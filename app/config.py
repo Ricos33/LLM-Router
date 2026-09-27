@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     classifier_confidence_threshold: float = 0.70
     jev_api_key: str = ""
     jev_api_base_url: str = "https://api.typesafe.ai/v1"
+    jev_model: str = "jev-latest"
+    jev_timeout: float = 5.0
 
     # Cheap Backend (e.g. Local Ollama)
     cheap_provider: str = "ollama"  # 'ollama' or 'openai_compatible'

@@ -55,9 +55,16 @@ class RouterEngine:
         if classifier:
             self.classifier = classifier
         elif settings.classifier_mode == "jev":
+            if not settings.jev_api_key:
+                logger.warning(
+                    "CLASSIFIER_MODE is 'jev' but JEV_API_KEY is not configured. "
+                    "JevClassifier will fall back to rule-based mock classification."
+                )
             self.classifier = JevClassifier(
                 api_key=settings.jev_api_key,
                 base_url=settings.jev_api_base_url,
+                model=settings.jev_model,
+                timeout=settings.jev_timeout,
             )
         else:
             self.classifier = RuleBasedClassifier(
