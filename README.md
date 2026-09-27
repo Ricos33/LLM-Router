@@ -4,6 +4,7 @@
 
 **Intelligent, OpenAI-Compatible API Gateway with Cost-Optimized Dynamic Routing**
 
+[![CI](https://github.com/Ricos33/LLM-Router/actions/workflows/ci.yml/badge.svg)](https://github.com/Ricos33/LLM-Router/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -78,7 +79,32 @@ flowchart TD
 
 ## 🚀 Quickstart
 
-### 1. Prerequisites & Installation
+### 🐳 Lancement avec Docker
+
+Le moyen le plus simple et rapide de lancer la stack complète (**Gateway FastAPI** et **Dashboard Streamlit**) :
+
+1. **Configurer l'environnement :**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Démarrer les services avec Docker Compose :**
+   ```bash
+   docker compose up --build
+   ```
+   *(ou en tâche de fond : `docker compose up -d --build`)*
+
+3. **URLs des services :**
+   - **Gateway FastAPI (Proxy API OpenAI-compatible) :** [`http://localhost:8000`](http://localhost:8000) (Documentation Swagger interactive sur [`http://localhost:8000/docs`](http://localhost:8000/docs))
+   - **Dashboard Streamlit (Télémétrie et monitoring en temps réel) :** [`http://localhost:8501`](http://localhost:8501)
+
+La base de données SQLite des métriques (`./data/metrics.sqlite3`) est automatiquement persistée sur l'hôte via un volume monté.
+
+---
+
+### 💻 Installation Locale (sans Docker)
+
+#### 1. Prerequisites & Installation
 
 ```bash
 git clone https://github.com/Ricos33/LLM-Router.git
