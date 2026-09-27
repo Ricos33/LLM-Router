@@ -53,3 +53,44 @@ async def test_router_model_override():
     )
     decision = router.decide_route(req)
     assert decision.tier == ModelTier.FRONTIER
+
+
+@pytest.mark.asyncio
+async def test_router_header_override_medium():
+    router = RouterEngine()
+    req = ChatCompletionRequest(
+        model="router-auto",
+        messages=[ChatMessage(role="user", content="Translate this text to Spanish")]
+    )
+    decision = router.decide_route(req, tier_header_override="medium")
+    assert decision.tier == ModelTier.MEDIUM
+
+
+@pytest.mark.asyncio
+async def test_router_agy_model_targets():
+    router = RouterEngine()
+
+    req_cheap = ChatCompletionRequest(
+        model="agy-cheap",
+        messages=[ChatMessage(role="user", content="Quick query")]
+    )
+    dec_cheap = router.decide_route(req_cheap)
+    assert dec_cheap.tier == ModelTier.CHEAP
+    assert dec_cheap.provider_name == "agy"
+
+    req_med = ChatCompletionRequest(
+        model="agy-medium",
+        messages=[ChatMessage(role="user", content="Code analysis")]
+    )
+    dec_med = router.decide_route(req_med)
+    assert dec_med.tier == ModelTier.MEDIUM
+    assert dec_med.provider_name == "agy"
+
+    req_front = ChatCompletionRequest(
+        model="agy-frontier",
+        messages=[ChatMessage(role="user", content="Deep theory")]
+    )
+    dec_front = router.decide_route(req_front)
+    assert dec_front.tier == ModelTier.FRONTIER
+    assert dec_front.provider_name == "agy"
+
