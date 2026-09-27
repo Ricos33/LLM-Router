@@ -7,7 +7,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Tests](https://img.shields.io/badge/tests-15%2F15%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-26%2F26%20passed-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 *Cut LLM inference costs by 70% to 85% by dynamically routing routine prompts to cheap/local models and reserving frontier LLMs for high-complexity reasoning.*
@@ -145,6 +145,43 @@ pytest -v
 
 ---
 
+## ⚡ Backend Agy (Local Antigravity CLI)
+
+LLM-Router supports **AgyBackend** (`app/backends/agy.py`), enabling dynamic headless routing through your local **Google Antigravity CLI** (`agy`).
+
+### Key Capabilities
+- **Headless CLI Execution:** Executes `agy -p "<prompt>" --model <model> [--effort <effort>] --output-format text` asynchronously in a subprocess with configurable timeouts.
+- **Configurable Multi-Tier Mapping:** Maps complexity tiers to models and reasoning effort:
+  - **Cheap (`cheap`):** Flash model for lightweight prompts & high throughput (`gemini-3.8-flash-low`, `--effort low`).
+  - **Medium (`medium`):** Pro model for balanced depth and code generation (`gemini-3.1-pro-high`, `--effort high`).
+  - **Frontier (`frontier`):** Flagship model for high-complexity reasoning (`claude-opus-4-6-thinking`). Claude models omit `--effort` automatically to adhere to CLI compatibility constraints.
+- **Reasoning Effort Support:** Supports CLI effort levels (`low`, `medium`, `high`, `max`) per tier where accepted by the target model.
+- **Telemetry & Latency:** Accurately measures subprocess execution latency, estimates token usage, and reports upstream tier and model in response headers (`X-Router-Tier`, `X-Router-Model`, `X-Router-Latency-MS`) and Streamlit telemetry.
+- **Simulation Fallback:** Seamlessly falls back to simulated responses if the binary is absent or an upstream timeout occurs when `SIMULATE_FALLBACK=true`.
+
+### Usage Examples
+
+```bash
+# 1. Target Agy Medium tier via explicit model alias
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "agy-medium",
+    "messages": [{"role": "user", "content": "Explain Paxos vs Raft consensus trade-offs."}]
+  }'
+
+# 2. Target Agy Frontier tier via X-Router-Tier header (with AGY_ENABLED=true)
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-Router-Tier: frontier" \
+  -d '{
+    "model": "router-auto",
+    "messages": [{"role": "user", "content": "Prove the correctness of the distributed commit protocol."}]
+  }'
+```
+
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Default | Description |
@@ -165,6 +202,12 @@ pytest -v
 | `FRONTIER_MODEL` | `gpt-4o` | Target frontier model identifier |
 | `FRONTIER_PROMPT_PRICE_PER_M` | `5.00` | Estimated $/1M input tokens |
 | `FRONTIER_COMPLETION_PRICE_PER_M` | `15.00` | Estimated $/1M output tokens |
+| `AGY_ENABLED` | `false` | Route queries through the local Agy CLI backend |
+| `AGY_BINARY_PATH` | `~/workspace/cli-tools/bin/agy` | Path to the local `agy` CLI binary |
+| `AGY_TIMEOUT` | `60.0` | Subprocess execution timeout in seconds |
+| `AGY_TIER_MAP` | `{"cheap": ...}` | JSON tier mapping for cheap, medium, and frontier tiers |
+| `AGY_PROMPT_PRICE_PER_M` | `0.00` | Estimated $/1M input tokens for Agy CLI |
+| `AGY_COMPLETION_PRICE_PER_M` | `0.00` | Estimated $/1M output tokens for Agy CLI |
 | `SIMULATE_FALLBACK` | `true` | Return simulation when upstream providers are offline |
 | `DATABASE_URL` | `sqlite:///./data/metrics.sqlite3` | SQLite path for metric logging |
 
