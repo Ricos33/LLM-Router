@@ -40,12 +40,28 @@ st.markdown(
         font-weight: 600;
         font-size: 0.85em;
     }
+    .badge-medium {
+        background-color: #2563eb;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.85em;
+    }
     .badge-frontier {
         background-color: #7c3aed;
         color: white;
         padding: 3px 8px;
         border-radius: 4px;
         font-weight: 600;
+        font-size: 0.85em;
+    }
+    .badge-agy {
+        background-color: #f59e0b;
+        color: #111827;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 700;
         font-size: 0.85em;
     }
     </style>
@@ -75,10 +91,18 @@ with st.sidebar:
     st.write(f"**Classifier:** `{settings.classifier_mode.upper()}`")
     st.write(f"**Cheap Backend:** `{settings.cheap_model}` ({settings.cheap_provider})")
     st.write(f"**Frontier Backend:** `{settings.frontier_model}`")
+    agy_status = "ENABLED ⚡" if settings.agy_enabled else "DISABLED"
+    st.write(f"**Agy Backend:** `{agy_status}`")
+    if settings.agy_enabled:
+        st.caption(f"Cheap: `{settings.agy_tier_map.get('cheap', {}).get('model', 'flash')}`")
+        st.caption(f"Medium: `{settings.agy_tier_map.get('medium', {}).get('model', 'pro')}`")
+        st.caption(f"Frontier: `{settings.agy_tier_map.get('frontier', {}).get('model', 'opus')}`")
     st.markdown("---")
     st.subheader("💰 Pricing (per 1M tokens)")
     st.caption(f"Cheap: ${settings.cheap_prompt_price_per_m} in / ${settings.cheap_completion_price_per_m} out")
     st.caption(f"Frontier: ${settings.frontier_prompt_price_per_m} in / ${settings.frontier_completion_price_per_m} out")
+    if settings.agy_enabled:
+        st.caption(f"Agy: ${settings.agy_prompt_price_per_m} in / ${settings.agy_completion_price_per_m} out (Local CLI)")
 
     st.markdown("---")
     if st.button("🔄 Refresh Data", use_container_width=True):
@@ -178,18 +202,36 @@ with right_col:
     )
     force_override = st.selectbox(
         "Routing Override (optional):",
-        options=["Auto (Classifier)", "Force Cheap (Ollama)", "Force Frontier (GPT-4o)"]
+        options=[
+            "Auto (Classifier)",
+            "Force Cheap",
+            "Force Medium",
+            "Force Frontier",
+            "Force Agy (Cheap)",
+            "Force Agy (Medium)",
+            "Force Agy (Frontier)",
+        ]
     )
 
     if st.button("🚀 Route Request", use_container_width=True):
         header_override = None
-        if "Cheap" in force_override:
+        req_model = "router-auto"
+
+        if force_override == "Force Cheap":
             header_override = "cheap"
-        elif "Frontier" in force_override:
+        elif force_override == "Force Medium":
+            header_override = "medium"
+        elif force_override == "Force Frontier":
             header_override = "frontier"
+        elif force_override == "Force Agy (Cheap)":
+            req_model = "agy-cheap"
+        elif force_override == "Force Agy (Medium)":
+            req_model = "agy-medium"
+        elif force_override == "Force Agy (Frontier)":
+            req_model = "agy-frontier"
 
         req = ChatCompletionRequest(
-            model="router-auto",
+            model=req_model,
             messages=[ChatMessage(role="user", content=test_prompt)]
         )
 
@@ -199,9 +241,14 @@ with right_col:
 
         meta = response.router_metadata
         if meta:
-            tier_badge = "badge-cheap" if meta.routed_tier == "cheap" else "badge-frontier"
+            tier_badge = (
+                "badge-cheap" if meta.routed_tier == "cheap"
+                else "badge-medium" if meta.routed_tier == "medium"
+                else "badge-frontier"
+            )
+            agy_badge = "<span class='badge-agy'>AGY CLI</span> &nbsp; " if meta.upstream_provider == "agy" else ""
             st.markdown(
-                f"**Decision:** <span class='{tier_badge}'>{meta.routed_tier.upper()}</span> &nbsp; "
+                f"**Decision:** {agy_badge}<span class='{tier_badge}'>{meta.routed_tier.upper()}</span> &nbsp; "
                 f"Model: `{meta.actual_model}` &nbsp; Latency: `{meta.latency_ms:.1f}ms`",
                 unsafe_allow_html=True
             )
@@ -223,9 +270,19 @@ recent = tracker.get_recent_requests(limit=50)
 if recent:
     formatted_rows = []
     for r in recent:
+        is_agy = (
+            r["routed_tier"].lower().startswith("agy")
+            or "gemini-3." in r["model_used"]
+            or "claude-opus" in r["model_used"]
+            or "claude-sonnet" in r["model_used"]
+            or "agy" in " ".join(r["classifier_reasons"]).lower()
+        )
+        agy_prefix = "⚡ AGY: " if is_agy else ""
+        tier_display = f"{agy_prefix}{r['routed_tier'].upper()}"
+
         formatted_rows.append({
             "Time": datetime.datetime.fromtimestamp(r["timestamp"]).strftime("%H:%M:%S"),
-            "Tier": r["routed_tier"].upper(),
+            "Tier": tier_display,
             "Model": r["model_used"],
             "Prompt Preview": r["prompt_preview"],
             "Tokens": r["total_tokens"],
