@@ -70,7 +70,7 @@ flowchart TD
 - **Standard OpenAI Format:** Fully compliant `POST /v1/chat/completions` and `GET /v1/models` endpoints.
 - **Typed Classifier Interface:** Clean `BaseClassifier` contract with explainable decision scoring (`score`, `confidence`, `reasons`).
 - **Explainable Rule-Based Classifier:** Out-of-the-box heuristic classifier detecting code, algorithmic reasoning, formal proofs, and multi-turn complexity.
-- **TypeSafe AI Jev Adapter:** Ready-to-use pluggable interface for TypeSafe AI's upcoming **Jev** classifier.
+- **TypeSafe AI Jev Integration:** Native System One classifier adapter connecting to TypeSafe AI's `POST /v1/systemone` endpoint for sub-100ms intent routing and complexity scoring with calibrated probabilities and automatic fallback.
 - **Configurable Routing Policy:** Override routing per-request via headers (`X-Router-Tier: cheap|frontier`) or model aliases (`router-cheap`, `router-frontier`).
 - **Telemetry & Live Dashboard:** Streamlit monitoring app visualizing request volume, cheap vs. frontier breakdown, and dollar savings in real time.
 - **Evaluation Benchmark Suite:** Built-in 20-prompt labeled dataset and evaluation runner with rich terminal analytics.
@@ -208,15 +208,49 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 
 ---
 
+## 🧠 Classifieur TypeSafe AI (Jev System One)
+
+LLM-Router s'intègre nativement avec **Jev** ([TypeSafe AI](https://typesafe.ai)), le premier modèle *System One* conçu pour la prise de décision structurée, ultra-rapide (< 100 ms) et calibrée.
+
+### Fonctionnement & Primitives Jev
+- **Endpoint Officiel :** `POST https://api.typesafe.ai/v1/systemone`
+- **Authentification :** Header HTTP `Authorization: Bearer <JEV_API_KEY>`
+- **Format de Requête :** Envoie l'historique des messages dans le champ `state` et évalue deux questions typées en parallèle :
+  - **`tier` (`choice`) :** Sélectionne l'option optimale parmi `cheap`, `medium` et `frontier` avec une distribution de probabilités (`probabilities`) et une certitude statistique (`confidence`).
+  - **`complexity` (`score`) :** Évalue la complexité cognitive et technique de la requête sur une échelle ordonnée (0 à 2, normalisé entre 0.0 et 1.0).
+- **Mapping vers nos Tiers :**
+  - **`cheap` :** Requêtes conversationnelles simples, salutations, faits généraux, résumés courts -> routé vers le backend Cheap (ex: Ollama Llama 3.2 3B).
+  - **`medium` :** Tâches de complexité intermédiaire, explications pas-à-pas, code standard -> routé vers le backend Medium (ex: Agy Pro).
+  - **`frontier` :** Raisonnement profond, architecture système distribuée, preuves mathématiques, audits de code -> routé vers le backend Frontier (ex: GPT-4o / Claude Opus).
+- **Résilience & Fallback Automatique :**
+  - Si `JEV_API_KEY` n'est pas configuré, un warning est loggé et le routeur bascule automatiquement sur le classifieur heuristique (`jev_mock_fallback`).
+  - En cas d'erreur HTTP, rate limit ou timeout réseau, un warning est loggé et le fallback heuristique prend le relais instantanément (`jev_error_fallback`), garantissant une continuité de service totale.
+
+### Activation
+
+```bash
+# Dans .env
+CLASSIFIER_MODE=jev
+JEV_API_KEY=ts_live_votre_cle_typesafe
+JEV_API_BASE_URL=https://api.typesafe.ai/v1
+JEV_MODEL=jev-latest
+JEV_TIMEOUT=5.0
+```
+
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8000` | HTTP port for the FastAPI gateway |
 | `HOST` | `0.0.0.0` | Bind host address |
-| `CLASSIFIER_MODE` | `mock` | `mock` (rule-based) or `jev` (TypeSafe AI) |
-| `CLASSIFIER_CONFIDENCE_THRESHOLD` | `0.70` | Confidence threshold for routing decisions |
-| `JEV_API_KEY` | `""` | TypeSafe AI API Key *(pending access)* |
+| `CLASSIFIER_MODE` | `mock` | `mock` (rule-based) ou `jev` (TypeSafe AI System One) |
+| `CLASSIFIER_CONFIDENCE_THRESHOLD` | `0.70` | Seuil de confiance pour les décisions de routage |
+| `JEV_API_KEY` | `""` | Clé d'API TypeSafe AI (depuis https://console.typesafe.ai) |
+| `JEV_API_BASE_URL` | `https://api.typesafe.ai/v1` | URL de base de l'API TypeSafe (endpoint `/v1/systemone`) |
+| `JEV_MODEL` | `jev-latest` | Alias ou version du modèle Jev (`jev-latest`, `jev-1.13.0`) |
+| `JEV_TIMEOUT` | `5.0` | Timeout HTTP en secondes pour l'appel de classification Jev |
 | `CHEAP_PROVIDER` | `ollama` | Cheap provider (`ollama` or `openai_compatible`) |
 | `CHEAP_API_BASE_URL` | `http://localhost:11434/v1` | URL for the cheap backend API |
 | `CHEAP_MODEL` | `llama3.2:3b` | Target cheap model identifier |
@@ -241,7 +275,7 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 
 ## 🗺️ Roadmap
 
-- [ ] **TypeSafe AI Jev Classifier Integration:** Seamless drop-in integration as soon as API access is provisioned.
+- [x] **TypeSafe AI Jev Classifier Integration:** Native System One API adapter with calibrated choice/score routing and graceful fallback.
 - [ ] **SSE Streaming Support:** Low-latency streaming proxy (`stream=True`) preserving token-by-token TTFT.
 - [ ] **Semantic Vector Routing:** Embedding-based similarity routing to fine-tuned domain-specific SLMs.
 - [ ] **Automated Provider Fallback:** Automatic degradation/promotion on rate limits or timeout spikes (429/503).
@@ -252,3 +286,4 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
