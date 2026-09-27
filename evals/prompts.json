@@ -1,0 +1,142 @@
+[
+  {
+    "id": "c1",
+    "prompt": "Hello! How are you doing today?",
+    "expected_tier": "cheap",
+    "category": "chit-chat",
+    "description": "Simple friendly greeting"
+  },
+  {
+    "id": "c2",
+    "prompt": "Bonjour, comment ça va ?",
+    "expected_tier": "cheap",
+    "category": "chit-chat",
+    "description": "Greeting in French"
+  },
+  {
+    "id": "c3",
+    "prompt": "What is the capital of France?",
+    "expected_tier": "cheap",
+    "category": "factual",
+    "description": "Direct geography trivia"
+  },
+  {
+    "id": "c4",
+    "prompt": "Define the word 'ubiquitous'.",
+    "expected_tier": "cheap",
+    "category": "definition",
+    "description": "Vocabulary dictionary definition"
+  },
+  {
+    "id": "c5",
+    "prompt": "Translate 'The meeting is rescheduled to tomorrow 2 PM' into Spanish.",
+    "expected_tier": "cheap",
+    "category": "translation",
+    "description": "Short sentence translation"
+  },
+  {
+    "id": "c6",
+    "prompt": "Please correct the spelling and grammar in this sentence: 'They was going to the park yesterday.'",
+    "expected_tier": "cheap",
+    "category": "grammar",
+    "description": "Basic subject-verb agreement correction"
+  },
+  {
+    "id": "c7",
+    "prompt": "Summarize this email in two bullet points: 'Hi team, please be advised that the quarterly review meeting will take place in Conference Room B at 10 AM. Don't forget your printed decks.'",
+    "expected_tier": "cheap",
+    "category": "summarization",
+    "description": "Short single-paragraph notice summary"
+  },
+  {
+    "id": "c8",
+    "prompt": "Give me a list of 5 healthy snack ideas for working at a desk.",
+    "expected_tier": "cheap",
+    "category": "brainstorming",
+    "description": "Simple list generation"
+  },
+  {
+    "id": "c9",
+    "prompt": "What year did Apollo 11 land on the Moon?",
+    "expected_tier": "cheap",
+    "category": "factual",
+    "description": "Direct historical trivia"
+  },
+  {
+    "id": "c10",
+    "prompt": "Qui est Victor Hugo ?",
+    "expected_tier": "cheap",
+    "category": "factual",
+    "description": "Factual biography question in French"
+  },
+  {
+    "id": "f1",
+    "prompt": "Write a Python function with type hints and doctests to find the longest palindromic substring in O(n) using Manacher's algorithm.",
+    "expected_tier": "frontier",
+    "category": "code",
+    "description": "Complex algorithmic implementation"
+  },
+  {
+    "id": "f2",
+    "prompt": "Compare microservices vs monolith architecture for an early-stage fintech startup handling PCI-DSS compliant transactions. Discuss latency, database consistency trade-offs, and operational overhead.",
+    "expected_tier": "frontier",
+    "category": "architecture",
+    "description": "High-level software architecture and compliance trade-offs"
+  },
+  {
+    "id": "f3",
+    "prompt": "Prove that the square root of 2 is irrational using proof by contradiction.",
+    "expected_tier": "frontier",
+    "category": "math",
+    "description": "Formal mathematical proof"
+  },
+  {
+    "id": "f4",
+    "prompt": "Write a PostgreSQL query with recursive CTE to compute the hierarchical tree path and depth for an organizational chart table (id, manager_id, name).",
+    "expected_tier": "frontier",
+    "category": "code",
+    "description": "Advanced SQL recursive query"
+  },
+  {
+    "id": "f5",
+    "prompt": "Analyze this memory leak in our asyncio service: def process(): asyncio.create_task(run_forever()). Why does the Task object get garbage collected intermittently?",
+    "expected_tier": "frontier",
+    "category": "debugging",
+    "description": "Low-level Python concurrency debugging"
+  },
+  {
+    "id": "f6",
+    "prompt": "Conduct a security audit of this Solidity smart contract function to check for reentrancy and integer overflow vulnerabilities: function withdraw(uint amount) public { require(balances[msg.sender] >= amount); msg.sender.call.value(amount)(''); balances[msg.sender] -= amount; }",
+    "expected_tier": "frontier",
+    "category": "security",
+    "description": "Smart contract vulnerability analysis"
+  },
+  {
+    "id": "f7",
+    "prompt": "Derive the gradient update rule for a multi-layer perceptron with cross-entropy loss and softmax output from first principles.",
+    "expected_tier": "frontier",
+    "category": "math",
+    "description": "Machine learning backpropagation mathematical derivation"
+  },
+  {
+    "id": "f8",
+    "prompt": "Design a distributed consensus mechanism resilient against network partitions and Byzantine faults for a peer-to-peer ledger.",
+    "expected_tier": "frontier",
+    "category": "architecture",
+    "description": "Distributed systems consensus design"
+  },
+  {
+    "id": "f9",
+    "prompt": "Refactor this monolithic Django view into a clean domain-driven architecture with repositories, service layers, and event-driven notifications.",
+    "expected_tier": "frontier",
+    "category": "refactoring",
+    "description": "Complex DDD architectural refactoring"
+  },
+  {
+    "id": "f10",
+    "prompt": "Write an asynchronous FastAPI background task worker integrating Celery, Redis sentinel failover, and prometheus metrics collection with graceful shutdown handling.",
+    "expected_tier": "frontier",
+    "category": "code",
+    "description": "Full-stack production asynchronous infra code"
+  }
+]
