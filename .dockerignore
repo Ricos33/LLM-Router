@@ -1,0 +1,24 @@
+# Python virtual environment and cache
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+
+# Version control
+.git
+.github
+
+# Databases and metrics persistence
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Testing and coverage
+.pytest_cache
+.coverage
+htmlcov/
+
+# Local environment files
+.env
+.env.*
