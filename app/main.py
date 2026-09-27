@@ -45,6 +45,7 @@ async def health_check():
         "status": "healthy",
         "service": "llm-router",
         "classifier": settings.classifier_mode,
+        "agy_enabled": settings.agy_enabled,
         "cheap_provider": settings.cheap_provider,
         "cheap_model": settings.cheap_model,
         "frontier_provider": settings.frontier_provider,
@@ -55,15 +56,21 @@ async def health_check():
 @app.get("/v1/models", response_model=ModelListResponse)
 async def list_models():
     """List available virtual router models and upstream targets."""
-    return ModelListResponse(
-        data=[
-            ModelObject(id="router-auto"),
-            ModelObject(id="router-cheap"),
-            ModelObject(id="router-frontier"),
-            ModelObject(id=settings.cheap_model),
-            ModelObject(id=settings.frontier_model),
-        ]
-    )
+    models = [
+        ModelObject(id="router-auto"),
+        ModelObject(id="router-cheap"),
+        ModelObject(id="router-medium"),
+        ModelObject(id="router-frontier"),
+        ModelObject(id=settings.cheap_model),
+        ModelObject(id=settings.frontier_model),
+    ]
+    if settings.agy_enabled:
+        models.extend([
+            ModelObject(id="agy-cheap"),
+            ModelObject(id="agy-medium"),
+            ModelObject(id="agy-frontier"),
+        ])
+    return ModelListResponse(data=models)
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)

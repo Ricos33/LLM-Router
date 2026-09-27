@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ModelTier(str, Enum):
     CHEAP = "cheap"
+    MEDIUM = "medium"
     FRONTIER = "frontier"
 
 
