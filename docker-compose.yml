@@ -11,16 +11,14 @@ services:
       - ./data:/app/data
     restart: unless-stopped
 
-  dashboard:
+  frontend:
     build:
       context: .
-      target: dashboard
+      target: frontend
     ports:
-      - "8501:8501"
+      - "3000:3000"
     env_file:
       - .env
     depends_on:
       - gateway
-    volumes:
-      - ./data:/app/data
     restart: unless-stopped

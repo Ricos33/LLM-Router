@@ -10,6 +10,7 @@ from app.models import (
     ModelListResponse,
     ModelObject,
 )
+from app.classifier.types import ClassificationResult
 from app.router import RouterEngine
 
 # Configure logging
@@ -105,6 +106,19 @@ async def chat_completions(
     except Exception as e:
         logger.error(f"Routing completion failure: {e}", exc_info=True)
         raise HTTPException(status_code=502, detail=f"LLM Router gateway error: {str(e)}")
+
+
+@app.post("/v1/classify", response_model=ClassificationResult)
+async def classify_prompt(request: ChatCompletionRequest):
+    """
+    Classify a conversation to suggest an optimal model tier without generating a completion.
+    """
+    if not request.messages:
+        raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
+    
+    # Run classifier
+    result = await router_engine.classifier.classify_async(request.messages)
+    return result
 
 
 @app.get("/v1/metrics/summary")

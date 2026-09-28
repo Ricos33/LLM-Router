@@ -7,7 +7,7 @@
 [![CI](https://github.com/Ricos33/LLM-Router/actions/workflows/ci.yml/badge.svg)](https://github.com/Ricos33/LLM-Router/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![React+Vite](https://img.shields.io/badge/React+Vite-1.32+-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io)
 [![Tests](https://img.shields.io/badge/tests-26%2F26%20passed-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -25,7 +25,7 @@ In modern GenAI systems, **up to 80% of inbound requests** are routine queries: 
 1. **Drop-in OpenAI Compatibility:** Point any existing `openai` client (`base_url="http://localhost:8000/v1"`) to LLM-Router without modifying application code.
 2. **Intent & Complexity Classification:** Analyzes prompt complexity, code syntax, and reasoning depth in sub-millisecond time.
 3. **Smart Tier Routing:** Directs simple queries to a **Cheap Backend** (e.g. local Ollama running `llama3.2:3b` at ~$0.00) and complex queries to a **Frontier Backend** (`gpt-4o`).
-4. **Live Cost Telemetry:** Real-time metrics tracking requests, latency, and dollars saved via an integrated Streamlit dashboard.
+4. **Live Cost Telemetry:** Real-time metrics tracking requests, latency, and dollars saved via an integrated React+Vite dashboard.
 
 ---
 
@@ -47,8 +47,8 @@ flowchart TD
         Frontier["Frontier Backend\n(OpenAI / OpenRouter: GPT-4o)\nHigh Reasoning"]
     end
     
-    subgraph Analytics ["Telemetry (:8501)"]
-        Dashboard["Streamlit Analytics Dashboard\n(Real-Time Savings & Tester)"]
+    subgraph Analytics ["Telemetry (:3000)"]
+        Dashboard["React+Vite Analytics Dashboard\n(Real-Time Savings & Tester)"]
     end
 
     Client -->|OpenAI Payload| API
@@ -72,7 +72,7 @@ flowchart TD
 - **Explainable Rule-Based Classifier:** Out-of-the-box heuristic classifier detecting code, algorithmic reasoning, formal proofs, and multi-turn complexity.
 - **TypeSafe AI Jev Integration:** Native System One classifier adapter connecting to TypeSafe AI's `POST /v1/systemone` endpoint for sub-100ms intent routing and complexity scoring with calibrated probabilities and automatic fallback.
 - **Configurable Routing Policy:** Override routing per-request via headers (`X-Router-Tier: cheap|frontier`) or model aliases (`router-cheap`, `router-frontier`).
-- **Telemetry & Live Dashboard:** Streamlit monitoring app visualizing request volume, cheap vs. frontier breakdown, and dollar savings in real time.
+- **Telemetry & Live Dashboard:** React+Vite monitoring app visualizing request volume, cheap vs. frontier breakdown, and dollar savings in real time.
 - **Evaluation Benchmark Suite:** Built-in 20-prompt labeled dataset and evaluation runner with rich terminal analytics.
 
 ---
@@ -81,7 +81,7 @@ flowchart TD
 
 ### 🐳 Lancement avec Docker
 
-Le moyen le plus simple et rapide de lancer la stack complète (**Gateway FastAPI** et **Dashboard Streamlit**) :
+Le moyen le plus simple et rapide de lancer la stack complète (**Gateway FastAPI** et **Dashboard React+Vite**) :
 
 1. **Configurer l'environnement :**
    ```bash
@@ -96,7 +96,7 @@ Le moyen le plus simple et rapide de lancer la stack complète (**Gateway FastAP
 
 3. **URLs des services :**
    - **Gateway FastAPI (Proxy API OpenAI-compatible) :** [`http://localhost:8000`](http://localhost:8000) (Documentation Swagger interactive sur [`http://localhost:8000/docs`](http://localhost:8000/docs))
-   - **Dashboard Streamlit (Télémétrie et monitoring en temps réel) :** [`http://localhost:8501`](http://localhost:8501)
+   - **Dashboard React+Vite (Télémétrie et monitoring en temps réel) :** [`http://localhost:3000`](http://localhost:3000)
 
 La base de données SQLite des métriques (`./data/metrics.sqlite3`) est automatiquement persistée sur l'hôte via un volume monté.
 
@@ -148,13 +148,13 @@ Notice the diagnostic response headers:
 - `X-Router-Model: llama3.2:3b`
 - `X-Router-Saved-USD: 0.00115`
 
-### 4. Launch the Streamlit Dashboard
+### 4. Launch the React+Vite Dashboard
 
-Run the live analytics UI on port `8501`:
+Run the live analytics UI on port `3000`:
 ```bash
 streamlit run dashboard/app.py
 ```
-Open `http://localhost:8501` to view real-time traffic statistics, cumulative savings, and test prompts interactively.
+Open `http://localhost:3000` to view real-time traffic statistics, cumulative savings, and test prompts interactively.
 
 ### 5. Run Routing Evaluations
 
@@ -182,7 +182,7 @@ LLM-Router supports **AgyBackend** (`app/backends/agy.py`), enabling dynamic hea
   - **Medium (`medium`):** Pro model for balanced depth and code generation (`gemini-3.1-pro-high`, `--effort high`).
   - **Frontier (`frontier`):** Flagship model for high-complexity reasoning (`claude-opus-4-6-thinking`). Claude models omit `--effort` automatically to adhere to CLI compatibility constraints.
 - **Reasoning Effort Support:** Supports CLI effort levels (`low`, `medium`, `high`, `max`) per tier where accepted by the target model.
-- **Telemetry & Latency:** Accurately measures subprocess execution latency, estimates token usage, and reports upstream tier and model in response headers (`X-Router-Tier`, `X-Router-Model`, `X-Router-Latency-MS`) and Streamlit telemetry.
+- **Telemetry & Latency:** Accurately measures subprocess execution latency, estimates token usage, and reports upstream tier and model in response headers (`X-Router-Tier`, `X-Router-Model`, `X-Router-Latency-MS`) and React+Vite telemetry.
 - **Simulation Fallback:** Seamlessly falls back to simulated responses if the binary is absent or an upstream timeout occurs when `SIMULATE_FALLBACK=true`.
 
 ### Usage Examples

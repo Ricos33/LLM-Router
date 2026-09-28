@@ -16,7 +16,6 @@ RUN mkdir -p /app/data
 
 # Copy application source code
 COPY app/ ./app/
-COPY dashboard/ ./dashboard/
 COPY evals/ ./evals/
 
 # ------------------------------------------------------------------------------
@@ -29,10 +28,14 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # ------------------------------------------------------------------------------
-# Target: dashboard (Streamlit analytics on port 8501)
+# Target: frontend (Vite React app on port 3000)
 # ------------------------------------------------------------------------------
-FROM base AS dashboard
-
-EXPOSE 8501
-
-CMD ["streamlit", "run", "dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+FROM node:20-alpine AS frontend
+WORKDIR /app
+COPY web/package*.json ./
+RUN npm install
+COPY web/ ./
+RUN npm run build
+RUN npm install -g serve
+EXPOSE 3000
+CMD ["serve", "-s", "dist", "-l", "3000"]
