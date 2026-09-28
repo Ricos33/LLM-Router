@@ -90,6 +90,7 @@ class MetricsTracker:
                 SELECT 
                     COUNT(*) as total_requests,
                     SUM(CASE WHEN routed_tier = 'cheap' THEN 1 ELSE 0 END) as cheap_requests,
+                    SUM(CASE WHEN routed_tier = 'medium' THEN 1 ELSE 0 END) as medium_requests,
                     SUM(CASE WHEN routed_tier = 'frontier' THEN 1 ELSE 0 END) as frontier_requests,
                     COALESCE(SUM(prompt_tokens), 0) as total_prompt_tokens,
                     COALESCE(SUM(completion_tokens), 0) as total_completion_tokens,
@@ -105,15 +106,24 @@ class MetricsTracker:
                 return {
                     "total_requests": 0,
                     "cheap_requests": 0,
+                    "medium_requests": 0,
                     "frontier_requests": 0,
                     "cheap_percentage": 0.0,
+                    "medium_percentage": 0.0,
                     "frontier_percentage": 0.0,
+                    "tier_distribution": {
+                        "cheap": 0,
+                        "medium": 0,
+                        "frontier": 0,
+                    },
                     "total_tokens": 0,
                     "total_cost_actual": 0.0,
                     "total_cost_if_frontier": 0.0,
                     "total_cost_saved": 0.0,
                     "savings_percentage": 0.0,
-                    "avg_latency_ms": 0.0
+                    "avg_latency_ms": 0.0,
+                    "average_latency_ms": 0.0,
+                    "total_errors": 0,
                 }
 
             total = row["total_requests"]
@@ -121,18 +131,32 @@ class MetricsTracker:
             cost_saved = row["total_cost_saved"]
             savings_pct = (cost_saved / cost_if_frontier * 100.0) if cost_if_frontier > 0 else 0.0
 
+            cheap_cnt = row["cheap_requests"] or 0
+            med_cnt = row["medium_requests"] or 0
+            front_cnt = row["frontier_requests"] or 0
+            avg_lat = round(row["avg_latency_ms"], 1)
+
             return {
                 "total_requests": total,
-                "cheap_requests": row["cheap_requests"] or 0,
-                "frontier_requests": row["frontier_requests"] or 0,
-                "cheap_percentage": round((row["cheap_requests"] or 0) / total * 100.0, 1),
-                "frontier_percentage": round((row["frontier_requests"] or 0) / total * 100.0, 1),
+                "cheap_requests": cheap_cnt,
+                "medium_requests": med_cnt,
+                "frontier_requests": front_cnt,
+                "cheap_percentage": round(cheap_cnt / total * 100.0, 1),
+                "medium_percentage": round(med_cnt / total * 100.0, 1),
+                "frontier_percentage": round(front_cnt / total * 100.0, 1),
+                "tier_distribution": {
+                    "cheap": cheap_cnt,
+                    "medium": med_cnt,
+                    "frontier": front_cnt,
+                },
                 "total_tokens": row["total_tokens"],
                 "total_cost_actual": round(row["total_cost_actual"], 6),
                 "total_cost_if_frontier": round(row["total_cost_if_frontier"], 6),
                 "total_cost_saved": round(cost_saved, 6),
                 "savings_percentage": round(savings_pct, 1),
-                "avg_latency_ms": round(row["avg_latency_ms"], 1)
+                "avg_latency_ms": avg_lat,
+                "average_latency_ms": avg_lat,
+                "total_errors": 0,
             }
 
     def get_recent_requests(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -151,6 +175,9 @@ class MetricsTracker:
             results = []
             for r in rows:
                 item = dict(r)
+                # Provide camelCase and alternate names for seamless frontend compatibility
+                item["actual_model"] = item["model_used"]
+                item["cost_saved_usd"] = item["cost_saved"]
                 try:
                     item["classifier_reasons"] = json.loads(item["classifier_reasons"])
                 except Exception:

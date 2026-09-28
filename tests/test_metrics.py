@@ -55,8 +55,14 @@ def test_metrics_tracker_crud():
         assert summary["frontier_requests"] == 1
         assert summary["cheap_percentage"] == 50.0
         assert summary["total_cost_saved"] > 0
+        assert summary["tier_distribution"]["cheap"] == 1
+        assert summary["tier_distribution"]["frontier"] == 1
 
         recent = tracker.get_recent_requests(limit=10)
         assert len(recent) == 2
         assert recent[0]["model_used"] == "gpt-4o"
+        assert recent[0]["actual_model"] == "gpt-4o"
+        assert "cost_saved_usd" in recent[0]
         assert recent[1]["model_used"] == "llama3.2:3b"
+        assert recent[1]["actual_model"] == "llama3.2:3b"
+
