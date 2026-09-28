@@ -63,6 +63,21 @@ class RuleBasedClassifier(BaseClassifier):
         self.code_regexes = [re.compile(p, re.IGNORECASE) for p in self.CODE_PATTERNS]
         self.simple_regexes = [re.compile(p, re.IGNORECASE) for p in self.SIMPLE_PATTERNS]
 
+    @staticmethod
+    def _calculate_probabilities(score: float) -> dict[str, float]:
+        import math
+        # score in [0.0, 1.0]
+        # Smooth gaussian bell curves centered at 0.10 (cheap), 0.50 (medium), 0.88 (frontier)
+        w_cheap = math.exp(-((score - 0.10) / 0.28) ** 2)
+        w_medium = math.exp(-((score - 0.50) / 0.25) ** 2)
+        w_frontier = math.exp(-((score - 0.88) / 0.28) ** 2)
+        total = w_cheap + w_medium + w_frontier
+        return {
+            "cheap": round(w_cheap / total, 4),
+            "medium": round(w_medium / total, 4),
+            "frontier": round(w_frontier / total, 4),
+        }
+
     def classify(self, messages: List[ChatMessage]) -> ClassificationResult:
         if not messages:
             return ClassificationResult(
@@ -70,7 +85,8 @@ class RuleBasedClassifier(BaseClassifier):
                 confidence=0.9,
                 score=0.1,
                 reasons=["Empty message context routed to cheap tier by default"],
-                suggested_model="cheap"
+                suggested_model="cheap",
+                probabilities={"cheap": 0.85, "medium": 0.12, "frontier": 0.03}
             )
 
         # Aggregate text from recent messages, focusing on the latest user message
@@ -129,12 +145,15 @@ class RuleBasedClassifier(BaseClassifier):
             else:
                 reasons.append("Low complexity: routine query suitable for lightweight/local LLM")
 
+        probs = self._calculate_probabilities(score)
+
         return ClassificationResult(
             tier=tier,
             confidence=round(confidence, 2),
             score=round(score, 3),
             reasons=reasons,
             suggested_model=tier.value,
+            probabilities=probs,
             metadata={
                 "message_count": len(messages),
                 "total_chars": total_length,

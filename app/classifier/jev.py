@@ -105,9 +105,24 @@ class JevClassifier(BaseClassifier):
             score = max(0.0, min(1.0, score))
 
             reasons = [f"TypeSafe Jev routed to '{tier.value}' tier (choice: {choice}, confidence: {confidence:.2f})"]
+            probabilities = {}
             if "probabilities" in tier_answer and isinstance(tier_answer["probabilities"], dict):
+                raw_p = tier_answer["probabilities"]
+                p_c = float(raw_p.get("cheap", raw_p.get("low", 0.0)))
+                p_m = float(raw_p.get("medium", 0.0))
+                p_f = float(raw_p.get("frontier", raw_p.get("high", 0.0)))
+                tot = p_c + p_m + p_f
+                if tot > 0:
+                    probabilities = {
+                        "cheap": round(p_c / tot, 4),
+                        "medium": round(p_m / tot, 4),
+                        "frontier": round(p_f / tot, 4),
+                    }
                 probs_str = ", ".join(f"{k}: {v:.2f}" for k, v in tier_answer["probabilities"].items())
                 reasons.append(f"Jev tier probabilities: {probs_str}")
+            if not probabilities:
+                probabilities = RuleBasedClassifier._calculate_probabilities(score)
+
             if raw_score is not None:
                 reasons.append(f"Jev complexity score: {float(raw_score):.2f}")
 
@@ -117,6 +132,7 @@ class JevClassifier(BaseClassifier):
                 score=round(score, 3),
                 reasons=reasons,
                 suggested_model=tier.value,
+                probabilities=probabilities,
                 metadata={
                     "provider": "typesafe_jev",
                     "model": data.get("model", self.model),
@@ -127,12 +143,14 @@ class JevClassifier(BaseClassifier):
         # 2. Legacy / simplified response fallback
         raw_tier = str(data.get("tier", "cheap")).lower().strip()
         tier = TIER_MAPPING.get(raw_tier, ModelTier.CHEAP)
+        score_val = float(data.get("score", 0.50))
         return ClassificationResult(
             tier=tier,
             confidence=float(data.get("confidence", 0.90)),
-            score=float(data.get("score", 0.50)),
+            score=score_val,
             reasons=data.get("reasons", [f"Classified by TypeSafe AI Jev ({tier.value})"]),
             suggested_model=data.get("suggested_model", tier.value),
+            probabilities=RuleBasedClassifier._calculate_probabilities(score_val),
             metadata={
                 "provider": "typesafe_jev",
                 "model": data.get("model", self.model),
@@ -148,6 +166,7 @@ class JevClassifier(BaseClassifier):
                 score=0.0,
                 reasons=["Empty message context routed to cheap tier by default"],
                 suggested_model="cheap",
+                probabilities={"cheap": 0.85, "medium": 0.12, "frontier": 0.03},
                 metadata={"provider": "typesafe_jev"}
             )
 

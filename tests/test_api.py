@@ -64,8 +64,42 @@ def test_metrics_endpoints(client):
     assert summary_res.status_code == 200
     summary = summary_res.json()
     assert "total_requests" in summary
+    assert "tier_distribution" in summary
+    assert "average_latency_ms" in summary
+    assert "total_errors" in summary
 
     recent_res = client.get("/v1/metrics/recent?limit=5")
     assert recent_res.status_code == 200
     recent = recent_res.json()
     assert isinstance(recent, list)
+
+
+def test_models_tiers_endpoint(client):
+    res = client.get("/v1/models/tiers")
+    assert res.status_code == 200
+    tiers = res.json()
+    assert "cheap" in tiers
+    assert "medium" in tiers
+    assert "frontier" in tiers
+    assert "model" in tiers["cheap"]
+    assert "model" in tiers["medium"]
+    assert "model" in tiers["frontier"]
+
+
+def test_classify_endpoint_probabilities(client):
+    payload = {
+        "messages": [
+            {"role": "user", "content": "Hello, how are you?"}
+        ]
+    }
+    res = client.post("/v1/classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "tier" in data
+    assert "probabilities" in data
+    assert "cheap" in data["probabilities"]
+    assert "medium" in data["probabilities"]
+    assert "frontier" in data["probabilities"]
+    assert "tier_models" in data
+    assert "suggested_model" in data
+

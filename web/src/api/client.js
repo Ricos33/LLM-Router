@@ -19,7 +19,18 @@ export const getMetricsSummary = async () => {
   return data;
 };
 
-export const getRecentMetrics = async () => {
-  const { data } = await api.get('/v1/metrics/recent');
+export const getRecentMetrics = async (limit = 50) => {
+  const { data } = await api.get(`/v1/metrics/recent?limit=${limit}`);
   return data;
 };
+
+export const getTierModels = async () => {
+  const { data } = await api.get('/v1/models/tiers');
+  return data;
+};
+
+export const getHealth = async () => {
+  const { data } = await api.get('/health');
+  return data;
+};
+

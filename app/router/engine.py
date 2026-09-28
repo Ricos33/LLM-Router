@@ -97,6 +97,82 @@ class RouterEngine:
             db_path=str(settings.db_path)
         )
 
+    def get_tier_models(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Return the resolved models and metadata for each tier based on backend settings.
+        Provides the real model names (e.g. gemini-3.8-flash-low, gemini-3.1-pro-high, claude-opus-4-6-thinking).
+        """
+        if settings.agy_enabled and hasattr(self, "agy_backend"):
+            return {
+                "cheap": {
+                    "tier": "cheap",
+                    "model": self.agy_backend.get_model_for_tier("cheap"),
+                    "provider": "agy",
+                    "effort": self.agy_backend.get_tier_config("cheap").get("effort", "low"),
+                    "displayName": "Flash / Local Fast",
+                    "description": "Idéal pour requêtes légères, salutations et faits simples",
+                },
+                "medium": {
+                    "tier": "medium",
+                    "model": self.agy_backend.get_model_for_tier("medium"),
+                    "provider": "agy",
+                    "effort": self.agy_backend.get_tier_config("medium").get("effort", "high"),
+                    "displayName": "Pro Intermediate",
+                    "description": "Pour tâches structurées, refactorings et scripts standards",
+                },
+                "frontier": {
+                    "tier": "frontier",
+                    "model": self.agy_backend.get_model_for_tier("frontier"),
+                    "provider": "agy",
+                    "effort": self.agy_backend.get_tier_config("frontier").get("effort"),
+                    "displayName": "Frontier Intelligence",
+                    "description": "Raisonnement complexe, architecture et code critique",
+                },
+            }
+        else:
+            cheap_model = (
+                settings.agy_tier_map.get("cheap", {}).get("model")
+                if "cheap" in settings.agy_tier_map
+                else settings.cheap_model
+            ) or settings.cheap_model
+            medium_model = (
+                settings.agy_tier_map.get("medium", {}).get("model")
+                if "medium" in settings.agy_tier_map
+                else "gemini-3.1-pro-high"
+            )
+            frontier_model = (
+                settings.agy_tier_map.get("frontier", {}).get("model")
+                if "frontier" in settings.agy_tier_map
+                else settings.frontier_model
+            ) or settings.frontier_model
+
+            return {
+                "cheap": {
+                    "tier": "cheap",
+                    "model": cheap_model,
+                    "provider": "agy" if "cheap" in settings.agy_tier_map else settings.cheap_provider,
+                    "effort": settings.agy_tier_map.get("cheap", {}).get("effort", "low"),
+                    "displayName": "Flash / Local Fast",
+                    "description": "Idéal pour requêtes légères, salutations et faits simples",
+                },
+                "medium": {
+                    "tier": "medium",
+                    "model": medium_model,
+                    "provider": "agy" if "medium" in settings.agy_tier_map else "intermediate",
+                    "effort": settings.agy_tier_map.get("medium", {}).get("effort", "high"),
+                    "displayName": "Pro Intermediate",
+                    "description": "Pour tâches structurées, refactorings et scripts standards",
+                },
+                "frontier": {
+                    "tier": "frontier",
+                    "model": frontier_model,
+                    "provider": "agy" if "frontier" in settings.agy_tier_map else settings.frontier_provider,
+                    "effort": settings.agy_tier_map.get("frontier", {}).get("effort"),
+                    "displayName": "Frontier Intelligence",
+                    "description": "Raisonnement complexe, architecture et code critique",
+                },
+            }
+
     def decide_route(
         self, request: ChatCompletionRequest, tier_header_override: Optional[str] = None
     ) -> RoutingDecision:

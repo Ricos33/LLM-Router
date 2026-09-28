@@ -51,6 +51,7 @@ async def health_check():
         "cheap_model": settings.cheap_model,
         "frontier_provider": settings.frontier_provider,
         "frontier_model": settings.frontier_model,
+        "tier_models": router_engine.get_tier_models(),
     }
 
 
@@ -72,6 +73,12 @@ async def list_models():
             ModelObject(id="agy-frontier"),
         ])
     return ModelListResponse(data=models)
+
+
+@app.get("/v1/models/tiers")
+async def get_tier_models():
+    """Retrieve configured tier-to-model mapping and metadata."""
+    return router_engine.get_tier_models()
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
@@ -118,6 +125,10 @@ async def classify_prompt(request: ChatCompletionRequest):
     
     # Run classifier
     result = await router_engine.classifier.classify_async(request.messages)
+    tier_models = router_engine.get_tier_models()
+    result.tier_models = tier_models
+    if result.tier.value in tier_models:
+        result.suggested_model = tier_models[result.tier.value]["model"]
     return result
 
 
