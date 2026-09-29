@@ -23,6 +23,10 @@ const VOLUME_PRESETS = [
 
 export default function Playground({ modelsCount }) {
   const [input, setInput] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(1000);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [budget, setBudget] = useState(4); // index in BUDGET_LEVELS
   const [strategy, setStrategy] = useState('balanced'); // 'balanced' | 'cost_optimized' | 'quality_optimized'
   
@@ -101,7 +105,10 @@ export default function Playground({ modelsCount }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: text }],
+          messages: [
+            ...(systemPrompt.trim() ? [{ role: 'system', content: systemPrompt }] : []),
+            { role: 'user', content: text }
+          ],
           budget: BUDGET_LEVELS[budget],
           providers: Array.from(selectedProviders),
           strategy: activeStrategy,
@@ -129,7 +136,12 @@ export default function Playground({ modelsCount }) {
         headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
         body: JSON.stringify({
           models: modelIds,
-          messages: [{ role: 'user', content: input }],
+          messages: [
+            ...(systemPrompt.trim() ? [{ role: 'system', content: systemPrompt }] : []),
+            { role: 'user', content: input }
+          ],
+          temperature: parseFloat(temperature),
+          max_tokens: parseInt(maxTokens) || 1000,
         })
       });
       if (!res.ok) throw new Error('API error ' + res.status);
@@ -169,7 +181,7 @@ export default function Playground({ modelsCount }) {
       handleAnalyze(input);
     }, 600);
     return () => clearTimeout(timer);
-  }, [input, budget, selectedProviders, strategy]);
+  }, [input, systemPrompt, budget, selectedProviders, strategy]);
 
   // Derived providers data
   const providersMap = useMemo(() => {
@@ -218,7 +230,7 @@ export default function Playground({ modelsCount }) {
       <div className="w-full lg:w-[32%] flex flex-col gap-5 overflow-y-auto pr-2 pb-4">
         
         {/* Presets */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {PRESETS.map(p => (
             <button
               key={p.label}
@@ -228,7 +240,53 @@ export default function Playground({ modelsCount }) {
               {p.label}
             </button>
           ))}
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className={`px-3 py-1.5 ml-auto border rounded-full text-xs font-medium transition-colors ${showAdvanced ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+          >
+            ⚙️ Advanced
+          </button>
         </div>
+
+        {/* Advanced Options Drawer */}
+        {showAdvanced && (
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">System Prompt</label>
+              <textarea
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                placeholder="Optional system instructions (e.g. 'You are a helpful coding assistant.')"
+                className="w-full p-2.5 rounded-lg border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-[12px] font-mono h-20"
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Temperature ({temperature})</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(e.target.value)}
+                  className="w-full accent-gray-900"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Max Tokens</label>
+                <input
+                  type="number"
+                  min="10"
+                  step="100"
+                  value={maxTokens}
+                  onChange={(e) => setMaxTokens(e.target.value)}
+                  className="w-full p-1.5 rounded border border-gray-200 bg-white outline-none focus:border-gray-400 text-[12px] font-mono"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Textarea */}
         <div className="relative flex-1 min-h-[300px]">
