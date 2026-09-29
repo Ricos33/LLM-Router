@@ -68,54 +68,47 @@ async def health_check():
 
 
 
-_openrouter_cache = None
-_openrouter_cache_time = 0
+_curated_models = [
+    # Anthropic
+    ModelObject(id="anthropic/claude-3-5-sonnet-20240620", name="Claude 3.5 Sonnet", provider="anthropic", tier="frontier", price_in=3.0, price_out=15.0, context_length=200000),
+    ModelObject(id="anthropic/claude-3-haiku-20240307", name="Claude 3 Haiku", provider="anthropic", tier="cheap", price_in=0.25, price_out=1.25, context_length=200000),
+    ModelObject(id="anthropic/claude-3-opus-20240229", name="Claude 3 Opus", provider="anthropic", tier="frontier", price_in=15.0, price_out=75.0, context_length=200000),
+    
+    # OpenAI
+    ModelObject(id="openai/gpt-4o", name="GPT-4o", provider="openai", tier="frontier", price_in=5.0, price_out=15.0, context_length=128000),
+    ModelObject(id="openai/gpt-4o-mini", name="GPT-4o Mini", provider="openai", tier="cheap", price_in=0.15, price_out=0.6, context_length=128000),
+    ModelObject(id="openai/o1-preview", name="o1-preview", provider="openai", tier="frontier", price_in=15.0, price_out=60.0, context_length=128000),
+    ModelObject(id="openai/o1-mini", name="o1-mini", provider="openai", tier="medium", price_in=3.0, price_out=12.0, context_length=128000),
+    
+    # Google
+    ModelObject(id="google/gemini-1.5-pro", name="Gemini 1.5 Pro", provider="google", tier="frontier", price_in=3.5, price_out=10.5, context_length=2000000),
+    ModelObject(id="google/gemini-1.5-flash", name="Gemini 1.5 Flash", provider="google", tier="cheap", price_in=0.075, price_out=0.3, context_length=1000000),
+    
+    # Qwen (Alibaba)
+    ModelObject(id="qwen/qwen-2.5-72b-instruct", name="Qwen 2.5 72B", provider="qwen", tier="medium", price_in=0.4, price_out=0.4, context_length=128000),
+    ModelObject(id="qwen/qwen-2.5-7b-instruct", name="Qwen 2.5 7B", provider="qwen", tier="cheap", price_in=0.1, price_out=0.1, context_length=128000),
+    
+    # Mistral
+    ModelObject(id="mistral/mistral-large-2407", name="Mistral Large 2", provider="mistral", tier="frontier", price_in=2.0, price_out=6.0, context_length=128000),
+    ModelObject(id="mistral/mistral-nemo", name="Mistral Nemo", provider="mistral", tier="cheap", price_in=0.15, price_out=0.15, context_length=128000),
+    
+    # DeepSeek
+    ModelObject(id="deepseek/deepseek-coder-v2", name="DeepSeek Coder V2", provider="deepseek", tier="medium", price_in=0.14, price_out=0.28, context_length=128000),
+    ModelObject(id="deepseek/deepseek-chat-v2.5", name="DeepSeek V2.5", provider="deepseek", tier="medium", price_in=0.14, price_out=0.28, context_length=128000),
+    
+    # Meta (Llama)
+    ModelObject(id="meta/llama-3.1-405b-instruct", name="Llama 3.1 405B", provider="meta", tier="frontier", price_in=2.7, price_out=2.7, context_length=128000),
+    ModelObject(id="meta/llama-3.1-70b-instruct", name="Llama 3.1 70B", provider="meta", tier="medium", price_in=0.4, price_out=0.4, context_length=128000),
+    ModelObject(id="meta/llama-3.1-8b-instruct", name="Llama 3.1 8B", provider="meta", tier="cheap", price_in=0.05, price_out=0.05, context_length=128000),
+    
+    # xAI (Grok)
+    ModelObject(id="xai/grok-2", name="Grok 2", provider="xai", tier="frontier", price_in=2.0, price_out=4.0, context_length=128000),
+    ModelObject(id="xai/grok-2-mini", name="Grok 2 Mini", provider="xai", tier="medium", price_in=0.2, price_out=0.4, context_length=128000),
+]
 
 @app.get("/v1/models", response_model=ModelListResponse)
 async def list_models():
-    global _openrouter_cache, _openrouter_cache_time
-    # Try fetching from OpenRouter
-    if _openrouter_cache is None or time.time() - _openrouter_cache_time > 3600:
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                res = await client.get("https://openrouter.ai/api/v1/models")
-                if res.status_code == 200:
-                    data = res.json().get("data", [])
-                    models = []
-                    for m in data:
-                        pr_prompt = m.get("pricing", {}).get("prompt", "0")
-                        pr_comp = m.get("pricing", {}).get("completion", "0")
-                        price_in = float(pr_prompt) * 1000000 if pr_prompt else 0
-                        price_out = float(pr_comp) * 1000000 if pr_comp else 0
-                        models.append(ModelObject(
-                            id=m["id"],
-                            name=m.get("name", m["id"]),
-                            provider=m["id"].split("/")[0] if "/" in m["id"] else "openrouter",
-                            tier="auto",
-                            price_in=price_in,
-                            price_out=price_out,
-                            context_length=m.get("context_length", 0)
-                        ))
-                    _openrouter_cache = models
-                    _openrouter_cache_time = time.time()
-        except Exception as e:
-            logger.warning(f"Failed to fetch OpenRouter models: {e}")
-    
-    if _openrouter_cache:
-        return ModelListResponse(data=_openrouter_cache)
-    
-    # Fallback realistic models
-    models = [
-        ModelObject(id="openai/gpt-4o", name="GPT-4o", provider="openai", tier="frontier", price_in=5.0, price_out=15.0, context_length=128000),
-        ModelObject(id="openai/gpt-4o-mini", name="GPT-4o Mini", provider="openai", tier="cheap", price_in=0.15, price_out=0.6, context_length=128000),
-        ModelObject(id="anthropic/claude-3.5-sonnet", name="Claude 3.5 Sonnet", provider="anthropic", tier="frontier", price_in=3.0, price_out=15.0, context_length=200000),
-        ModelObject(id="anthropic/claude-3-haiku", name="Claude 3 Haiku", provider="anthropic", tier="cheap", price_in=0.25, price_out=1.25, context_length=200000),
-        ModelObject(id="google/gemini-1.5-pro", name="Gemini 1.5 Pro", provider="google", tier="frontier", price_in=3.5, price_out=10.5, context_length=2000000),
-        ModelObject(id="google/gemini-1.5-flash", name="Gemini 1.5 Flash", provider="google", tier="cheap", price_in=0.35, price_out=1.05, context_length=1000000),
-        ModelObject(id="meta-llama/llama-3-70b-instruct", name="Llama 3 70B", provider="meta", tier="medium", price_in=0.8, price_out=0.8, context_length=8192),
-        ModelObject(id="meta-llama/llama-3-8b-instruct", name="Llama 3 8B", provider="meta", tier="cheap", price_in=0.1, price_out=0.1, context_length=8192),
-    ]
-    return ModelListResponse(data=models)
+    return ModelListResponse(data=_curated_models)
 @app.get("/v1/models/tiers")
 async def get_tier_models():
     """Retrieve configured tier-to-model mapping and metadata."""

@@ -44,11 +44,11 @@ class Settings(BaseSettings):
 
     # OpenAI Specific (for demo setup)
     openai_api_key: str = ""
-    openai_model: str = "gpt-5"
+    openai_model: str = "gpt-4o"
 
     # Anthropic Specific (for demo setup)
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-opus-4-6"
+    anthropic_model: str = "claude-3-5-sonnet-20240620"
     # Agy Backend (Local Antigravity CLI)
     agy_enabled: bool = False
     agy_binary_path: str = "~/workspace/cli-tools/bin/agy"

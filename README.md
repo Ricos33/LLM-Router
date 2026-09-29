@@ -94,8 +94,8 @@ flowchart TD
 | `FRONTIER_PROVIDER` | `openai` | Frontier provider (`openai`, `anthropic`, or `openai_compatible`) |
 | `FRONTIER_API_KEY` | `""` | Generic frontier API key |
 | `OPENAI_API_KEY` | `""` | OpenAI API Key (for demo) |
-| `OPENAI_MODEL` | `gpt-5` | OpenAI target model |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI target model |
 | `ANTHROPIC_API_KEY` | `""` | Anthropic API Key (for demo) |
-| `ANTHROPIC_MODEL` | `claude-opus-4-6` | Anthropic target model |
+| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20240620` | Anthropic target model |
 | `AGY_ENABLED` | `false` | `true` to use local Antigravity CLI backends |
 | `SIMULATE_FALLBACK` | `true` | Return simulation when upstream providers are offline |
