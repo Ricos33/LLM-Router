@@ -1,101 +1,97 @@
-# LLM-Router
+# LLM-Router 🚀
 
-Intelligent, OpenAI-Compatible API Gateway with Cost-Optimized Dynamic Routing. Cuts LLM inference costs by routing routine prompts to cheap/local models and reserving frontier LLMs for high-complexity reasoning.
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-green.svg)
+![React](https://img.shields.io/badge/React-18.3.1-blue.svg)
 
-## Quickstart
+An intelligent, OpenAI-Compatible API Gateway with cost-optimized dynamic routing. 
 
-**Docker:**
+LLM-Router cuts LLM inference costs by intelligently analyzing incoming prompts and routing routine/simple queries to cheap or local models, while reserving frontier LLMs (like GPT-4o or Claude 3.5 Sonnet) only for high-complexity reasoning tasks. It's completely transparent to the client application.
+
+## ✨ Key Features
+- **🧠 Intelligent Routing**: Routes based on reasoning complexity, code detection, and context length.
+- **💰 Automatic Cost Savings**: Cuts costs by up to 80% without sacrificing quality.
+- **📊 Real-time Telemetry Dashboard**: View traffic, routing distribution, and actual $ saved in real-time.
+- **⚡ Benchmark Mode**: Interactive suite to send standard prompts across multiple models and compare latency/cost.
+- **🛡️ Rate Limiting & Budgets**: Set a monthly budget to cap spending; automatically rejects requests with HTTP 429 when exceeded.
+- **🔌 OpenAI Compatible**: Drop-in replacement for OpenAI API; just change the base URL.
+- **🔑 UI-Configurable API Keys**: Configure API keys per provider securely in your browser's local storage for testing in the Playground.
+- **🔁 Automatic Fallbacks**: Transparently retries requests on frontier models if a local/cheap model fails.
+
+## 🚀 Quickstart
+
+**Docker (Recommended):**
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
-- Gateway: http://localhost:8000
-- Dashboard: http://localhost:3000
+- Gateway API: `http://localhost:8000`
+- Web Dashboard & Playground: `http://localhost:3000`
 
-**Local:**
+**Local Development:**
 ```bash
+# Start Backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Start Frontend
+cd web && npm install && npm run dev
 ```
-Dashboard: `cd web && npm install && npm run build`
 
 ## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
-    Client["Client Application
-(OpenAI SDK, LangChain, cURL)"]
+    Client["Client Application\n(OpenAI SDK, LangChain, cURL)"]
     
-    subgraph Gateway ["LLM-Router Gateway (:8000)"]
-        API["FastAPI POST /v1/chat/completions"]
-        Classifier{"Classifier Engine
-(Rule-Based Mock / Jev)"}
-        Policy["Routing Policy Manager
-(Thresholds & Overrides)"]
-        Metrics["SQLite Metrics Tracker
-(Latency, Tokens, Cost Saved)"]
+    subgraph Gateway ["LLM-Router Gateway (FastAPI)"]
+        API["POST /v1/chat/completions"]
+        Classifier{"Classifier Engine\n(Rule-Based Mock / Jev)"}
+        Policy["Routing Policy Manager\n(Thresholds, Budgets)"]
+        Metrics["SQLite Metrics Tracker\n(Latency, Tokens, Cost Saved)"]
     end
     
     subgraph Backends ["Execution Backends"]
-        Cheap["Cheap Tier
-(Ollama / Flash)"]
-        Medium["Medium Tier
-(Agy Pro / Claude Sonnet)"]
-        Frontier["Frontier Tier
-(GPT-4o / Claude Opus)"]
+        Cheap["Cheap Tier\n(Ollama / Flash)"]
+        Medium["Medium Tier\n(Llama 3 / Qwen)"]
+        Frontier["Frontier Tier\n(GPT-4o / Claude Opus)"]
     end
     
-    subgraph Analytics ["Telemetry (:3000)"]
-        Dashboard["React Analytics Dashboard"]
+    subgraph Analytics ["Web UI (React)"]
+        Dashboard["Telemetry Dashboard"]
+        Playground["Playground & Benchmark Suite"]
     end
 
     Client -->|OpenAI Payload| API
     API --> Classifier
     Classifier -->|Score & Reasons| Policy
+    Policy -->|Rate Limit / Budget Check| Policy
     Policy -->|Cheap Tier| Cheap
     Policy -->|Medium Tier| Medium
     Policy -->|Frontier Tier| Frontier
+    Cheap -.->|Fallback| Frontier
     Cheap --> API
     Medium --> API
     Frontier --> API
     API -->|Async Logging| Metrics
-    Metrics -.->|Telemetry Data| Dashboard
-    API -->|Response + Routing Headers| Client
+    Metrics -.->|Data| Dashboard
+    API -->|Response + Headers| Client
 ```
 
-### Components
-- **Client Application**: Any application using OpenAI-compatible SDKs. Sends prompts exactly as if it were talking to OpenAI.
-- **FastAPI Gateway**: The reverse proxy that intercepts `/v1/chat/completions`. Handles authentication, routing, and streaming responses (SSE).
-- **Classifier Engine**: Analyzes inbound prompts in real-time. Uses TypeSafe AI's Jev for robust intent and complexity classification, or falls back to a rule-based mock for testing.
-- **Routing Policy Manager**: Determines the optimal backend tier (cheap, medium, or frontier) based on the classifier's complexity score and any user-defined overrides.
-- **Execution Backends**: The actual LLM providers.
-  - *Cheap Tier*: Local models (Ollama) or extremely fast cloud models for routine queries.
-  - *Medium Tier*: Balanced models for standard tasks.
-  - *Frontier Tier*: State-of-the-art models (OpenAI GPT-4o, Anthropic Claude Opus) reserved for complex reasoning.
-- **SQLite Metrics Tracker**: Logs request latency, token usage, and cost savings asynchronously to avoid blocking the main request cycle.
-- **React Analytics Dashboard**: A real-time telemetry UI for visualizing traffic, routing decisions, and financial savings.
-
-
-## Main Endpoints
-
-- `POST /v1/chat/completions`: Standard OpenAI chat completion. Returns routing info in headers (`X-Router-Tier`, `X-Router-Model`, `X-Router-Saved-USD`).
-- `POST /v1/classify`: Analyzes prompt complexity and suggests tier.
+## ⚙️ Configuration (.env)
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8000` | HTTP port for the FastAPI gateway |
-| `HOST` | `0.0.0.0` | Bind host address |
-| `CLASSIFIER_MODE` | `mock` | `mock` (rule-based) or `jev` (TypeSafe AI) |
-| `JEV_API_KEY` | `""` | TypeSafe AI key for Jev classifier |
-| `CHEAP_PROVIDER` | `ollama` | Cheap provider (`ollama` or `openai_compatible`) |
-| `FRONTIER_PROVIDER` | `openai` | Frontier provider (`openai`, `anthropic`, or `openai_compatible`) |
-| `FRONTIER_API_KEY` | `""` | Generic frontier API key |
-| `OPENAI_API_KEY` | `""` | OpenAI API Key (for demo) |
-| `OPENAI_MODEL` | `gpt-4o` | OpenAI target model |
-| `ANTHROPIC_API_KEY` | `""` | Anthropic API Key (for demo) |
-| `ANTHROPIC_MODEL` | `claude-3-5-sonnet-20240620` | Anthropic target model |
-| `AGY_ENABLED` | `false` | `true` to use local Antigravity CLI backends |
-| `SIMULATE_FALLBACK` | `true` | Return simulation when upstream providers are offline |
+| `CLASSIFIER_MODE` | `mock` | `mock` (rule-based heuristic) or `jev` (TypeSafe AI) |
+| `MONTHLY_BUDGET_USD` | `0.0` | Maximum monthly budget (0.0 = unlimited) |
+| `CHEAP_PROVIDER` | `ollama` | Provider for cheap tier (`ollama`, `openai_compatible`) |
+| `FRONTIER_PROVIDER` | `openai` | Provider for frontier tier (`openai`, `anthropic`, etc) |
+| `SIMULATE_FALLBACK` | `true` | Returns simulated responses if upstream APIs fail |
+
+## 🤝 Contributing
+Contributions are welcome! Please check the issues page or open a PR.

@@ -12,3 +12,4 @@
 - Tue Sep 29 03:23:00 CEST 2026: Implemented configurable API keys per provider from the UI (Settings modal), with dynamic backend key overrides.
 - Tue Sep 29 03:24:19 CEST 2026: Added Benchmark mode in a new UI tab with battery of test prompts, and comparative table of cost/latency per model.
 - Tue Sep 29 03:26:13 CEST 2026: Added rate limiting via Monthly Budget tracking (backend HTTP 429) and UI progress bar alerts.
+- Tue Sep 29 03:26:47 CEST 2026: Upgraded README.md to a premium portfolio version with badges, new feature highlights, and updated mermaid architecture diagram.
