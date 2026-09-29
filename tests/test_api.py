@@ -120,3 +120,46 @@ def test_chat_completions_streaming(client):
     text = response.text
     assert text.startswith("data: ")
     assert "data: [DONE]" in text
+
+def test_classify_endpoint_budget_filtering(client):
+    # Test Free budget
+    payload = {
+        "messages": [{"role": "user", "content": "test"}],
+        "budget": "Free"
+    }
+    res = client.post("/v1/classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["recommendations"]) == 0 or all(r["price_in"] == 0 for r in data["recommendations"])
+
+    # Test Pro budget (should include expensive models)
+    payload["budget"] = "Pro"
+    res = client.post("/v1/classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert any((r["price_in"] or 0) > 2.0 for r in data["recommendations"])
+
+def test_classify_endpoint_provider_filtering(client):
+    payload = {
+        "messages": [{"role": "user", "content": "test"}],
+        "providers": ["anthropic"]
+    }
+    res = client.post("/v1/classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert all(r["provider"] == "anthropic" for r in data["recommendations"])
+
+def test_classify_endpoint_caching(client):
+    payload = {
+        "messages": [{"role": "user", "content": "test caching query"}],
+        "budget": "Any",
+        "providers": []
+    }
+    res1 = client.post("/v1/classify", json=payload)
+    assert res1.status_code == 200
+    
+    # Second request should hit cache
+    res2 = client.post("/v1/classify", json=payload)
+    assert res2.status_code == 200
+    assert res1.json()["suggested_model"] == res2.json()["suggested_model"]
+
