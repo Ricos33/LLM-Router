@@ -985,6 +985,66 @@ async def toggle_guardrails(enable: Optional[bool] = True):
     return {"pii_guardrails_enabled": settings.pii_guardrails_enabled}
 
 
+
+# ── Feedback Loop ───────────────────────────────────────────────────────────
+
+from app.router.feedback import FeedbackManager
+
+_feedback_manager = FeedbackManager(db_path=str(settings.db_path))
+
+
+class FeedbackRequest(BaseModel):
+    response_id: str
+    model_id: str
+    rating: int  # +1 (thumbs up) or -1 (thumbs down)
+    category: Optional[str] = "general"
+    session_id: Optional[str] = None
+
+
+@app.post("/v1/feedback", tags=["Feedback"])
+async def submit_feedback(request: FeedbackRequest):
+    """
+    Submit feedback (👍 = +1, 👎 = -1) on a model response.
+    Feedback adjusts classifier fit scores over time.
+    Anti-abuse: max 10 votes/minute per session, no duplicate votes on same response.
+    """
+    if request.rating not in (-1, 1):
+        raise HTTPException(status_code=400, detail="Rating must be +1 or -1")
+    try:
+        entry = _feedback_manager.record_feedback(
+            response_id=request.response_id,
+            model_id=request.model_id,
+            rating=request.rating,
+            category=request.category or "general",
+            session_id=request.session_id,
+        )
+        return {
+            "status": "recorded",
+            "feedback_id": entry.feedback_id,
+            "adjustment": _feedback_manager.get_adjustment(request.model_id, request.category or "general"),
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=429, detail=str(e))
+
+
+@app.get("/v1/feedback/stats", tags=["Feedback"])
+async def get_feedback_stats():
+    """Get feedback statistics: total votes, satisfaction rate, per-model breakdown."""
+    return _feedback_manager.get_stats()
+
+
+@app.get("/v1/feedback/recent", tags=["Feedback"])
+async def get_recent_feedback(limit: int = 50):
+    """Get recent feedback entries."""
+    return {"feedback": _feedback_manager.get_recent(limit=limit)}
+
+
+@app.get("/v1/feedback/adjustments", tags=["Feedback"])
+async def get_feedback_adjustments():
+    """Get current feedback-based score adjustments for all models."""
+    return {"adjustments": _feedback_manager.get_all_adjustments()}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)
