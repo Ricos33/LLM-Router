@@ -148,3 +148,8 @@
 - Created dedicated UI for PII Guardrails (toggle enable/disable, all-time masking statistics grouped by PII type) in SettingsModal.
 - Connected to `/v1/keys` and `/v1/guardrails` endpoints.
 - Frontend build OK.
+## 29/09 15:56 - Feedback Loop UI
+- Added `response_id` extraction in backend (`ModelCompareResult`) for executed prompts.
+- Built interactive 👍/👎 Feedback buttons in Playground execution panel connected to `/v1/feedback`.
+- Feedback logic tracks per-execution state avoiding duplicates.
+- All tests pass (152). Frontend build OK.
