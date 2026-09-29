@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { classifyPrompt, getModels } from '../api/client';
+import CodeSnippetsModal from './CodeSnippetsModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -31,6 +32,7 @@ export default function Playground({ modelsCount }) {
   const [showSetup, setShowSetup] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
+  const [showSnippets, setShowSnippets] = useState(false);
   const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -312,14 +314,24 @@ export default function Playground({ modelsCount }) {
                     </span>
                   )}
                 </div>
-                <button 
-                  onClick={handleExportJSON}
-                  title="Export classification and recommendations as JSON"
-                  className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Export JSON
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => setShowSnippets(true)}
+                    title="View API integration snippets for this model"
+                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Connect API
+                  </button>
+                  <button 
+                    onClick={handleExportJSON}
+                    title="Export classification and recommendations as JSON"
+                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export JSON
+                  </button>
+                </div>
               </div>
               
               {/* Top Model */}
@@ -772,6 +784,14 @@ export default function Playground({ modelsCount }) {
           </div>
         </div>
       </div>
+
+      {showSnippets && (
+        <CodeSnippetsModal
+          onClose={() => setShowSnippets(false)}
+          model={classification?.recommendations?.[0]?.model_id || 'router-auto'}
+          prompt={input}
+        />
+      )}
     </div>
   );
 }

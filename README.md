@@ -11,14 +11,16 @@ LLM-Router cuts LLM inference costs by intelligently analyzing incoming prompts 
 
 ## ✨ Key Features
 - **🧠 Three-Tier Intelligent Routing**: Accurately classifies prompts into `cheap`, `medium`, and `frontier` tiers based on syntax, reasoning keywords, code, context length, and dialogue depth.
+- **🔬 Decision Trace & Transparent Explainability**: Complete heuristic signal deltas, dynamic benchmark weights, and fallback chain visibility via `/v1/classify/explain`.
+- **⚡ Concurrent Model Comparison**: Side-by-side prompt execution across multiple models via `/v1/compare` with token, latency, and cost spread analysis.
 - **🎯 Curated 8-Provider Catalog**: 23 verified September 2026 models from Anthropic, OpenAI, Google, Qwen, Mistral, DeepSeek, Meta, and xAI with verified pricing and empirical benchmarks.
 - **💰 Automatic Cost Savings**: Cuts overall API spending by up to 80% with real-time per-request and per-1K savings estimation.
-- **📊 Real-time Telemetry Dashboard**: Interactive charts showing traffic, model distribution, latency, and cumulative cost savings.
+- **📊 Real-time Telemetry Dashboard**: Interactive charts showing traffic, model distribution, latency, 24h activity timeseries, and cumulative cost savings.
 - **📈 Deep Analytics & Telemetry**: Rich metrics via `/v1/analytics` and `/v1/catalog/summary` tracking efficiency and hourly time-series.
-- **⚡ Interactive Benchmark Suite**: Evaluate candidate models against test prompt batteries with instant latency, cost, and fit comparison.
+- **⚡ Interactive Benchmark Suite**: 5-category evaluation battery (Reasoning, Coding, Summary, Creative, Conversational) with aggregate summary stats and badges.
 - **🛡️ Rate Limiting & Budgets**: Set a monthly budget with visual progress alerts and automatic HTTP 429 enforcement.
 - **🔑 UI-Configurable API Keys**: Secure client-side API key configuration for all 8 providers stored in localStorage.
-- **🔁 Automatic Fallbacks**: Resilient upstream routing that gracefully falls back to frontier models or simulated responses.
+- **🔁 Resilient Fallback Chain**: Multi-tier failover (same-tier alternatives -> frontier escalation -> simulation safety net).
 - **🔌 OpenAI Compatible**: Drop-in replacement for OpenAI API (`/v1/chat/completions`); just change the base URL.
 
 
@@ -44,6 +46,27 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 # Start Frontend
 cd web && npm install && npm run dev
 ```
+
+### 💻 1-Minute SDK Integration
+
+```python
+from openai import OpenAI
+
+# Simply redirect base_url to LLM-Router
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="sk-local-router",  # Handled by gateway
+)
+
+# Use "router-auto" for automatic routing, or specify any catalog model
+response = client.chat.completions.create(
+    model="router-auto",
+    messages=[{"role": "user", "content": "Explain quantum teleportation"}],
+)
+
+print(response.choices[0].message.content)
+```
+
 
 ## 🏗️ Architecture
 
