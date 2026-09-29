@@ -63,6 +63,9 @@ class ModelObject(BaseModel):
     object: str = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
     owned_by: str = "llm-router"
+    name: Optional[str] = None
+    provider: Optional[str] = None
+    tier: Optional[str] = None
 
 
 class ModelListResponse(BaseModel):

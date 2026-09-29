@@ -62,20 +62,24 @@ async def health_check():
 async def list_models():
     """List available virtual router models and upstream targets."""
     models = [
-        ModelObject(id="router-auto"),
-        ModelObject(id="router-cheap"),
-        ModelObject(id="router-medium"),
-        ModelObject(id="router-frontier"),
-        ModelObject(id=settings.cheap_model),
-        ModelObject(id=settings.frontier_model),
-        ModelObject(id=settings.openai_model),
-        ModelObject(id=settings.anthropic_model),
+        ModelObject(id="router-auto", name="Router Auto", provider="llm-router", tier="auto"),
+        ModelObject(id="router-cheap", name="Router Cheap", provider="llm-router", tier="cheap"),
+        ModelObject(id="router-medium", name="Router Medium", provider="llm-router", tier="medium"),
+        ModelObject(id="router-frontier", name="Router Frontier", provider="llm-router", tier="frontier"),
+        ModelObject(id=settings.cheap_model, name=settings.cheap_model, provider=settings.cheap_provider, tier="cheap"),
+        ModelObject(id=settings.frontier_model, name=settings.frontier_model, provider=settings.frontier_provider, tier="frontier"),
     ]
+    if settings.openai_model:
+        models.append(ModelObject(id=settings.openai_model, name=settings.openai_model, provider="openai", tier="frontier"))
+    if settings.anthropic_model:
+        models.append(ModelObject(id=settings.anthropic_model, name=settings.anthropic_model, provider="anthropic", tier="frontier"))
+        
     if settings.agy_enabled:
+        tier_map = settings.agy_tier_map
         models.extend([
-            ModelObject(id="agy-cheap"),
-            ModelObject(id="agy-medium"),
-            ModelObject(id="agy-frontier"),
+            ModelObject(id=tier_map.get("cheap", {}).get("model", "agy-cheap"), name=tier_map.get("cheap", {}).get("model", "AGY Cheap"), provider="agy", tier="cheap"),
+            ModelObject(id=tier_map.get("medium", {}).get("model", "agy-medium"), name=tier_map.get("medium", {}).get("model", "AGY Medium"), provider="agy", tier="medium"),
+            ModelObject(id=tier_map.get("frontier", {}).get("model", "agy-frontier"), name=tier_map.get("frontier", {}).get("model", "AGY Frontier"), provider="agy", tier="frontier"),
         ])
     return ModelListResponse(data=models)
 
