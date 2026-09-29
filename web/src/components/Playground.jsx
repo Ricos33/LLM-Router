@@ -252,7 +252,22 @@ export default function Playground({ modelsCount }) {
         {showAdvanced && (
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
             <div>
-              <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">System Prompt</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider">System Prompt</label>
+                <select
+                  className="text-[10px] bg-transparent border-none text-gray-500 font-medium cursor-pointer outline-none hover:text-gray-900"
+                  onChange={(e) => {
+                    if (e.target.value) setSystemPrompt(e.target.value);
+                    e.target.value = '';
+                  }}
+                >
+                  <option value="">Templates...</option>
+                  <option value="You are an expert Principal Software Engineer. Write clean, modular, and extremely performant code. Avoid all unnecessary pleasantries.">👨‍💻 Coder</option>
+                  <option value="You are a professional copywriter and editor. Your task is to refine the provided text to be engaging, clear, and perfectly formatted.">✍️ Writer</option>
+                  <option value="You are an advanced data scientist. Analyze the provided numbers or patterns and output structured JSON only.">📊 Data Analyst</option>
+                  <option value="You are a strict security auditor. Point out any vulnerabilities, flaws, or security risks in the provided context immediately.">🛡️ Security</option>
+                </select>
+              </div>
               <textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
