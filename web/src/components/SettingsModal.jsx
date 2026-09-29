@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { getRules, createRule, deleteRule, resetRules } from '../api/client';
+import {
+  getRules,
+  createRule,
+  deleteRule,
+  resetRules,
+  getBudgetStatus,
+  testBudgetAlert,
+  configureBudget,
+  clearBudgetAlerts,
+} from '../api/client';
 
 const AUTHORIZED_PROVIDERS = [
   { id: 'openai', name: 'OpenAI (GPT)', placeholder: 'sk-proj-...' },
@@ -13,7 +22,7 @@ const AUTHORIZED_PROVIDERS = [
 ];
 
 export default function SettingsModal({ onClose }) {
-  const [activeTab, setActiveTab] = useState('keys'); // 'keys' | 'rules'
+  const [activeTab, setActiveTab] = useState('keys'); // 'keys' | 'rules' | 'budget'
   const [keys, setKeys] = useState({});
   const [health, setHealth] = useState({});
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -30,6 +39,12 @@ export default function SettingsModal({ onClose }) {
     target_model: '',
     priority: 100,
   });
+
+  // Enterprise Budget State
+  const [budgetStatus, setBudgetStatus] = useState(null);
+  const [budgetForm, setBudgetForm] = useState({ monthly_budget_usd: '', webhook_url: '', thresholds: '50, 80, 90, 100' });
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [budgetMessage, setBudgetMessage] = useState(null);
 
   const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
@@ -56,11 +71,84 @@ export default function SettingsModal({ onClose }) {
     }
   };
 
+  const loadBudget = async () => {
+    try {
+      const data = await getBudgetStatus();
+      setBudgetStatus(data);
+      if (data) {
+        setBudgetForm({
+          monthly_budget_usd: data.monthly_budget_usd !== undefined ? (data.monthly_budget_usd || '') : '',
+          webhook_url: data.webhook_url || '',
+          thresholds: (data.thresholds || [50, 80, 90, 100]).join(', '),
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to load budget status', e);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'rules') {
       loadRules();
+    } else if (activeTab === 'budget') {
+      loadBudget();
     }
   }, [activeTab]);
+
+  const handleSaveBudget = async (e) => {
+    if (e) e.preventDefault();
+    setBudgetLoading(true);
+    try {
+      const threshArr = budgetForm.thresholds
+        ? budgetForm.thresholds.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n))
+        : [50, 80, 90, 100];
+      await configureBudget({
+        monthly_budget_usd: budgetForm.monthly_budget_usd === '' ? 0.0 : parseFloat(budgetForm.monthly_budget_usd),
+        webhook_url: budgetForm.webhook_url,
+        thresholds: threshArr,
+      });
+      await loadBudget();
+      setSavedSuccess(true);
+      setBudgetMessage('Budget configuration saved successfully.');
+      setTimeout(() => {
+        setSavedSuccess(false);
+        setBudgetMessage(null);
+      }, 4000);
+    } catch (err) {
+      setBudgetMessage('Failed to save budget: ' + (err.message || err));
+    } finally {
+      setBudgetLoading(false);
+    }
+  };
+
+  const handleTriggerTest = async () => {
+    setBudgetLoading(true);
+    try {
+      const res = await testBudgetAlert();
+      setBudgetMessage(
+        res.webhook_tested
+          ? (res.webhook_dispatched ? 'Synthetic alert dispatched to webhook!' : 'Test alert created (webhook returned HTTP error).')
+          : 'Synthetic alert recorded in local history.'
+      );
+      await loadBudget();
+      setTimeout(() => setBudgetMessage(null), 5000);
+    } catch (err) {
+      setBudgetMessage('Failed test alert: ' + (err.message || err));
+    } finally {
+      setBudgetLoading(false);
+    }
+  };
+
+  const handleClearAlertHistory = async () => {
+    try {
+      await clearBudgetAlerts();
+      await loadBudget();
+      setBudgetMessage('Alert history cleared.');
+      setTimeout(() => setBudgetMessage(null), 3000);
+    } catch (err) {
+      console.warn(err);
+    }
+  };
 
   const handleTrip = async (provider) => {
     try {
@@ -180,6 +268,25 @@ export default function SettingsModal({ onClose }) {
                 <span className="text-[10px] bg-gray-100 px-1.5 py-0.2 rounded-full font-mono">
                   {rules.length || 4}
                 </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('budget')}
+                className={`text-xs font-semibold pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+                  activeTab === 'budget'
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                <span>Budget & Webhooks</span>
+                {budgetStatus?.status && budgetStatus.status !== 'unlimited' && (
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    budgetStatus.status === 'critical' ? 'bg-red-100 text-red-700' :
+                    budgetStatus.status === 'warning' ? 'bg-amber-100 text-amber-700' :
+                    'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {budgetStatus.percent_used?.toFixed(0)}%
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -409,6 +516,148 @@ export default function SettingsModal({ onClose }) {
             )}
           </div>
         )}
+
+        {/* Tab 3: Enterprise Budget & Webhooks */}
+        {activeTab === 'budget' && (
+          <div className="p-5 flex flex-col gap-4 text-[13px] overflow-y-auto">
+            {budgetMessage && (
+              <div className="text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 flex items-center justify-between animate-in fade-in">
+                <span>{budgetMessage}</span>
+                <button onClick={() => setBudgetMessage(null)} className="text-gray-400 hover:text-black">✕</button>
+              </div>
+            )}
+
+            {/* Current Budget Status Card */}
+            <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col gap-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-gray-700">Budget Status</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                  budgetStatus?.status === 'critical' ? 'bg-red-100 text-red-700' :
+                  budgetStatus?.status === 'warning' ? 'bg-amber-100 text-amber-700' :
+                  budgetStatus?.status === 'caution' ? 'bg-blue-100 text-blue-700' :
+                  budgetStatus?.status === 'normal' ? 'bg-emerald-100 text-emerald-700' :
+                  'bg-gray-200 text-gray-700'
+                }`}>
+                  {budgetStatus?.status || 'unlimited'}
+                </span>
+              </div>
+              <div className="flex justify-between items-end text-xs font-mono">
+                <span className="text-gray-500">Current Month Spend:</span>
+                <span className="font-bold text-gray-900">${(budgetStatus?.current_cost_usd || 0).toFixed(4)}</span>
+              </div>
+              {budgetStatus?.monthly_budget_usd > 0 && (
+                <div>
+                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mt-1">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        budgetStatus.percent_used >= 100 ? 'bg-red-500' :
+                        budgetStatus.percent_used >= 80 ? 'bg-amber-500' :
+                        'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, budgetStatus.percent_used || 0)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-mono">
+                    <span>{budgetStatus.percent_used?.toFixed(1)}% used</span>
+                    <span>${budgetStatus.remaining_usd?.toFixed(2)} remaining</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Configuration Form */}
+            <form onSubmit={handleSaveBudget} className="flex flex-col gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Monthly Budget Limit (USD)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00 (unlimited)"
+                  value={budgetForm.monthly_budget_usd}
+                  onChange={e => setBudgetForm({ ...budgetForm, monthly_budget_usd: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                />
+                <span className="text-[10px] text-gray-400 mt-0.5 block">Set to 0 or leave empty for unlimited routing.</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Alert Webhook URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={budgetForm.webhook_url}
+                  onChange={e => setBudgetForm({ ...budgetForm, webhook_url: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                />
+                <span className="text-[10px] text-gray-400 mt-0.5 block">Payload sent via HTTP POST with threshold details.</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                  Alert Thresholds (%)
+                </label>
+                <input
+                  type="text"
+                  placeholder="50, 80, 90, 100"
+                  value={budgetForm.thresholds}
+                  onChange={e => setBudgetForm({ ...budgetForm, thresholds: e.target.value })}
+                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                />
+                <span className="text-[10px] text-gray-400 mt-0.5 block">Comma-separated percentages to trigger alerts when crossed.</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  type="button"
+                  onClick={handleTriggerTest}
+                  disabled={budgetLoading}
+                  className="text-xs px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-1 shadow-2xs"
+                >
+                  ⚡ Send Test Alert
+                </button>
+                <button
+                  type="submit"
+                  disabled={budgetLoading}
+                  className="text-xs px-4 py-1.5 bg-black hover:bg-gray-800 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  Save Budget Config
+                </button>
+              </div>
+            </form>
+
+            {/* Alert Event History */}
+            {budgetStatus?.recent_alerts && budgetStatus.recent_alerts.length > 0 && (
+              <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                    Recent Alerts ({budgetStatus.alert_count})
+                  </span>
+                  <button
+                    onClick={handleClearAlertHistory}
+                    className="text-[10px] text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    Clear History
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
+                  {budgetStatus.recent_alerts.map((a, idx) => (
+                    <div key={idx} className="p-2 rounded bg-gray-50 border border-gray-100 text-[10px] font-mono flex justify-between items-center">
+                      <span className="text-gray-800 truncate mr-2">{a.message}</span>
+                      <span className="text-gray-400 flex-shrink-0">
+                        {new Date(a.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Footer */}
         <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
@@ -423,14 +672,27 @@ export default function SettingsModal({ onClose }) {
           </button>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3.5 py-1.5 text-[12px] font-medium text-gray-600 hover:text-black">Cancel</button>
-            <button 
-              onClick={handleSave} 
-              className={`px-4 py-1.5 text-white text-[12px] font-medium rounded-lg shadow-sm transition-all ${
-                savedSuccess ? 'bg-emerald-600' : 'bg-black hover:bg-gray-800'
-              }`}
-            >
-              {savedSuccess ? 'Saved!' : 'Save Keys'}
-            </button>
+            {activeTab === 'keys' && (
+              <button 
+                onClick={handleSave} 
+                className={`px-4 py-1.5 text-white text-[12px] font-medium rounded-lg shadow-sm transition-all ${
+                  savedSuccess ? 'bg-emerald-600' : 'bg-black hover:bg-gray-800'
+                }`}
+              >
+                {savedSuccess ? 'Saved!' : 'Save Keys'}
+              </button>
+            )}
+            {activeTab === 'budget' && (
+              <button 
+                onClick={handleSaveBudget} 
+                disabled={budgetLoading}
+                className={`px-4 py-1.5 text-white text-[12px] font-medium rounded-lg shadow-sm transition-all ${
+                  savedSuccess ? 'bg-emerald-600' : 'bg-black hover:bg-gray-800'
+                }`}
+              >
+                {savedSuccess ? 'Saved!' : 'Save Budget'}
+              </button>
+            )}
           </div>
         </div>
       </div>
