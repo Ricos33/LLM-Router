@@ -55,3 +55,4 @@
 - Tue Sep 29 06:27:16 UTC 2026: Added System Prompt Quick-Select Templates to the Playground's Advanced Options drawer, giving users immediate testing personas (Coder, Writer, Data Analyst, Security).
 - Tue Sep 29 06:29:36 UTC 2026: Implemented 'Per-Request Budget Enforcer'. Large prompts mapped to Frontier models are estimated for token cost; if the predicted cost exceeds the configurable 'max_cost_per_request_usd', the gateway auto-downgrades the request to MEDIUM tier to prevent bill shocks.
 - Tue Sep 29 06:30:51 UTC 2026: Implemented 'API Key Pool Rotation'. Added 'frontier_api_keys_pool' config. The Gateway now load-balances requests across multiple keys to bypass provider rate limits during traffic spikes.
+- Tue Sep 29 06:32:14 UTC 2026: Built a beautiful new 'Model Catalog' tab in the frontend. Users can now explore, search, and filter the entire model registry by tier and provider, complete with input/output pricing and context window metrics.
