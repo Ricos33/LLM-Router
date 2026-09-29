@@ -505,6 +505,21 @@ class RouterEngine:
             strategy_override=strategy_override,
         )
 
+        # Enforce Request Budget Cap (prevent runaway costs on massive prompts)
+        if settings.max_cost_per_request_usd > 0.0 and decision.tier == ModelTier.FRONTIER:
+            est_tokens = sum(len(m.content) for m in request.messages) / 4.0
+            price_in, _ = get_model_pricing(decision.model_name)
+            est_cost = (est_tokens / 1_000_000.0) * (price_in or settings.frontier_prompt_price_per_m)
+            if est_cost > settings.max_cost_per_request_usd:
+                logger.warning(f"Estimated prompt cost ${est_cost:.4f} exceeds max ${settings.max_cost_per_request_usd:.2f}. Downgrading to MEDIUM tier.")
+                decision = self.decide_route(
+                    request,
+                    tier_header_override="medium",
+                    strategy_override=strategy_override,
+                )
+                if decision.reasons:
+                    decision.reasons.append(f"Auto-downgraded from Frontier: estimated prompt cost ${est_cost:.4f} > limit ${settings.max_cost_per_request_usd:.2f}")
+
         # Step 2: Execution via selected backend with automatic resilient fallback chain
         attempt_queue = [decision] + self.get_fallback_candidates(decision)
         executed_decision = decision

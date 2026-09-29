@@ -52,3 +52,4 @@
 - Tue Sep 29 06:23:12 UTC 2026: Implemented intelligent Context Window Auto-Truncation in RouterEngine. Preserves system prompt while shedding oldest messages to strictly fit candidate model's context limits, avoiding HTTP 400 errors during deep conversations. Tests: 73 passed.
 - Tue Sep 29 06:24:28 UTC 2026: Added Advanced Options Drawer to Playground UI. Users can now inject custom System Prompts and tweak Temperature/Max Tokens on the fly, which dynamically feed into the Gateway caching and routing engine. Build OK.
 - Tue Sep 29 06:25:46 UTC 2026: Implemented DELETE /v1/analytics endpoint and UI 'Clear' button to wipe all telemetry and demo data cleanly on demand.
+- Tue Sep 29 06:27:16 UTC 2026: Added System Prompt Quick-Select Templates to the Playground's Advanced Options drawer, giving users immediate testing personas (Coder, Writer, Data Analyst, Security).
