@@ -27,10 +27,8 @@ export default function Playground({ modelsCount }) {
   
   const [showSetup, setShowSetup] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
-  
-  const [completionResult, setCompletionResult] = useState('');
+  const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [completionMeta, setCompletionMeta] = useState(null);
 
   useEffect(() => {
     getModels().then(data => {
@@ -47,8 +45,7 @@ export default function Playground({ modelsCount }) {
     if (!text.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setError(null);
-    setCompletionResult('');
-    setCompletionMeta(null);
+    setExecutions([]);
     try {
       const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
@@ -70,28 +67,39 @@ export default function Playground({ modelsCount }) {
     }
   };
 
-  const handleExecute = async (modelId) => {
-    if (!input.trim() || isExecuting) return;
+  const handleExecute = async (modelIds) => {
+    if (!input.trim() || isExecuting || !modelIds.length) return;
     setIsExecuting(true);
-    setCompletionResult('');
-    setCompletionMeta(null);
+    setExecutions(modelIds.map(id => ({ model: id, loading: true, result: '', meta: null })));
+    
     try {
-      const res = await fetch(API_BASE + '/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: modelId || 'router-auto',
-          messages: [{ role: 'user', content: input }],
-          stream: false
-        })
+      const promises = modelIds.map(async (modelId, index) => {
+        try {
+          const res = await fetch(API_BASE + '/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: modelId,
+              messages: [{ role: 'user', content: input }],
+              stream: false
+            })
+          });
+          if (!res.ok) throw new Error('API error');
+          const data = await res.json();
+          setExecutions(prev => {
+            const next = [...prev];
+            next[index] = { model: modelId, loading: false, result: data.choices[0].message.content, meta: data.router_metadata };
+            return next;
+          });
+        } catch (e) {
+          setExecutions(prev => {
+            const next = [...prev];
+            next[index] = { model: modelId, loading: false, result: 'Error executing request.', meta: null };
+            return next;
+          });
+        }
       });
-      if (!res.ok) throw new Error('API error ' + res.status);
-      const data = await res.json();
-      setCompletionResult(data.choices[0].message.content);
-      setCompletionMeta(data.router_metadata);
-    } catch (e) {
-      console.error(e);
-      setCompletionResult('Error executing request.');
+      await Promise.all(promises);
     } finally {
       setIsExecuting(false);
     }
@@ -347,28 +355,49 @@ export default function Playground({ modelsCount }) {
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-4">
               <div className="flex justify-between items-center">
                 <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
-                  Execution
+                  Execution Compare
                 </div>
-                <button 
-                  onClick={() => handleExecute(classification.recommendations[0]?.model_id)}
-                  disabled={isExecuting || !classification.recommendations?.length}
-                  className="px-4 py-2 bg-emerald-600 text-white text-[12px] font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
-                >
-                  {isExecuting ? 'Running...' : 'Run with Top Model'}
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleExecute([classification.recommendations[0]?.model_id])}
+                    disabled={isExecuting || !classification.recommendations?.length}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-[11px] font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    Run Top
+                  </button>
+                  <button 
+                    onClick={() => handleExecute(classification.recommendations.slice(0, 2).map(r => r.model_id))}
+                    disabled={isExecuting || classification.recommendations?.length < 2}
+                    className="px-4 py-1.5 bg-emerald-600 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                  >
+                    {isExecuting ? 'Running...' : 'Compare Top 2'}
+                  </button>
+                </div>
               </div>
               
-              {completionResult && (
-                <div className="mt-2 text-[13px] text-gray-700 p-4 bg-gray-50 rounded-lg border border-gray-100 max-h-[300px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
-                  {completionResult}
-                </div>
-              )}
-              
-              {completionMeta && (
-                <div className="flex flex-wrap gap-4 mt-2 text-[11px] text-gray-500 font-medium bg-gray-50/50 p-2 rounded-md border border-gray-100">
-                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>{completionMeta.actual_model}</span>
-                  <span>{(completionMeta.latency_ms || 0).toFixed(0)}ms</span>
-                  <span className="text-emerald-600">Saved: ${(completionMeta.cost_saved_usd || 0).toFixed(4)}</span>
+              {executions.length > 0 && (
+                <div className={`grid gap-4 ${executions.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {executions.map((exec, idx) => (
+                    <div key={idx} className="flex flex-col gap-2 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 text-[11px] font-semibold text-gray-600 truncate flex justify-between items-center">
+                        <span className="truncate" title={exec.model}>{exec.model}</span>
+                        {exec.loading && <span className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></span>}
+                      </div>
+                      <div className="p-3 text-[12px] text-gray-700 h-[250px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
+                        {exec.loading ? (
+                          <div className="flex justify-center items-center h-full opacity-50">
+                            <span className="animate-pulse">Waiting for model...</span>
+                          </div>
+                        ) : exec.result}
+                      </div>
+                      {exec.meta && (
+                        <div className="px-3 py-2 bg-white border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-medium">
+                          <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
+                          <span>${(exec.meta.cost_actual_usd || 0).toFixed(4)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -8,3 +8,4 @@
 - Tue Sep 29 03:10:19 CEST 2026: Added CSV export feature for request metrics in the Dashboard.
 - Tue Sep 29 03:12:23 CEST 2026: Replaced cost comparison with an interactive Scatter chart plotting Cost vs Reasoning Quality in Dashboard.
 - Tue Sep 29 03:13:35 CEST 2026: Enhanced Recent Requests table with actual cost and detailed classifier score.
+- Tue Sep 29 03:15:09 CEST 2026: Added live Execution panel to the Playground, allowing users to send queries to the recommended model.
