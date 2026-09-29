@@ -103,3 +103,20 @@ def test_classify_endpoint_probabilities(client):
     assert "tier_models" in data
     assert "suggested_model" in data
 
+
+def test_chat_completions_streaming(client):
+    payload = {
+        "model": "router-auto",
+        "messages": [
+            {"role": "user", "content": "Tell me a short story."}
+        ],
+        "stream": True
+    }
+    response = client.post("/v1/chat/completions", json=payload)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
+    assert "X-Router-Tier" in response.headers
+    
+    text = response.text
+    assert text.startswith("data: ")
+    assert "data: [DONE]" in text

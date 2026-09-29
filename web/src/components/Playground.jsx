@@ -16,9 +16,50 @@ export default function Playground() {
     setIsSending(true);
     setCompletion(null);
     try {
-      const res = await chatCompletion([{ role: 'user', content: input }]);
-      const content = res.data?.choices?.[0]?.message?.content || JSON.stringify(res.data);
-      setCompletion(content);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'router-auto',
+          messages: [{ role: 'user', content: input }],
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      let text = '';
+      let buffer = '';
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // Keep the last incomplete line in buffer
+          for (const line of lines) {
+            if (line.trim().startsWith('data: ') && line.trim() !== 'data: [DONE]') {
+              try {
+                const parsed = JSON.parse(line.trim().slice(6));
+                const delta = parsed.choices[0]?.delta?.content;
+                if (delta) {
+                  text += delta;
+                  setCompletion(text);
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+      }
     } catch (e) {
       console.error(e);
       setCompletion('Error fetching completion.');

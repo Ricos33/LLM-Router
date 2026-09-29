@@ -1,6 +1,9 @@
 import logging
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Response
+from fastapi.responses import StreamingResponse
+import asyncio
+import json
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
@@ -101,14 +104,40 @@ async def chat_completions(
             request, tier_header_override=x_router_tier
         )
 
+        headers_dict = {}
         # Inject diagnostic routing headers
         if completion.router_metadata:
             meta = completion.router_metadata
-            response.headers["X-Router-Tier"] = meta.routed_tier
-            response.headers["X-Router-Model"] = meta.actual_model
-            response.headers["X-Router-Latency-MS"] = str(meta.latency_ms)
-            response.headers["X-Router-Saved-USD"] = str(meta.cost_saved_usd)
-            response.headers["X-Router-Score"] = str(meta.classifier_score)
+            headers_dict["X-Router-Tier"] = meta.routed_tier
+            headers_dict["X-Router-Model"] = meta.actual_model
+            headers_dict["X-Router-Latency-MS"] = str(meta.latency_ms)
+            headers_dict["X-Router-Saved-USD"] = str(meta.cost_saved_usd)
+            headers_dict["X-Router-Score"] = str(meta.classifier_score)
+            
+            for k, v in headers_dict.items():
+                response.headers[k] = v
+
+        if request.stream:
+            async def stream_generator():
+                content = completion.choices[0].message.content
+                chunk_size = 4
+                response_id = completion.id
+                model = completion.model
+                
+                # Initial role chunk
+                yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\\n\\n"
+                
+                # Content chunks
+                for i in range(0, len(content), chunk_size):
+                    chunk = content[i:i+chunk_size]
+                    yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {'content': chunk}, 'finish_reason': None}]})}\\n\\n"
+                    await asyncio.sleep(0.01) # Simulate network delay
+                
+                # Final chunk
+                yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\\n\\n"
+                yield "data: [DONE]\\n\\n"
+            
+            return StreamingResponse(stream_generator(), media_type="text/event-stream", headers=headers_dict)
 
         return completion
 
