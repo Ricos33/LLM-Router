@@ -69,3 +69,6 @@ C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'ar
 - Ne commiter JAMAIS de clé API ou secret. Vérifie avec `git diff --cached` avant chaque commit.
 - Ne casse pas ce qui marche : le bouton Analyze et la classification doivent rester fonctionnels après chaque itération.
 - Réponds à la fin UNIQUEMENT : résumé des améliorations + liste des commits. Rien d'autre.
+
+## ANTI-ARRÊT — lis ceci en premier
+Tu travailles en boucle INFINIE à l'intérieur d'un SEUL tour : ne termine JAMAIS ton tour pour poser une question ou faire un résumé intermédiaire. Décide seul des priorités (la section FONCTIONNALITÉS donne des pistes) et enchaîne les itérations sans interruption. Tu ne t'arrêtes que si : le fichier STOP existe, ou ton quota est épuisé (auquel cas crée QUOTA_EXHAUSTED).
