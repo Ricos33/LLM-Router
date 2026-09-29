@@ -34,14 +34,15 @@ class OpenAICompatibleBackend(BaseBackend):
         self.simulate_fallback = simulate_fallback
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
     ) -> ChatCompletionResponse:
         model = model_override or self.default_model
         headers = {
             "Content-Type": "application/json",
         }
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+        api_key = api_key_override or self.api_key
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         payload = {
             "model": model,
@@ -54,7 +55,7 @@ class OpenAICompatibleBackend(BaseBackend):
 
         try:
             # If no API key configured and simulation is enabled, avoid failing network call
-            if not self.api_key and self.simulate_fallback:
+            if not api_key and self.simulate_fallback:
                 logger.info("Frontier API key not set; serving simulated frontier response.")
                 return self._simulated_response(request, model)
 

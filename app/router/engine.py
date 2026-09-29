@@ -390,7 +390,8 @@ class RouterEngine:
 
         # Step 2: Execution via selected backend with automatic fallback
         try:
-            response = await decision.backend.complete(request, model_override=decision.model_name)
+            api_key_override = getattr(request, "provider_keys", None).get(decision.provider_name.lower()) if getattr(request, "provider_keys", None) and decision.provider_name else None
+            response = await decision.backend.complete(request, model_override=decision.model_name, api_key_override=api_key_override)
         except Exception as e:
             logger.warning(f"Backend execution failed for {decision.tier.value} ({decision.model_name}): {e}. Falling back to FRONTIER tier.")
             # Fallback to Frontier
@@ -402,7 +403,8 @@ class RouterEngine:
                 classifier_score=decision.classifier_score,
                 reasons=decision.reasons + [f"Fallback triggered due to failure in {decision.model_name}"]
             )
-            response = await decision.backend.complete(request, model_override=decision.model_name)
+            api_key_override = getattr(request, "provider_keys", None).get(decision.provider_name.lower()) if getattr(request, "provider_keys", None) and decision.provider_name else None
+            response = await decision.backend.complete(request, model_override=decision.model_name, api_key_override=api_key_override)
 
         latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
 

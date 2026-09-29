@@ -125,6 +125,7 @@ async def chat_completions(
     request: ChatCompletionRequest,
     response: Response,
     x_router_tier: Optional[str] = Header(None, alias="X-Router-Tier"),
+    x_provider_keys: Optional[str] = Header(None, alias="X-Provider-Keys"),
 ):
     """
     OpenAI-compatible chat completions endpoint.
@@ -132,6 +133,12 @@ async def chat_completions(
     """
     if not request.messages:
         raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
+        
+    if x_provider_keys:
+        try:
+            request.provider_keys = json.loads(x_provider_keys)
+        except:
+            pass
 
     try:
         completion = await router_engine.route_and_execute(

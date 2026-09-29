@@ -25,15 +25,16 @@ class AnthropicBackend(BaseBackend):
         self.simulate_fallback = simulate_fallback
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
     ) -> ChatCompletionResponse:
         model = model_override or self.default_model
         
-        if not self.api_key and self.simulate_fallback:
+        api_key = api_key_override or self.api_key
+        if not api_key and self.simulate_fallback:
             return self._simulated_response(request, model)
             
         headers = {
-            "x-api-key": self.api_key,
+            "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         }

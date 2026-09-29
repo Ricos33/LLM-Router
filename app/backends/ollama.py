@@ -32,7 +32,7 @@ class OllamaBackend(BaseBackend):
         self.simulate_fallback = simulate_fallback
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
     ) -> ChatCompletionResponse:
         model = model_override or self.default_model
         payload = {

@@ -49,7 +49,7 @@ export default function Playground({ modelsCount }) {
     try {
       const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: text }],
           budget: BUDGET_LEVELS[budget],
@@ -77,7 +77,7 @@ export default function Playground({ modelsCount }) {
         try {
           const res = await fetch(API_BASE + '/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
             body: JSON.stringify({
               model: modelId,
               messages: [{ role: 'user', content: input }],

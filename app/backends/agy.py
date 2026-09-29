@@ -93,7 +93,7 @@ class AgyBackend(BaseBackend):
         return None
 
     def resolve_target(
-        self, model_override: Optional[str] = None, request_model: Optional[str] = None
+        self, model_override: Optional[str] = None, api_key_override: Optional[str] = None, request_model: Optional[str] = None
     ) -> Tuple[str, str, Optional[str]]:
         """
         Resolve (tier, model, effort) from override or request model.
@@ -160,7 +160,7 @@ class AgyBackend(BaseBackend):
         return cmd
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
     ) -> ChatCompletionResponse:
         tier, target_model, effort = self.resolve_target(
             model_override=model_override, request_model=request.model
