@@ -332,6 +332,16 @@ async def get_recent_metrics(limit: int = 50):
     return router_engine.metrics.get_recent_requests(limit=limit)
 
 
+@app.get("/v1/metrics/export/csv")
+async def export_metrics_csv():
+    """Export all metrics as a CSV file."""
+    csv_data = router_engine.metrics.get_all_requests_csv()
+    return Response(content=csv_data, media_type="text/csv", headers={
+        "Content-Disposition": "attachment; filename=llm_router_metrics.csv"
+    })
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)

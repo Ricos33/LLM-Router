@@ -166,6 +166,13 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <span>📋</span> Recent Requests
           </h3>
+          <a
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/csv`}
+            download="llm_router_metrics.csv"
+            className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+          >
+            <span>📥</span> Export CSV
+          </a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">

@@ -184,3 +184,35 @@ class MetricsTracker:
                     item["classifier_reasons"] = []
                 results.append(item)
             return results
+
+    def get_all_requests_csv(self) -> str:
+        import csv
+        import io
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT id, timestamp, prompt_preview, routed_tier, model_used,
+                       prompt_tokens, completion_tokens, total_tokens,
+                       latency_ms, cost_actual, cost_if_frontier, cost_saved,
+                       classifier_score
+                FROM metrics
+                ORDER BY id DESC
+            """)
+            rows = cur.fetchall()
+            output = io.StringIO()
+            writer = csv.writer(output)
+            # Write header
+            writer.writerow([
+                "id", "timestamp", "prompt_preview", "routed_tier", "model_used",
+                "prompt_tokens", "completion_tokens", "total_tokens",
+                "latency_ms", "cost_actual", "cost_if_frontier", "cost_saved", "classifier_score"
+            ])
+            for r in rows:
+                writer.writerow([
+                    r["id"], r["timestamp"], r["prompt_preview"], r["routed_tier"], r["model_used"],
+                    r["prompt_tokens"], r["completion_tokens"], r["total_tokens"],
+                    r["latency_ms"], r["cost_actual"], r["cost_if_frontier"], r["cost_saved"],
+                    r["classifier_score"]
+                ])
+            return output.getvalue()
+
