@@ -384,6 +384,19 @@ async def classify_prompt(request: ClassifyRequest):
     result.recommendations = recommendations[:10] # Top 10
     result.suggested_model = top_model
     result.confidence = top_conf
+
+    if result.decision_trace is not None:
+        from app.models import ChatCompletionRequest
+        dummy_req = ChatCompletionRequest(model=top_model, messages=[ChatMessage(**m) for m in request.messages])
+        decision = router_engine.decide_route(dummy_req)
+        fallback_candidates = [c.model_name for c in router_engine.get_fallback_candidates(decision)[:3]]
+        result.decision_trace.update({
+            "recommended_model": top_model,
+            "recommended_confidence": top_conf,
+            "applied_weights": {k: round(v, 2) for k, v in weights.items()},
+            "planned_fallback_chain": [top_model] + fallback_candidates,
+            "total_candidates_evaluated": len(all_models),
+        })
     
     CLASSIFY_CACHE[cache_key] = result
     
@@ -392,6 +405,17 @@ async def classify_prompt(request: ClassifyRequest):
         CLASSIFY_CACHE.clear()
         
     return result
+
+
+@app.post("/v1/classify/explain", response_model=ClassificationResult)
+async def explain_classification(request: ClassifyRequest):
+    """
+    Detailed explainability endpoint: returns the complete decision trace,
+    including individual heuristic signal deltas, category weights, and fallback chain.
+    """
+    return await classify_prompt(request)
+
+
 @app.get("/v1/metrics/summary")
 async def get_metrics_summary():
     """Retrieve aggregate usage and cost savings statistics."""

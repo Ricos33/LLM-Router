@@ -206,7 +206,16 @@ class RuleBasedClassifier(BaseClassifier):
                 probabilities={"cheap": 0.85, "medium": 0.12, "frontier": 0.03},
                 category_scores={"Reasoning": 0.1, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0},
                 tags=["Conversational"],
-                detected_intent="conversational"
+                detected_intent="conversational",
+                decision_trace={
+                    "baseline_score": 0.10,
+                    "signals": [{"signal": "Empty Context", "delta": 0.0, "detail": "Default neutral fallback"}],
+                    "calculated_score": 0.10,
+                    "thresholds": {"cheap_ceiling": self.cheap_ceiling, "frontier_floor": self.frontier_floor},
+                    "assigned_tier": ModelTier.CHEAP.value,
+                    "detected_intent": "conversational",
+                    "category_scores": {"Reasoning": 0.1, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0},
+                }
             )
 
         # Aggregate text from recent messages, focusing on the latest user message
@@ -215,12 +224,15 @@ class RuleBasedClassifier(BaseClassifier):
         full_text = "\n".join([m.content for m in messages])
 
         reasons: List[str] = []
-        score = 0.18  # Baseline neutral prior (slight lean toward cheap)
+        signals: List[dict] = []
+        base_score = 0.18
+        score = base_score
 
         # 1. Simple heuristic shortcut — strong cheap signal
         for s_reg in self.simple_regexes:
             if s_reg.search(latest_user_text.strip()):
                 reasons.append("Matches simple conversational/factual intent pattern")
+                signals.append({"signal": "Conversational Pattern", "delta": -0.15, "detail": "Matches routine conversational or factual greeting regex"})
                 score -= 0.15
                 break
 
@@ -230,6 +242,7 @@ class RuleBasedClassifier(BaseClassifier):
             boost = min(0.55, 0.30 + (code_matches - 1) * 0.08)
             score += boost
             reasons.append(f"Detected programming syntax or code snippets ({code_matches} pattern matches)")
+            signals.append({"signal": "Programming Syntax", "delta": round(boost, 3), "detail": f"{code_matches} code patterns matched"})
 
         # 3. High reasoning / technical keywords — strong frontier signal
         text_lower = full_text.lower()
@@ -238,6 +251,7 @@ class RuleBasedClassifier(BaseClassifier):
             boost = min(0.60, 0.30 + (len(keyword_hits) - 1) * 0.10)
             score += boost
             reasons.append(f"Contains complex reasoning / architecture concepts: {', '.join(keyword_hits[:3])}")
+            signals.append({"signal": "Formal/Architecture Concepts", "delta": round(boost, 3), "detail": f"Keywords: {', '.join(keyword_hits[:3])}"})
 
         # 4. Medium-level keywords — moderate complexity signal
         medium_hits = [kw for kw in self.MEDIUM_REASONING_KEYWORDS if kw in text_lower]
@@ -245,6 +259,7 @@ class RuleBasedClassifier(BaseClassifier):
             boost = min(0.30, 0.12 + (len(medium_hits) - 1) * 0.06)
             score += boost
             reasons.append(f"Contains structured task indicators: {', '.join(medium_hits[:3])}")
+            signals.append({"signal": "Structured Task Concepts", "delta": round(boost, 3), "detail": f"Keywords: {', '.join(medium_hits[:3])}"})
 
         # 5. Creative keywords — moderate complexity
         creative_hits = [kw for kw in self.CREATIVE_KEYWORDS if kw in text_lower]
@@ -252,37 +267,48 @@ class RuleBasedClassifier(BaseClassifier):
             boost = min(0.25, 0.10 + (len(creative_hits) - 1) * 0.06)
             score += boost
             reasons.append(f"Creative writing/generation task: {', '.join(creative_hits[:3])}")
+            signals.append({"signal": "Creative Generation", "delta": round(boost, 3), "detail": f"Keywords: {', '.join(creative_hits[:3])}"})
 
         # 6. Context length & multi-turn complexity
         total_length = len(full_text)
+        length_delta = 0.0
         if total_length > 2000:
-            score += 0.30
+            length_delta += 0.30
             reasons.append(f"Very extensive context length ({total_length} characters)")
         elif total_length > 1200:
-            score += 0.22
+            length_delta += 0.22
             reasons.append(f"Extensive context length ({total_length} characters)")
         elif total_length > 500:
-            score += 0.12
+            length_delta += 0.12
             reasons.append(f"Moderate context length ({total_length} characters)")
 
         if len(messages) >= 6:
-            score += 0.15
+            length_delta += 0.15
             reasons.append(f"Deep multi-turn conversation ({len(messages)} turns)")
         elif len(messages) >= 4:
-            score += 0.08
+            length_delta += 0.08
             reasons.append(f"Multi-turn conversation history ({len(messages)} turns)")
 
+        if length_delta > 0:
+            score += length_delta
+            signals.append({"signal": "Context & Turn Depth", "delta": round(length_delta, 3), "detail": f"{total_length} chars, {len(messages)} turns"})
+
         # 7. Question complexity (number of questions, conditionals)
+        q_delta = 0.0
         question_count = text_lower.count("?")
         if question_count >= 3:
-            score += 0.10
+            q_delta += 0.10
             reasons.append(f"Multiple questions detected ({question_count} questions)")
 
         conditional_keywords = ["if", "but", "however", "unless", "although", "whereas"]
         cond_count = sum(1 for kw in conditional_keywords if f" {kw} " in f" {text_lower} ")
         if cond_count >= 3:
-            score += 0.08
+            q_delta += 0.08
             reasons.append(f"Complex conditional reasoning ({cond_count} qualifiers)")
+
+        if q_delta > 0:
+            score += q_delta
+            signals.append({"signal": "Question & Conditional Qualifiers", "delta": round(q_delta, 3), "detail": f"{question_count} questions, {cond_count} conditionals"})
 
         # Normalize score between 0.0 and 1.0
         score = max(0.0, min(1.0, score))
@@ -323,6 +349,19 @@ class RuleBasedClassifier(BaseClassifier):
         if tier_tag not in tags:
             tags.append(tier_tag)
 
+        decision_trace = {
+            "baseline_score": base_score,
+            "signals": signals,
+            "calculated_score": round(score, 3),
+            "thresholds": {
+                "cheap_ceiling": self.cheap_ceiling,
+                "frontier_floor": self.frontier_floor
+            },
+            "assigned_tier": tier.value,
+            "detected_intent": detected_intent,
+            "category_scores": category_scores,
+        }
+
         return ClassificationResult(
             tier=tier,
             confidence=round(confidence, 2),
@@ -333,6 +372,7 @@ class RuleBasedClassifier(BaseClassifier):
             category_scores=category_scores,
             tags=tags,
             detected_intent=detected_intent,
+            decision_trace=decision_trace,
             metadata={
                 "message_count": len(messages),
                 "total_chars": total_length,

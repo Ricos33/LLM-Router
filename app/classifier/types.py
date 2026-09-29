@@ -22,4 +22,5 @@ class ClassificationResult(BaseModel):
     tags: List[str] = Field(default_factory=list)
     recommendations: List[Dict[str, Any]] = Field(default_factory=list)
     detected_intent: Optional[str] = None
+    decision_trace: Optional[Dict[str, Any]] = None
 

@@ -340,3 +340,15 @@ def test_classifier_category_distinctness():
     assert creat_res.category_scores["Coding"] == 0.0
 
 
+def test_classifier_decision_trace():
+    classifier = RuleBasedClassifier()
+    res = classifier.classify([ChatMessage(role="user", content="def solve_knapsack():\n    pass")])
+    assert res.decision_trace is not None
+    trace = res.decision_trace
+    assert "baseline_score" in trace
+    assert "signals" in trace
+    assert any(s["signal"] == "Programming Syntax" for s in trace["signals"])
+    assert "calculated_score" in trace
+    assert "thresholds" in trace
+
+

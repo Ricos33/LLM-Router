@@ -327,4 +327,20 @@ def test_compare_endpoint_explicit_models(client):
     assert "google/gemini-3.8-flash" in models_returned
 
 
+def test_classify_explain_endpoint(client):
+    payload = {
+        "messages": [
+            {"role": "user", "content": "Write a python function to compute matrix determinant using LU decomposition."}
+        ]
+    }
+    res = client.post("/v1/classify/explain", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "decision_trace" in data
+    trace = data["decision_trace"]
+    assert "signals" in trace
+    assert "planned_fallback_chain" in trace
+    assert len(trace["planned_fallback_chain"]) >= 2
+
+
 

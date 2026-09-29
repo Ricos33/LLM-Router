@@ -30,6 +30,7 @@ export default function Playground({ modelsCount }) {
   
   const [showSetup, setShowSetup] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
   const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -451,6 +452,79 @@ export default function Playground({ modelsCount }) {
                 </div>
               );
             })()}
+
+            {/* DECISION TRACE ACCORDION */}
+            {classification.decision_trace && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2">
+                <button
+                  onClick={() => setShowTrace(!showTrace)}
+                  className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>🔬</span>
+                    <span>Decision Trace & Explanations</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 capitalize">
+                      {classification.detected_intent || classification.decision_trace.detected_intent || 'analysis'}
+                    </span>
+                  </div>
+                  <span className="text-gray-400">{showTrace ? '−' : '+'}</span>
+                </button>
+                {showTrace && (
+                  <div className="p-4 pt-0 border-t border-gray-100 flex flex-col gap-4 text-xs">
+                    {/* Heuristic Signals */}
+                    <div className="pt-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        Activated Heuristic Signals
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-gray-500 font-mono text-[11px] p-2 bg-gray-50 rounded-lg">
+                          <span>Base Prior Neutral Score</span>
+                          <span className="font-semibold text-gray-700">0.18</span>
+                        </div>
+                        {(classification.decision_trace.signals || []).map((s, idx) => (
+                          <div key={idx} className="flex justify-between items-center p-2 rounded-lg border border-gray-100 bg-white shadow-2xs">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-800">{s.signal}</span>
+                              <span className="text-[10px] text-gray-400">{s.detail}</span>
+                            </div>
+                            <span className={`font-mono font-bold text-[12px] ${s.delta >= 0 ? 'text-purple-600' : 'text-emerald-600'}`}>
+                              {s.delta >= 0 ? `+${s.delta}` : s.delta}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center text-[12px] font-bold p-2.5 bg-black text-white rounded-lg">
+                          <span>Final Calculated Complexity</span>
+                          <span>{classification.score?.toFixed(2)} / 1.0</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Planned Fallback Chain */}
+                    {classification.decision_trace.planned_fallback_chain && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                          Resilience Fallback Sequence
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {classification.decision_trace.planned_fallback_chain.map((mod, i) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-medium ${
+                                i === 0 ? 'bg-black text-white shadow-xs' : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {i === 0 ? 'Primary: ' : `${i + 1}. `}{mod}
+                              </span>
+                              {i < classification.decision_trace.planned_fallback_chain.length - 1 && (
+                                <span className="text-gray-400 font-bold">→</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Raw Data */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
