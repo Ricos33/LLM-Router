@@ -158,7 +158,7 @@ class JevClassifier(BaseClassifier):
             }
         )
 
-    def classify(self, messages: List[ChatMessage]) -> ClassificationResult:
+    def classify(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
         if not messages:
             return ClassificationResult(
                 tier=ModelTier.CHEAP,
@@ -172,7 +172,7 @@ class JevClassifier(BaseClassifier):
 
         if not self.api_key:
             logger.warning("JevClassifier: JEV_API_KEY is not set. Falling back to rule-based mock classifier.")
-            res = self.fallback.classify(messages)
+            res = self.fallback.classify(messages, strategy=strategy)
             res.metadata["provider"] = "jev_mock_fallback"
             res.reasons.insert(0, "[Jev Fallback] JEV_API_KEY not configured; evaluated via rule-based classifier")
             return res
@@ -195,12 +195,12 @@ class JevClassifier(BaseClassifier):
                 return self._parse_response(data)
         except Exception as e:
             logger.warning("Jev API request failed (%s: %s). Falling back to rule-based mock classifier.", type(e).__name__, e)
-            res = self.fallback.classify(messages)
+            res = self.fallback.classify(messages, strategy=strategy)
             res.metadata["provider"] = "jev_error_fallback"
             res.reasons.insert(0, f"[Jev Warning] Fallback activated ({type(e).__name__}: {e})")
             return res
 
-    async def classify_async(self, messages: List[ChatMessage]) -> ClassificationResult:
+    async def classify_async(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
         if not messages:
             return ClassificationResult(
                 tier=ModelTier.CHEAP,
@@ -213,7 +213,7 @@ class JevClassifier(BaseClassifier):
 
         if not self.api_key:
             logger.warning("JevClassifier: JEV_API_KEY is not set. Falling back to rule-based mock classifier.")
-            res = self.fallback.classify(messages)
+            res = self.fallback.classify(messages, strategy=strategy)
             res.metadata["provider"] = "jev_mock_fallback"
             res.reasons.insert(0, "[Jev Fallback] JEV_API_KEY not configured; evaluated via rule-based classifier")
             return res
@@ -236,7 +236,7 @@ class JevClassifier(BaseClassifier):
                 return self._parse_response(data)
         except Exception as e:
             logger.warning("Async Jev API request failed (%s: %s). Falling back to rule-based mock classifier.", type(e).__name__, e)
-            res = self.fallback.classify(messages)
+            res = self.fallback.classify(messages, strategy=strategy)
             res.metadata["provider"] = "jev_error_fallback"
             res.reasons.insert(0, f"[Jev Warning] Fallback activated ({type(e).__name__}: {e})")
             return res

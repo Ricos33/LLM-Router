@@ -195,7 +195,18 @@ class RuleBasedClassifier(BaseClassifier):
 
         return intent, tags
 
-    def classify(self, messages: List[ChatMessage]) -> ClassificationResult:
+    STRATEGY_THRESHOLDS = {
+        "cost_optimized": (0.45, 0.75),
+        "balanced": (0.35, 0.65),
+        "quality_optimized": (0.25, 0.50),
+    }
+
+    def classify(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
+        strat_key = strategy.lower().strip() if strategy else "balanced"
+        cheap_ceiling, frontier_floor = self.STRATEGY_THRESHOLDS.get(
+            strat_key, (self.cheap_ceiling, self.frontier_floor)
+        )
+
         if not messages:
             return ClassificationResult(
                 tier=ModelTier.CHEAP,
@@ -211,7 +222,8 @@ class RuleBasedClassifier(BaseClassifier):
                     "baseline_score": 0.10,
                     "signals": [{"signal": "Empty Context", "delta": 0.0, "detail": "Default neutral fallback"}],
                     "calculated_score": 0.10,
-                    "thresholds": {"cheap_ceiling": self.cheap_ceiling, "frontier_floor": self.frontier_floor},
+                    "thresholds": {"cheap_ceiling": cheap_ceiling, "frontier_floor": frontier_floor},
+                    "strategy": strat_key,
                     "assigned_tier": ModelTier.CHEAP.value,
                     "detected_intent": "conversational",
                     "category_scores": {"Reasoning": 0.1, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0},
@@ -314,20 +326,20 @@ class RuleBasedClassifier(BaseClassifier):
         score = max(0.0, min(1.0, score))
 
         # Three-tier routing
-        if score >= self.frontier_floor:
+        if score >= frontier_floor:
             tier = ModelTier.FRONTIER
-        elif score >= self.cheap_ceiling:
+        elif score >= cheap_ceiling:
             tier = ModelTier.MEDIUM
         else:
             tier = ModelTier.CHEAP
 
         # Confidence: distance from nearest boundary
         if tier == ModelTier.FRONTIER:
-            boundary_dist = score - self.frontier_floor
+            boundary_dist = score - frontier_floor
         elif tier == ModelTier.CHEAP:
-            boundary_dist = self.cheap_ceiling - score
+            boundary_dist = cheap_ceiling - score
         else:
-            boundary_dist = min(score - self.cheap_ceiling, self.frontier_floor - score)
+            boundary_dist = min(score - cheap_ceiling, frontier_floor - score)
 
         confidence = max(0.55, min(0.99, 0.60 + boundary_dist))
 
@@ -354,9 +366,10 @@ class RuleBasedClassifier(BaseClassifier):
             "signals": signals,
             "calculated_score": round(score, 3),
             "thresholds": {
-                "cheap_ceiling": self.cheap_ceiling,
-                "frontier_floor": self.frontier_floor
+                "cheap_ceiling": cheap_ceiling,
+                "frontier_floor": frontier_floor
             },
+            "strategy": strat_key,
             "assigned_tier": tier.value,
             "detected_intent": detected_intent,
             "category_scores": category_scores,

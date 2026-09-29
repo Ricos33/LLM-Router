@@ -24,6 +24,7 @@ const VOLUME_PRESETS = [
 export default function Playground({ modelsCount }) {
   const [input, setInput] = useState('');
   const [budget, setBudget] = useState(4); // index in BUDGET_LEVELS
+  const [strategy, setStrategy] = useState('balanced'); // 'balanced' | 'cost_optimized' | 'quality_optimized'
   
   const [allModels, setAllModels] = useState([]);
   const [selectedProviders, setSelectedProviders] = useState(new Set());
@@ -69,6 +70,7 @@ export default function Playground({ modelsCount }) {
     const exportData = {
       prompt: input,
       timestamp: new Date().toISOString(),
+      strategy: strategy,
       classification: {
         tier: classification.tier,
         score: classification.score,
@@ -87,20 +89,22 @@ export default function Playground({ modelsCount }) {
     URL.revokeObjectURL(url);
   };
 
-  const handleAnalyze = async (textToAnalyze) => {
+  const handleAnalyze = async (textToAnalyze, strategyOverride) => {
     const text = typeof textToAnalyze === 'string' ? textToAnalyze : input;
     if (!text.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setError(null);
     setExecutions([]);
     try {
+      const activeStrategy = strategyOverride || strategy;
       const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: text }],
           budget: BUDGET_LEVELS[budget],
-          providers: Array.from(selectedProviders)
+          providers: Array.from(selectedProviders),
+          strategy: activeStrategy,
         })
       });
       if (!res.ok) throw new Error('API error ' + res.status);
@@ -164,7 +168,7 @@ export default function Playground({ modelsCount }) {
       handleAnalyze(input);
     }, 600);
     return () => clearTimeout(timer);
-  }, [input, budget, selectedProviders]);
+  }, [input, budget, selectedProviders, strategy]);
 
   // Derived providers data
   const providersMap = useMemo(() => {
@@ -276,6 +280,56 @@ export default function Playground({ modelsCount }) {
               <span key={lbl} className={budget === idx ? "text-black" : ""}>{lbl}</span>
             ))}
           </div>
+        </div>
+
+        {/* Routing Strategy Profile */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
+          <div className="flex justify-between items-center text-sm font-semibold">
+            <span>Routing Strategy</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium capitalize">
+              {strategy.replace('_', ' ')}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-lg text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setStrategy('cost_optimized')}
+              className={`py-1.5 px-2 rounded-md transition-all text-center ${
+                strategy === 'cost_optimized'
+                  ? 'bg-white text-black font-semibold shadow-xs'
+                  : 'text-gray-500 hover:text-black'
+              }`}
+            >
+              💰 Cost
+            </button>
+            <button
+              type="button"
+              onClick={() => setStrategy('balanced')}
+              className={`py-1.5 px-2 rounded-md transition-all text-center ${
+                strategy === 'balanced'
+                  ? 'bg-white text-black font-semibold shadow-xs'
+                  : 'text-gray-500 hover:text-black'
+              }`}
+            >
+              ⚡ Balanced
+            </button>
+            <button
+              type="button"
+              onClick={() => setStrategy('quality_optimized')}
+              className={`py-1.5 px-2 rounded-md transition-all text-center ${
+                strategy === 'quality_optimized'
+                  ? 'bg-white text-black font-semibold shadow-xs'
+                  : 'text-gray-500 hover:text-black'
+              }`}
+            >
+              🎯 Quality
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-500 leading-tight">
+            {strategy === 'cost_optimized' && 'Favors cheap & medium models (Ceiling: 0.45, Floor: 0.75).'}
+            {strategy === 'balanced' && 'Balanced trade-off between price and intelligence (0.35 / 0.65).'}
+            {strategy === 'quality_optimized' && 'Prioritizes frontier reasoning and precision (0.25 / 0.50).'}
+          </p>
         </div>
 
         {/* Analyze Button */}
@@ -578,6 +632,25 @@ export default function Playground({ modelsCount }) {
                           <span>Final Calculated Complexity</span>
                           <span>{classification.score?.toFixed(2)} / 1.0</span>
                         </div>
+                        {classification.decision_trace.strategy && (
+                          <div className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-lg text-gray-700 font-mono text-[11px]">
+                            <div>
+                              <span className="text-gray-400">Strategy: </span>
+                              <span className="font-semibold capitalize text-black">
+                                {classification.decision_trace.strategy.replace('_', ' ')}
+                              </span>
+                            </div>
+                            {classification.decision_trace.thresholds && (
+                              <div className="text-[10px]">
+                                <span className="text-gray-400">Ceiling: </span>
+                                <span className="font-semibold text-emerald-600">{classification.decision_trace.thresholds.cheap_ceiling}</span>
+                                <span className="text-gray-300 mx-1">|</span>
+                                <span className="text-gray-400">Floor: </span>
+                                <span className="font-semibold text-purple-600">{classification.decision_trace.thresholds.frontier_floor}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 

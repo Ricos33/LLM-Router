@@ -15,6 +15,7 @@ class ClassifyRequest(BaseModel):
     messages: List[dict]
     budget: Optional[str] = "Any"
     providers: Optional[List[str]] = None
+    strategy: Optional[str] = "balanced"
 
 from app.models import (
     ChatCompletionRequest,
@@ -97,6 +98,7 @@ async def chat_completions(
     request: ChatCompletionRequest,
     response: Response,
     x_router_tier: Optional[str] = Header(None, alias="X-Router-Tier"),
+    x_router_strategy: Optional[str] = Header(None, alias="X-Router-Strategy"),
     x_provider_keys: Optional[str] = Header(None, alias="X-Provider-Keys"),
 ):
     """
@@ -114,7 +116,9 @@ async def chat_completions(
 
     try:
         completion = await router_engine.route_and_execute(
-            request, tier_header_override=x_router_tier
+            request,
+            tier_header_override=x_router_tier,
+            strategy_override=x_router_strategy,
         )
 
         headers_dict = {}
@@ -126,6 +130,8 @@ async def chat_completions(
             headers_dict["X-Router-Latency-MS"] = str(meta.latency_ms)
             headers_dict["X-Router-Saved-USD"] = str(meta.cost_saved_usd)
             headers_dict["X-Router-Score"] = str(meta.classifier_score)
+            if meta.routing_strategy:
+                headers_dict["X-Router-Strategy"] = meta.routing_strategy
             if meta.fallback_triggered:
                 headers_dict["X-Router-Fallback"] = "true"
                 headers_dict["X-Router-Fallback-Chain"] = "; ".join(meta.fallback_chain)
@@ -300,7 +306,8 @@ async def classify_prompt(request: ClassifyRequest):
         raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
         
     full_text = " ".join([m.get("content", "") for m in request.messages]).lower()
-    cache_key = hashlib.md5(f"{full_text}_{request.budget}_{','.join(request.providers or [])}".encode()).hexdigest()
+    strategy_val = (request.strategy or "balanced").lower().strip()
+    cache_key = hashlib.md5(f"{full_text}_{request.budget}_{strategy_val}_{','.join(request.providers or [])}".encode()).hexdigest()
     
     if cache_key in CLASSIFY_CACHE:
         return CLASSIFY_CACHE[cache_key]
@@ -309,7 +316,7 @@ async def classify_prompt(request: ClassifyRequest):
     from app.models import ChatMessage
     chat_msgs = [ChatMessage(**m) for m in request.messages]
     
-    result = await router_engine.classifier.classify_async(chat_msgs)
+    result = await router_engine.classifier.classify_async(chat_msgs, strategy=strategy_val)
     
     comp = result.score
     
@@ -423,8 +430,12 @@ async def classify_prompt(request: ClassifyRequest):
 
     if result.decision_trace is not None:
         from app.models import ChatCompletionRequest
-        dummy_req = ChatCompletionRequest(model=top_model, messages=[ChatMessage(**m) for m in request.messages])
-        decision = router_engine.decide_route(dummy_req)
+        dummy_req = ChatCompletionRequest(
+            model=top_model,
+            messages=[ChatMessage(**m) for m in request.messages],
+            strategy=strategy_val,
+        )
+        decision = router_engine.decide_route(dummy_req, strategy_override=strategy_val)
         fallback_candidates = [c.model_name for c in router_engine.get_fallback_candidates(decision)[:3]]
         result.decision_trace.update({
             "recommended_model": top_model,

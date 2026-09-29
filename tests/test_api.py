@@ -379,4 +379,44 @@ def test_providers_health_endpoint(client):
     assert first_p["status"] == "healthy"
 
 
+def test_classify_strategy_profiles(client):
+    """Test that /v1/classify respects the strategy field."""
+    prompt = "Write an essay about the Roman Empire and analyze economic decline factors."
+    res_cost = client.post("/v1/classify", json={
+        "messages": [{"role": "user", "content": prompt}],
+        "strategy": "cost_optimized"
+    })
+    assert res_cost.status_code == 200
+    data_cost = res_cost.json()
+    assert data_cost["decision_trace"]["strategy"] == "cost_optimized"
+    assert data_cost["decision_trace"]["thresholds"]["cheap_ceiling"] == 0.45
+
+    res_qual = client.post("/v1/classify", json={
+        "messages": [{"role": "user", "content": prompt}],
+        "strategy": "quality_optimized"
+    })
+    assert res_qual.status_code == 200
+    data_qual = res_qual.json()
+    assert data_qual["decision_trace"]["strategy"] == "quality_optimized"
+    assert data_qual["decision_trace"]["thresholds"]["frontier_floor"] == 0.50
+
+
+def test_chat_completions_strategy_header(client):
+    """Test that X-Router-Strategy header is reflected in completion response."""
+    res = client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "router-auto",
+            "messages": [{"role": "user", "content": "Explain binary search trees."}],
+            "strategy": "quality_optimized",
+        },
+        headers={"X-Router-Strategy": "quality_optimized"}
+    )
+    assert res.status_code == 200
+    assert res.headers.get("X-Router-Strategy") == "quality_optimized"
+    data = res.json()
+    assert data["router_metadata"]["routing_strategy"] == "quality_optimized"
+
+
+
 

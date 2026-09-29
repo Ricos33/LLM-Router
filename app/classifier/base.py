@@ -8,10 +8,10 @@ class BaseClassifier(ABC):
     """Abstract base classifier interface for LLM routing."""
 
     @abstractmethod
-    def classify(self, messages: List[ChatMessage]) -> ClassificationResult:
+    def classify(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
         """Synchronously classify conversation messages."""
         pass
 
-    async def classify_async(self, messages: List[ChatMessage]) -> ClassificationResult:
+    async def classify_async(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
         """Asynchronously classify conversation messages (default delegates to sync)."""
-        return self.classify(messages)
+        return self.classify(messages, strategy=strategy)

@@ -352,3 +352,31 @@ def test_classifier_decision_trace():
     assert "thresholds" in trace
 
 
+def test_classifier_strategy_profiles():
+    classifier = RuleBasedClassifier()
+    # Moderate complexity prompt: has some code/structure, moderate score
+    msg = [ChatMessage(role="user", content="Can you explain how quicksort partition works in Python?\n```python\ndef partition(arr, low, high):\n    pass\n```")]
+
+    res_balanced = classifier.classify(msg, strategy="balanced")
+    res_cost = classifier.classify(msg, strategy="cost_optimized")
+    res_quality = classifier.classify(msg, strategy="quality_optimized")
+
+    # Verify thresholds in decision traces
+    assert res_balanced.decision_trace["strategy"] == "balanced"
+    assert res_balanced.decision_trace["thresholds"] == {"cheap_ceiling": 0.35, "frontier_floor": 0.65}
+
+    assert res_cost.decision_trace["strategy"] == "cost_optimized"
+    assert res_cost.decision_trace["thresholds"] == {"cheap_ceiling": 0.45, "frontier_floor": 0.75}
+
+    assert res_quality.decision_trace["strategy"] == "quality_optimized"
+    assert res_quality.decision_trace["thresholds"] == {"cheap_ceiling": 0.25, "frontier_floor": 0.50}
+
+    # Scores should be identical since the prompt is the same, but the assigned tier can shift
+    assert res_balanced.score == res_cost.score == res_quality.score
+
+    # Quality optimized should be at least as high tier as balanced, and balanced at least as high as cost
+    tier_rank = {ModelTier.CHEAP: 0, ModelTier.MEDIUM: 1, ModelTier.FRONTIER: 2}
+    assert tier_rank[res_quality.tier] >= tier_rank[res_balanced.tier] >= tier_rank[res_cost.tier]
+
+
+

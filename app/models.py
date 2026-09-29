@@ -22,6 +22,7 @@ class ChatCompletionRequest(BaseModel):
     presence_penalty: Optional[float] = 0.0
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
+    strategy: Optional[str] = "balanced"
 
 
 class ChatCompletionChoice(BaseModel):
@@ -51,6 +52,7 @@ class RouterMetadata(BaseModel):
     circuit_status: Optional[str] = "healthy"
     cost_cached_usd: Optional[float] = None
     cache_savings_pct: Optional[float] = None
+    routing_strategy: Optional[str] = "balanced"
 
 
 

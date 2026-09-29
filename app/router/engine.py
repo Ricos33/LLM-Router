@@ -182,7 +182,10 @@ class RouterEngine:
             }
 
     def decide_route(
-        self, request: ChatCompletionRequest, tier_header_override: Optional[str] = None
+        self,
+        request: ChatCompletionRequest,
+        tier_header_override: Optional[str] = None,
+        strategy_override: Optional[str] = None,
     ) -> RoutingDecision:
         """
         Evaluate request against explicit policy overrides and the classifier.
@@ -353,7 +356,8 @@ class RouterEngine:
             )
 
         # Rule 3: Intelligent classification
-        classification: ClassificationResult = self.classifier.classify(request.messages)
+        strategy = strategy_override or getattr(request, "strategy", "balanced") or "balanced"
+        classification: ClassificationResult = self.classifier.classify(request.messages, strategy=strategy)
 
         if settings.agy_enabled:
             if classification.tier == ModelTier.FRONTIER:
@@ -464,7 +468,10 @@ class RouterEngine:
         return candidates
 
     async def route_and_execute(
-        self, request: ChatCompletionRequest, tier_header_override: Optional[str] = None
+        self,
+        request: ChatCompletionRequest,
+        tier_header_override: Optional[str] = None,
+        strategy_override: Optional[str] = None,
     ) -> ChatCompletionResponse:
         start_time = time.perf_counter()
 
@@ -476,7 +483,11 @@ class RouterEngine:
                 raise HTTPException(status_code=429, detail=f"Monthly budget of ${settings.monthly_budget_usd:.2f} exceeded.")
 
         # Step 1: Decision
-        decision = self.decide_route(request, tier_header_override)
+        decision = self.decide_route(
+            request,
+            tier_header_override=tier_header_override,
+            strategy_override=strategy_override,
+        )
 
         # Step 2: Execution via selected backend with automatic resilient fallback chain
         attempt_queue = [decision] + self.get_fallback_candidates(decision)
@@ -574,6 +585,7 @@ class RouterEngine:
             executed_decision.provider_name.lower(), {}
         ).get("status", "healthy")
 
+        strat_used = strategy_override or getattr(request, "strategy", "balanced") or "balanced"
         router_metadata = RouterMetadata(
             routed_tier=executed_decision.tier.value,
             classifier_score=executed_decision.classifier_score,
@@ -589,6 +601,7 @@ class RouterEngine:
             fallback_triggered=fallback_triggered,
             fallback_chain=fallback_history,
             circuit_status=circuit_status,
+            routing_strategy=strat_used,
         )
         response.router_metadata = router_metadata
 
