@@ -414,5 +414,73 @@ def test_chat_completions_strategy_header(client):
     assert data["router_metadata"]["routing_strategy"] == "quality_optimized"
 
 
+def test_chat_completions_rule_header(client):
+    """Test that X-Router-Rule diagnostic header is emitted when an enterprise rule triggers."""
+    res = client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "router-auto",
+            "messages": [{"role": "user", "content": "How do I optimize a complex PostgreSQL database schema with indexing strategy?"}],
+        }
+    )
+    assert res.status_code == 200
+    assert "X-Router-Rule" in res.headers
+    assert res.headers["X-Router-Rule"] == "sql-database-optimization"
+    data = res.json()
+    assert data["router_metadata"]["matched_rule"] == "sql-database-optimization"
+
+
+def test_classify_explain_trace_rule_match(client):
+    """Test that /v1/classify/explain includes matched_rule metadata."""
+    res = client.post(
+        "/v1/classify/explain",
+        json={
+            "messages": [{"role": "user", "content": "Prove by mathematical induction that 1 + 2 + ... + n = n(n+1)/2"}],
+        }
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["decision_trace"] is not None
+    assert "matched_rule" in data["decision_trace"]
+    assert data["decision_trace"]["matched_rule"]["rule_id"] == "math-formal-proofs"
+
+
+def test_catalog_models_pricing_and_cache_validation(client):
+    """Verify that every model in the registry satisfies price and context invariants."""
+    res = client.get("/v1/models")
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert len(data) == 23
+
+    for m in data:
+        assert m["price_in"] >= 0.0
+        assert m["price_out"] >= 0.0
+        assert m["context_length"] >= 8000
+        assert m["tier"] in ("cheap", "medium", "frontier")
+        if m["price_cache_read"] is not None and m["price_in"] > 0:
+            assert m["price_cache_read"] < m["price_in"]
+
+
+def test_estimate_cost_with_custom_tier_and_provider_filter(client):
+    """Verify that /v1/estimate-cost filters properly by tier and provider."""
+    res = client.post(
+        "/v1/estimate-cost",
+        json={
+            "messages": [{"role": "user", "content": "Summarize this article"}],
+            "estimated_completion_tokens": 800,
+            "cache_hit_rate": 0.75,
+            "tier": "cheap",
+            "provider": "mistral"
+        }
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["estimates"]) >= 1
+    for est in data["estimates"]:
+        assert est["tier"] == "cheap"
+        assert est["provider"] == "mistral"
+
+
+
 
 
