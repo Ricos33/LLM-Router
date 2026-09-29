@@ -57,3 +57,4 @@
 - Tue Sep 29 06:30:51 UTC 2026: Implemented 'API Key Pool Rotation'. Added 'frontier_api_keys_pool' config. The Gateway now load-balances requests across multiple keys to bypass provider rate limits during traffic spikes.
 - Tue Sep 29 06:32:14 UTC 2026: Built a beautiful new 'Model Catalog' tab in the frontend. Users can now explore, search, and filter the entire model registry by tier and provider, complete with input/output pricing and context window metrics.
 - Tue Sep 29 07:31:00 UTC 2026: Implemented JSON Mode (response_format) toggle in Playground Advanced Settings and wired it to Router Engine payload generation for OpenAI-compatible backends. Tests passed, build OK.
+- Tue Sep 29 07:31:30 UTC 2026: Quota épuisé pour gemini-3.1-pro-high. Passage au modèle suivant.
