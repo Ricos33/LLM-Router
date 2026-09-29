@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { classifyPrompt, getModels } from '../api/client';
+import { classifyPrompt, getModels, estimateCost } from '../api/client';
 import CodeSnippetsModal from './CodeSnippetsModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -50,6 +50,10 @@ export default function Playground({ modelsCount }) {
   const [customCompareModels, setCustomCompareModels] = useState(new Set());
   const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [costEstimation, setCostEstimation] = useState(null);
+  const [estCompletionTokens, setEstCompletionTokens] = useState(500);
+  const [estCacheHitRate, setEstCacheHitRate] = useState(0.0);
+  const [showCostEstimates, setShowCostEstimates] = useState(false);
 
   const toggleCustomCompare = (modelId) => {
     setCustomCompareModels(prev => {
@@ -184,6 +188,27 @@ export default function Playground({ modelsCount }) {
     }, 600);
     return () => clearTimeout(timer);
   }, [input, systemPrompt, budget, selectedProviders, strategy]);
+
+  // Debounced pre-execution cost estimation
+  useEffect(() => {
+    if (!input.trim()) {
+      setCostEstimation(null);
+      return;
+    }
+    const msgs = [
+      ...(systemPrompt.trim() ? [{ role: 'system', content: systemPrompt }] : []),
+      { role: 'user', content: input }
+    ];
+    const timer = setTimeout(() => {
+      estimateCost(msgs, {
+        completionTokens: estCompletionTokens,
+        cacheHitRate: estCacheHitRate,
+      }).then(data => {
+        if (data) setCostEstimation(data);
+      }).catch(console.warn);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [input, systemPrompt, estCompletionTokens, estCacheHitRate]);
 
   // Derived providers data
   const providersMap = useMemo(() => {
@@ -324,7 +349,9 @@ export default function Playground({ modelsCount }) {
             className="w-full h-full p-4 pb-12 rounded-xl border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-[14px] shadow-sm font-sans"
           />
           <div className="absolute bottom-3 left-4 text-xs text-gray-400 font-mono flex items-center gap-2">
-            <span>~{Math.ceil(input.length / 4)} tokens</span>
+            <span className={costEstimation ? "text-gray-700 font-medium" : ""}>
+              {costEstimation ? `${costEstimation.prompt_tokens_estimated} tokens (est.)` : `~${Math.ceil(input.length / 4)} tokens`}
+            </span>
             <span>·</span>
             <span>{input.length} chars</span>
           </div>
@@ -674,6 +701,156 @@ export default function Playground({ modelsCount }) {
                 </div>
               );
             })()}
+
+            {/* PRE-EXECUTION TOKEN & COST ESTIMATOR */}
+            {costEstimation && costEstimation.summary && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2">
+                <button
+                  onClick={() => setShowCostEstimates(!showCostEstimates)}
+                  className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>📊</span>
+                    <span>Cost Engine & Caching Projections</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                      {costEstimation.prompt_tokens_estimated} in · {estCompletionTokens} out
+                    </span>
+                  </div>
+                  <span className="text-gray-400">{showCostEstimates ? '−' : '+'}</span>
+                </button>
+
+                {showCostEstimates && (
+                  <div className="p-4 pt-0 border-t border-gray-100 flex flex-col gap-4 text-xs">
+                    {/* Controls: Completion Tokens & Cache Hit Rate */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                      <div>
+                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-gray-700 uppercase">
+                          <span>Output Tokens</span>
+                          <span className="font-mono text-gray-500">{estCompletionTokens}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {[150, 500, 1000, 2000].map(cnt => (
+                            <button
+                              key={cnt}
+                              onClick={() => setEstCompletionTokens(cnt)}
+                              className={`flex-1 py-1 rounded text-[10px] font-medium border transition-colors ${
+                                estCompletionTokens === cnt
+                                  ? 'bg-gray-900 text-white border-gray-900'
+                                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                              }`}
+                            >
+                              {cnt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-gray-700 uppercase">
+                          <span>Cache Hit Ratio</span>
+                          <span className="font-mono text-emerald-600 font-bold">
+                            {Math.round(estCacheHitRate * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={estCacheHitRate}
+                          onChange={e => setEstCacheHitRate(parseFloat(e.target.value))}
+                          className="w-full accent-emerald-600 cursor-pointer mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="bg-emerald-50 rounded-lg p-2.5 border border-emerald-100">
+                        <div className="text-[9px] uppercase font-bold text-emerald-700 mb-0.5">Cheapest Fit</div>
+                        <div className="font-bold text-emerald-900 text-[13px] font-mono">
+                          ${(costEstimation.summary.cheapest_cost_usd || 0).toFixed(6)}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 truncate mt-0.5" title={costEstimation.summary.cheapest_model}>
+                          {costEstimation.summary.cheapest_model}
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 rounded-lg p-2.5 border border-blue-100">
+                        <div className="text-[9px] uppercase font-bold text-blue-700 mb-0.5">Recommended</div>
+                        {(() => {
+                          const topRec = classification.recommendations?.[0];
+                          const est = costEstimation.estimates?.find(e => e.model_id === topRec?.model_id);
+                          const cost = est ? est.cost_total_usd : (costEstimation.summary.cheapest_cost_usd || 0);
+                          return (
+                            <>
+                              <div className="font-bold text-blue-900 text-[13px] font-mono">
+                                ${cost.toFixed(6)}
+                              </div>
+                              <div className="text-[10px] text-blue-600 truncate mt-0.5" title={topRec?.model_id}>
+                                {topRec?.model_id}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      <div className="bg-purple-50 rounded-lg p-2.5 border border-purple-100 col-span-2 sm:col-span-1">
+                        <div className="text-[9px] uppercase font-bold text-purple-700 mb-0.5">Max Frontier</div>
+                        <div className="font-bold text-purple-900 text-[13px] font-mono">
+                          ${(costEstimation.summary.most_expensive_cost_usd || 0).toFixed(6)}
+                        </div>
+                        <div className="text-[10px] text-purple-600 truncate mt-0.5" title={costEstimation.summary.most_expensive_model}>
+                          {costEstimation.summary.most_expensive_model}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estimates Table */}
+                    <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-200">
+                      <table className="w-full text-[11px] text-left">
+                        <thead className="bg-gray-50 text-gray-500 font-semibold sticky top-0 border-b border-gray-200">
+                          <tr>
+                            <th className="py-1.5 px-2.5">Model</th>
+                            <th className="py-1.5 px-2">Tier</th>
+                            <th className="py-1.5 px-2 text-right">Cost/Req</th>
+                            <th className="py-1.5 px-2 text-right">Savings</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 bg-white">
+                          {(costEstimation.estimates || []).map(e => {
+                            const isRecommended = classification.recommendations?.[0]?.model_id === e.model_id;
+                            return (
+                              <tr key={e.model_id} className={isRecommended ? 'bg-blue-50/60 font-semibold' : 'hover:bg-gray-50'}>
+                                <td className="py-1.5 px-2.5 truncate max-w-[140px]" title={e.model_id}>
+                                  {isRecommended && <span className="text-blue-600 mr-1 font-bold">★</span>}
+                                  {e.model_id}
+                                </td>
+                                <td className="py-1.5 px-2 capitalize">
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                    e.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                                    e.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-emerald-100 text-emerald-700'
+                                  }`}>
+                                    {e.tier}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono text-gray-800">
+                                  ${e.cost_total_usd.toFixed(6)}
+                                </td>
+                                <td className="py-1.5 px-2 text-right font-mono text-emerald-600">
+                                  {e.savings_pct > 0 ? `-${e.savings_pct}%` : '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* DECISION TRACE ACCORDION */}
             {classification.decision_trace && (
