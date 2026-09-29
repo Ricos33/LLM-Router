@@ -37,4 +37,5 @@
 - Tue Sep 29 07:32:43 CEST 2026: Implemented 24h activity timeseries chart (requests/cost saved metric toggles) and top routed models performance matrix in Dashboard UI using live /v1/analytics telemetry. Tests: 59 passed, build OK.
 - Tue Sep 29 07:34:54 CEST 2026: Upgraded Benchmark suite to 5 category prompts (Reasoning, Coding, Summary, Creative, Conversational), added tier quick-selectors (Tiers/All/None), and aggregate summary tfoot with lowest cost and fastest model badges. Tests: 59 passed, build OK.
 - Tue Sep 29 07:37:35 CEST 2026: Implemented full Decision Trace explainability system: signal-level delta tracking in RuleBasedClassifier, /v1/classify/explain endpoint exposing weights and planned fallback sequence, and interactive Decision Trace inspector accordion in Playground UI. Tests: 61 passed, build OK.
+- Tue Sep 29 07:40:11 CEST 2026: Added interactive CodeSnippetsModal in Playground UI (cURL, Python OpenAI SDK, TypeScript OpenAI SDK, REST Classify), and updated README.md portfolio documentation with architecture and quickstart SDK integration snippet. Tests: 61 passed, build OK.
 
