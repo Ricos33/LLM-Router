@@ -19,6 +19,7 @@ export default function Dashboard({ onReplayPrompt }) {
   const [models, setModels] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [providerHealth, setProviderHealth] = useState({});
+  const [cacheStats, setCacheStats] = useState(null);
   const [timeseriesMetric, setTimeseriesMetric] = useState('requests');
   const [tierFilter, setTierFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,6 +170,7 @@ export default function Dashboard({ onReplayPrompt }) {
         .then(res => res.json())
         .then(setAnalytics)
         .catch(console.warn);
+      fetch(`${apiUrl}/v1/cache/stats`).then(res => res.json()).then(setCacheStats).catch(console.warn);
       fetch(`${apiUrl}/v1/providers/health`)
         .then(res => res.json())
         .then(setProviderHealth)
@@ -276,6 +278,26 @@ export default function Dashboard({ onReplayPrompt }) {
           </div>
           <div className="text-3xl font-bold text-txt-base">{summary.total_requests}</div>
           <div className="mt-2 text-xs text-txt-muted">{(summary.total_tokens || 0).toLocaleString()} tokens processed</div>
+        </div>
+        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-100 rounded-bl-full opacity-50 -mr-8 -mt-8"></div>
+          <div className="text-[11px] font-bold text-emerald-800 mb-2 uppercase tracking-widest flex items-center gap-2 relative z-10">
+            <span>⚡</span> Semantic Cache
+          </div>
+          {cacheStats ? (
+            <>
+              <div className="text-3xl font-bold text-emerald-600 relative z-10">
+                {Math.round((cacheStats.hit_rate || 0) * 100)}% <span className="text-lg text-emerald-500 font-medium tracking-normal">Hit Rate</span>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-emerald-700 font-medium relative z-10">
+                <span className="bg-emerald-100 px-1.5 py-0.5 rounded shadow-2xs">{cacheStats.hit_count} Hits</span>
+                <span className="bg-emerald-100 px-1.5 py-0.5 rounded shadow-2xs">{cacheStats.semantic_hit_count} Semantic</span>
+                <span className="bg-emerald-100 px-1.5 py-0.5 rounded shadow-2xs">${(cacheStats.savings_usd || 0).toFixed(4)} Saved</span>
+              </div>
+            </>
+          ) : (
+             <div className="text-sm text-emerald-700/60 mt-4 italic relative z-10">Loading cache stats...</div>
+          )}
         </div>
 
         <div className="p-5 bg-surface border border-brd rounded-2xl shadow-sm hover:shadow-md transition-shadow">
