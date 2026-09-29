@@ -4,7 +4,7 @@
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-green.svg)
 ![React](https://img.shields.io/badge/React-18.3.1-blue.svg)
-![Tests: 100 passing](https://img.shields.io/badge/Tests-100%20passing-brightgreen.svg)
+![Tests: 109 passing](https://img.shields.io/badge/Tests-109%20passing-brightgreen.svg)
 
 An intelligent, OpenAI-Compatible API Gateway with cost-optimized dynamic routing, enterprise policy rules, and empirical benchmark intelligence.
 
@@ -16,13 +16,14 @@ LLM-Router cuts LLM inference costs by up to **80%** by analyzing incoming promp
 
 - **🧠 Three-Tier Intelligent Routing**: Accurately classifies prompts into `cheap`, `medium`, and `frontier` tiers based on syntax, reasoning keywords, math/LaTeX, multi-lingual heuristics (FR/ES/DE/PT), code depth, and dialogue history.
 - **🛡️ Enterprise Routing Rules & Policy Overrides**: Deterministic regex and word-boundary keyword rules with priority ordering, target models/tiers/providers, and full `/v1/rules` CRUD API.
+- **💳 Enterprise Budget & Threshold Alerting**: Multi-stage budget threshold monitoring (50%, 80%, 90%, 100%), automated webhook dispatching (Slack, Discord, PagerDuty), alert history logging, and runtime configuration via `/v1/budget/*`.
 - **💰 Pre-Execution Cost Preview & Token Estimator**: Heuristic tokenizer engine and `/v1/estimate-cost` API showing exact token counts, cost spread across all 23 models, and prompt caching savings before dispatch.
-- **⚡ Prompt Caching Economics**: Comprehensive support for prompt prefix caching discounts (50% to 90% cuts) with live hit ratio simulation sliders.
+- **⚡ Prompt Caching Economics**: Comprehensive support for prompt prefix caching discounts (50% to 90% cuts) with live hit ratio simulation sliders and cumulative savings analytics.
 - **🔬 Decision Trace & Transparent Explainability**: Complete heuristic signal deltas, dynamic benchmark weights, and fallback chain visibility via `/v1/classify/explain`.
 - **⚡ Concurrent Model Comparison**: Side-by-side prompt execution across multiple models via `/v1/compare` with token, latency, cost spread analysis, and 1-click CSV/JSON export.
 - **🎯 Curated 8-Provider Registry**: 23 verified September 2026 models from Anthropic, OpenAI, Google, Qwen, Mistral, DeepSeek, Meta, and xAI with verified pricing and empirical benchmarks (MMLU-Pro, GPQA Diamond, SWE-bench).
-- **🩺 Synthetic Health Probing & Circuit Breakers**: Automatic failover, cooldown recovery, rolling latency tracking, and `/v1/providers/probe` connectivity monitoring.
-- **📊 Real-time Telemetry Dashboard**: Interactive charts showing traffic, model distribution, latency, 24h activity timeseries, cumulative cost savings, and 1-click query replay.
+- **🩺 Synthetic Health Probing & Latency Radar**: Automatic failover, cooldown recovery, rolling latency tracking, and `/v1/providers/probe` connectivity monitoring.
+- **📊 Real-time Telemetry Dashboard**: Interactive charts showing traffic, upstream provider distribution, model distribution, latency, 24h activity timeseries, cumulative cost savings, and 1-click query replay.
 - **🔁 Multi-Step Fallback Chain**: Multi-tier failover (same-tier alternatives → frontier escalation → simulation safety net).
 - **🔌 OpenAI Compatible**: Drop-in replacement for OpenAI API (`/v1/chat/completions`); just change the base URL.
 
@@ -85,6 +86,7 @@ flowchart TD
         Rules["Enterprise Rules Manager\n(/v1/rules)"]
         Classifier{"Classifier Engine\n(Rule-Based Heuristics / Jev)"}
         CircuitBreaker["Provider Circuit Breaker\n(/v1/providers/probe)"]
+        BudgetAlert["Budget & Alert Manager\n(/v1/budget/*)"]
         Policy["Routing Policy Manager\n(Thresholds, Budgets, Caching)"]
         Metrics["SQLite Metrics Tracker\n(Latency, Tokens, Cost Saved)"]
     end
@@ -106,7 +108,8 @@ flowchart TD
     Rules -->|Rule Match Override| Policy
     Rules -->|Default Fallthrough| Classifier
     Classifier -->|Score, Intent & Category Weights| Policy
-    Policy --> CircuitBreaker
+    Policy --> BudgetAlert
+    BudgetAlert --> CircuitBreaker
     CircuitBreaker -->|Cheap Tier| Cheap
     CircuitBreaker -->|Medium Tier| Medium
     CircuitBreaker -->|Frontier Tier| Frontier
@@ -148,6 +151,8 @@ Detailed benchmarks and sources can be found in [docs/benchmarks.md](docs/benchm
 | `PORT` | `8000` | HTTP port for the FastAPI gateway |
 | `CLASSIFIER_MODE` | `mock` | `mock` (rule-based heuristic) or `jev` (TypeSafe AI) |
 | `MONTHLY_BUDGET_USD` | `0.0` | Maximum monthly budget in USD (0.0 = unlimited) |
+| `BUDGET_ALERT_WEBHOOK_URL` | *(empty)* | Webhook URL for automated threshold alerts (Slack/Discord) |
+| `BUDGET_ALERT_THRESHOLDS` | `50,80,90,100` | Comma-separated percentages for triggering budget alerts |
 | `CHEAP_PROVIDER` | `ollama` | Provider for cheap tier (`ollama`, `openai_compatible`) |
 | `FRONTIER_PROVIDER` | `anthropic` | Provider for frontier tier (`anthropic`, `openai`, etc.) |
 | `SIMULATE_FALLBACK` | `true` | Returns simulated responses if upstream APIs fail |
@@ -170,7 +175,7 @@ Run the automated test suite covering classification heuristics, enterprise rout
 pytest -v
 ```
 
-100 comprehensive tests verifying routing integrity and failover safety.
+109 comprehensive tests verifying routing integrity and failover safety.
 
 ---
 
