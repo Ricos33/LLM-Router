@@ -94,3 +94,7 @@
 - Added visual fallback indicator badges to the Playground to prove resilience transparency.
 - Tracked `fallback_triggered` in SQLite `RequestMetric` and added Resilience Stats to the Analytics dashboard UI.
 - All tests (116) pass. Web build pass. Pushed.
+## 29/09 12:56 - Real Fallback with Exponential Backoff
+- Implemented exponential backoff with jitter in engine.py for resilient fallback.
+- Updated openai_backend.py to actually raise errors when explicit keys are passed.
+- Added test_fallback.py which passes. Curl confirmed fallback from gpt-4o to claude-sonnet-5. All tests (117) pass, web build ok.
