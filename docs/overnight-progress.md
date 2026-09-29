@@ -21,4 +21,6 @@
 - Tue Sep 29 03:59:15 CEST 2026: Added /v1/analytics and /v1/catalog/summary endpoints, enhanced heuristic classifier with formal math/CS reasoning keywords, and added tier-alignment bonus to model recommendation for sharp differentiation. Tests: 54 passed, build OK.
 - Tue Sep 29 04:02:10 CEST 2026: Aligned SettingsModal to 8 authorized providers, updated .env.example with placeholders, and added curated catalog documentation table to README.md. Build OK, 54 tests pass.
 - Tue Sep 29 04:04:30 CEST 2026: Elevated Playground to premium tier with expanded preset prompts, direct JSON export of classification/routing metadata, and tier pill badges with benchmark scores in catalog cards. Build OK, 54 tests pass.
+- Tue Sep 29 04:13:38 CEST 2026: Implemented /v1/compare endpoint with concurrent multi-model execution, centralized catalog architecture (app/catalog.py), per-model pricing in router engine, and side-by-side comparison in Playground UI with copy, latency, token count, and lowest cost/fastest badges. Fixed Benchmark API_BASE url. Tests: 56 passed, build OK.
+
 
