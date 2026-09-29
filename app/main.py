@@ -135,23 +135,51 @@ async def chat_completions(
 
         if request.stream:
             async def stream_generator():
-                content = completion.choices[0].message.content
-                chunk_size = 4
+                content = completion.choices[0].message.content if completion.choices else ""
                 response_id = completion.id
                 model = completion.model
                 
                 # Initial role chunk
-                yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})}\\n\\n"
+                first_chunk = {
+                    "id": response_id,
+                    "object": "chat.completion.chunk",
+                    "created": int(time.time()),
+                    "model": model,
+                    "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
+                }
+                yield f"data: {json.dumps(first_chunk)}\n\n"
                 
-                # Content chunks
-                for i in range(0, len(content), chunk_size):
-                    chunk = content[i:i+chunk_size]
-                    yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {'content': chunk}, 'finish_reason': None}]})}\\n\\n"
-                    await asyncio.sleep(0.01) # Simulate network delay
+                # Content chunks (chunking dynamically by words)
+                words = content.split(" ")
+                for i in range(0, len(words), 3):
+                    chunk_text = " ".join(words[i:i+3])
+                    if i + 3 < len(words):
+                        chunk_text += " "
+                    chunk_payload = {
+                        "id": response_id,
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": model,
+                        "choices": [{"index": 0, "delta": {"content": chunk_text}, "finish_reason": None}],
+                    }
+                    yield f"data: {json.dumps(chunk_payload)}\n\n"
+                    await asyncio.sleep(0.005)
                 
-                # Final chunk
-                yield f"data: {json.dumps({'id': response_id, 'object': 'chat.completion.chunk', 'model': model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\\n\\n"
-                yield "data: [DONE]\\n\\n"
+                # Final chunk with usage stats
+                final_chunk = {
+                    "id": response_id,
+                    "object": "chat.completion.chunk",
+                    "created": int(time.time()),
+                    "model": model,
+                    "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                    "usage": {
+                        "prompt_tokens": completion.usage.prompt_tokens,
+                        "completion_tokens": completion.usage.completion_tokens,
+                        "total_tokens": completion.usage.total_tokens,
+                    }
+                }
+                yield f"data: {json.dumps(final_chunk)}\n\n"
+                yield "data: [DONE]\n\n"
             
             return StreamingResponse(stream_generator(), media_type="text/event-stream", headers=headers_dict)
 

@@ -59,6 +59,26 @@ def test_chat_completions_forced_frontier(client):
     assert response.headers["X-Router-Tier"] == "frontier"
 
 
+def test_chat_completions_streaming(client):
+    payload = {
+        "model": "router-auto",
+        "messages": [
+            {"role": "user", "content": "Explain photosynthesis briefly."}
+        ],
+        "stream": True,
+    }
+    response = client.post("/v1/chat/completions", json=payload)
+    assert response.status_code == 200
+    assert "text/event-stream" in response.headers["content-type"]
+    assert "X-Router-Model" in response.headers
+    assert "X-Router-Tier" in response.headers
+
+    body_text = response.text
+    assert "data: {" in body_text
+    assert "chat.completion.chunk" in body_text
+    assert "data: [DONE]" in body_text
+
+
 def test_metrics_endpoints(client):
     summary_res = client.get("/v1/metrics/summary")
     assert summary_res.status_code == 200
