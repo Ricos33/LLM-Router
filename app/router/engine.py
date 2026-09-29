@@ -388,8 +388,21 @@ class RouterEngine:
         # Step 1: Decision
         decision = self.decide_route(request, tier_header_override)
 
-        # Step 2: Execution via selected backend
-        response = await decision.backend.complete(request, model_override=decision.model_name)
+        # Step 2: Execution via selected backend with automatic fallback
+        try:
+            response = await decision.backend.complete(request, model_override=decision.model_name)
+        except Exception as e:
+            logger.warning(f"Backend execution failed for {decision.tier.value} ({decision.model_name}): {e}. Falling back to FRONTIER tier.")
+            # Fallback to Frontier
+            decision = RoutingDecision(
+                tier=ModelTier.FRONTIER,
+                model_name=self.frontier_backend.default_model,
+                backend=self.frontier_backend,
+                provider_name=settings.frontier_provider,
+                classifier_score=decision.classifier_score,
+                reasons=decision.reasons + [f"Fallback triggered due to failure in {decision.model_name}"]
+            )
+            response = await decision.backend.complete(request, model_override=decision.model_name)
 
         latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
 

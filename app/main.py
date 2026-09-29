@@ -199,6 +199,9 @@ MODEL_BENCHMARKS = {
     "xai/grok-2-mini": {"Reasoning": 0.81, "Coding": 0.79, "Summary": 0.80, "Creative": 0.84},
 }
 
+import hashlib
+CLASSIFY_CACHE = {}
+
 @app.post("/v1/classify", response_model=ClassificationResult)
 async def classify_prompt(request: ClassifyRequest):
     """
@@ -206,6 +209,12 @@ async def classify_prompt(request: ClassifyRequest):
     """
     if not request.messages:
         raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
+        
+    full_text = " ".join([m.get("content", "") for m in request.messages]).lower()
+    cache_key = hashlib.md5(f"{full_text}_{request.budget}_{','.join(request.providers or [])}".encode()).hexdigest()
+    
+    if cache_key in CLASSIFY_CACHE:
+        return CLASSIFY_CACHE[cache_key]
     
     # Run classifier
     from app.models import ChatMessage
@@ -304,6 +313,12 @@ async def classify_prompt(request: ClassifyRequest):
     result.suggested_model = top_model
     result.confidence = top_conf
     
+    CLASSIFY_CACHE[cache_key] = result
+    
+    # Keep cache small to avoid memory leaks
+    if len(CLASSIFY_CACHE) > 1000:
+        CLASSIFY_CACHE.clear()
+        
     return result
 @app.get("/v1/metrics/summary")
 async def get_metrics_summary():
