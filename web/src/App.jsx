@@ -164,7 +164,7 @@ function App() {
         {activeTab === 'playground' && <Playground modelsCount={modelCount} />}
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'benchmark' && <Benchmark />}
-        {activeTab === 'catalog' && <Catalog />}
+        {activeTab === 'catalog' && <Catalog onSelectModel={() => setActiveTab('playground')} />}
       </main>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
