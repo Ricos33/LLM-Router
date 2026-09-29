@@ -24,6 +24,17 @@ Tu t'arrêtes uniquement si : (a) le fichier /home/hatch/workspace/llm-router-wa
 - Garde l'ADN validé : 3 colonnes (prompt / analyse / catalogue), bouton Analyze, providers à cocher, slider budget, barres noires.
 - Chaque élément doit avoir une raison d'être. Teste visuellement via le build (pas de screenshot possible sur cette VM).
 
+## CARTE BLANCHE — pousse les limites
+Youssef donne carte blanche totale : toutes les améliorations possibles, en te référant au web en continu (derniers modèles, prix à jour, benchmarks, best practices UI/UX), et en poussant chaque sujet au fond. Pistes à explorer (non exhaustif, ajoute les tiennes) :
+- **Économies** : le pitch d'origine du projet — montre l'argent économisé. Estimation du coût par requête (modèle recommandé vs frontier systématique), dashboard des économies, stats de distribution des tiers recommandés.
+- **Classifier excellent sans clé** : le fallback heuristique local doit être très bon (c'est ce que la démo utilisera sans clés API).
+- **Performance** : cache des classifications, debounce de la classification live, builds optimisés.
+- **Playground premium** : responsive mobile, accessibilité, micro-interactions, états vides/erreurs soignés.
+- **README portfolio** : badges, quickstart impeccable, architecture mermaid à jour avec les nouveaux modules.
+- **Tests** : coverage du classifier (cas limites), tests du filtrage providers/budget, tests des nouveaux endpoints.
+- **Hygiène** : refactorise proprement tout module devenu confus ; supprime le code mort.
+Chaque idée suivie jusqu'au bout : implémentée, testée, committée, poussée.
+
 ## RÈGLE D'OR — NE RESTE JAMAIS BLOQUÉ
 C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'arrêter en attendant quoi que ce soit.
 - Timebox : 25 minutes max par itération. Au-delà, termine l'itération (commit ce qui marche, ou revert) et passe à la suivante.
