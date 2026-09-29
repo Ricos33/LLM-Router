@@ -296,3 +296,47 @@ def test_jev_classifier_empty_messages():
     assert result.tier == ModelTier.CHEAP
     assert result.confidence == 1.0
 
+
+def test_classifier_domain_intents():
+    classifier = RuleBasedClassifier()
+
+    # Proof intent
+    res_proof = classifier.classify([ChatMessage(role="user", content="Prove that the halting problem is undecidable.")])
+    assert res_proof.detected_intent == "formal_reasoning"
+    assert "Proof" in res_proof.tags
+
+    # Architecture intent
+    res_arch = classifier.classify([ChatMessage(role="user", content="Design a distributed system architecture with microservices and consensus.")])
+    assert res_arch.detected_intent == "system_architecture"
+    assert "Architecture" in res_arch.tags
+
+    # Coding intent
+    res_code = classifier.classify([ChatMessage(role="user", content="Debug this python script that has a bug in DFS graph traversal.")])
+    assert res_code.detected_intent == "code_engineering"
+    assert "Coding" in res_code.tags
+
+    # Summary intent
+    res_sum = classifier.classify([ChatMessage(role="user", content="Summarize this article into 3 key takeaways and bullet points.")])
+    assert res_sum.detected_intent == "content_summary"
+    assert "Summary" in res_sum.tags
+
+    # Creative intent
+    res_creat = classifier.classify([ChatMessage(role="user", content="Write a creative short story about an AI in neo-tokyo.")])
+    assert res_creat.detected_intent == "creative_writing"
+    assert "Creative" in res_creat.tags
+
+
+def test_classifier_category_distinctness():
+    classifier = RuleBasedClassifier()
+
+    # Code prompt should have high Coding, lower Creative/Summary
+    code_res = classifier.classify([ChatMessage(role="user", content="def binary_search(arr, target):\n    pass")])
+    assert code_res.category_scores["Coding"] > 0.4
+    assert code_res.category_scores["Creative"] < 0.2
+
+    # Creative prompt should have high Creative, zero Coding
+    creat_res = classifier.classify([ChatMessage(role="user", content="Write a poem and a short story about the stars.")])
+    assert creat_res.category_scores["Creative"] > 0.4
+    assert creat_res.category_scores["Coding"] == 0.0
+
+

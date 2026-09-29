@@ -276,31 +276,22 @@ async def classify_prompt(request: ClassifyRequest):
     
     comp = result.score
     
-    # Simple heuristic to determine prompt weights
-    full_text = " ".join([m.get("content", "") for m in request.messages]).lower()
-    
-    is_coding = any(k in full_text for k in ["def ", "class ", "function", "react", "html", "css", "bug", "error", "script"])
-    is_summary = any(k in full_text for k in ["summarize", "tldr", "tl;dr", "resume", "shorten"])
-    is_creative = any(k in full_text for k in ["poem", "story", "joke", "imagine", "write a", "blog"])
-    
-    tags = []
-    if is_coding: tags.append("Coding")
-    if is_summary: tags.append("Summary")
-    if is_creative: tags.append("Creative")
-    if comp > 0.7 or not (is_coding or is_summary or is_creative): 
-        tags.append("Reasoning")
-    if len(full_text) > 1000: tags.append("Long")
+    # Use category scores and tags from classifier
+    category_scores = result.category_scores or {
+        "Reasoning": 0.5, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0
+    }
+    tags = result.tags or []
 
-    # Weights for scoring
-    weights = {"Reasoning": 1.0, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0}
-    if is_coding: weights["Coding"] = 2.0; weights["Reasoning"] = 0.5
-    if is_summary: weights["Summary"] = 2.0; weights["Reasoning"] = 0.5
-    if is_creative: weights["Creative"] = 2.0; weights["Reasoning"] = 0.5
+    # Dynamic weights derived directly from prompt category requirements
+    weights = {
+        "Reasoning": max(0.2, category_scores.get("Reasoning", 0.2) * 1.5),
+        "Coding": category_scores.get("Coding", 0.0) * 2.5,
+        "Summary": category_scores.get("Summary", 0.0) * 2.5,
+        "Creative": category_scores.get("Creative", 0.0) * 2.5,
+    }
     
     # Target baseline score depending on complexity
     target_score = 0.65 + (comp * 0.25) # from 0.65 to 0.90 based on complexity
-    
-    category_scores = {k: min(1.0, comp * (1.2 if k in tags else 0.8)) for k in ["Reasoning", "Coding", "Summary", "Creative"]}
     
     # Get available models
     models_resp = await list_models()

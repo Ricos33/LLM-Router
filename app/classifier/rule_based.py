@@ -114,6 +114,87 @@ class RuleBasedClassifier(BaseClassifier):
             "frontier": round(w_frontier / total, 4),
         }
 
+    def analyze_category_scores(self, full_text: str) -> dict[str, float]:
+        text_lower = full_text.lower()
+
+        # 1. Coding score
+        code_matches = sum(1 for reg in self.code_regexes if reg.search(full_text))
+        coding_keywords = ["code", "script", "debug", "error", "refactor", "algorithm", "function", "variable", "api", "syntax", "pass", "return"]
+        code_kw_hits = sum(1 for kw in coding_keywords if kw in text_lower)
+        coding_score = min(1.0, (code_matches * 0.45) + (code_kw_hits * 0.15))
+
+        # 2. Reasoning score
+        reasoning_hits = sum(1 for kw in self.COMPLEX_REASONING_KEYWORDS if kw in text_lower)
+        medium_hits = sum(1 for kw in self.MEDIUM_REASONING_KEYWORDS if kw in text_lower)
+        q_count = text_lower.count("?")
+        reasoning_score = min(1.0, 0.12 + (reasoning_hits * 0.28) + (medium_hits * 0.08) + min(0.12, q_count * 0.04))
+
+        # 3. Summary score
+        summary_keywords = ["summarize", "summary", "tldr", "tl;dr", "bullet points", "key takeaways", "condense", "briefly", "shorten", "overview", "recap"]
+        sum_hits = sum(1 for kw in summary_keywords if kw in text_lower)
+        summary_score = min(1.0, sum_hits * 0.35)
+
+        # 4. Creative score
+        creative_hits = sum(1 for kw in self.CREATIVE_KEYWORDS if kw in text_lower)
+        creative_score = min(1.0, creative_hits * 0.30)
+
+        # Baseline normalization: if everything is very low, give baseline conversational reasoning
+        if max(coding_score, reasoning_score, summary_score, creative_score) < 0.25:
+            reasoning_score = 0.18
+
+        return {
+            "Reasoning": round(max(0.05, min(1.0, reasoning_score)), 2),
+            "Coding": round(max(0.0, min(1.0, coding_score)), 2),
+            "Summary": round(max(0.0, min(1.0, summary_score)), 2),
+            "Creative": round(max(0.0, min(1.0, creative_score)), 2),
+        }
+
+    def detect_domain_intent(self, full_text: str, category_scores: dict[str, float]) -> tuple[str, list[str]]:
+        text_lower = full_text.lower()
+        tags = []
+
+        is_arch = any(k in text_lower for k in ["distributed system", "microservice", "architecture", "consensus", "byzantine", "idempotent", "event-driven", "kafka", "ledger", "database schema"])
+        is_proof = any(k in text_lower for k in ["prove", "proof", "theorem", "undecidable", "halting problem", "p vs np", "asymptotic complexity", "differential equation"])
+        is_security = any(k in text_lower for k in ["security audit", "vulnerability", "zero-day", "exploit", "reentrancy", "cve", "penetration test", "injection attack"])
+        is_data = any(k in text_lower for k in ["sql query", "postgresql", "cte", "index", "table scan", "data pipeline", "etl", "analytics", "dataframe", "pandas"])
+
+        if is_proof:
+            intent = "formal_reasoning"
+            tags.extend(["Proof", "Reasoning"])
+        elif is_security:
+            intent = "security_audit"
+            tags.extend(["Security", "Reasoning"])
+        elif is_arch:
+            intent = "system_architecture"
+            tags.extend(["Architecture", "Reasoning"])
+        elif category_scores.get("Coding", 0) >= 0.40:
+            intent = "code_engineering"
+            tags.append("Coding")
+            if any(k in text_lower for k in ["debug", "error", "exception", "bug"]):
+                tags.append("Debugging")
+            elif any(k in text_lower for k in ["refactor", "clean", "type hints"]):
+                tags.append("Refactor")
+        elif is_data:
+            intent = "data_engineering"
+            tags.extend(["Data", "Coding"])
+        elif category_scores.get("Summary", 0) >= 0.35:
+            intent = "content_summary"
+            tags.append("Summary")
+        elif category_scores.get("Creative", 0) >= 0.35:
+            intent = "creative_writing"
+            tags.append("Creative")
+        elif category_scores.get("Reasoning", 0) >= 0.55:
+            intent = "complex_reasoning"
+            tags.append("Reasoning")
+        else:
+            intent = "conversational"
+            tags.append("Conversational")
+
+        if len(full_text) > 1000:
+            tags.append("Long")
+
+        return intent, tags
+
     def classify(self, messages: List[ChatMessage]) -> ClassificationResult:
         if not messages:
             return ClassificationResult(
@@ -122,7 +203,10 @@ class RuleBasedClassifier(BaseClassifier):
                 score=0.1,
                 reasons=["Empty message context routed to cheap tier by default"],
                 suggested_model="cheap",
-                probabilities={"cheap": 0.85, "medium": 0.12, "frontier": 0.03}
+                probabilities={"cheap": 0.85, "medium": 0.12, "frontier": 0.03},
+                category_scores={"Reasoning": 0.1, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0},
+                tags=["Conversational"],
+                detected_intent="conversational"
             )
 
         # Aggregate text from recent messages, focusing on the latest user message
@@ -231,6 +315,14 @@ class RuleBasedClassifier(BaseClassifier):
 
         probs = self._calculate_probabilities(score)
 
+        category_scores = self.analyze_category_scores(full_text)
+        detected_intent, tags = self.detect_domain_intent(full_text, category_scores)
+
+        # Append tier to tags if not present
+        tier_tag = tier.value.capitalize()
+        if tier_tag not in tags:
+            tags.append(tier_tag)
+
         return ClassificationResult(
             tier=tier,
             confidence=round(confidence, 2),
@@ -238,10 +330,15 @@ class RuleBasedClassifier(BaseClassifier):
             reasons=reasons,
             suggested_model=tier.value,
             probabilities=probs,
+            category_scores=category_scores,
+            tags=tags,
+            detected_intent=detected_intent,
             metadata={
                 "message_count": len(messages),
                 "total_chars": total_length,
                 "score_threshold_cheap": self.cheap_ceiling,
                 "score_threshold_frontier": self.frontier_floor,
+                "detected_intent": detected_intent,
             }
         )
+

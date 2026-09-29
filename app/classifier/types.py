@@ -21,3 +21,5 @@ class ClassificationResult(BaseModel):
     category_scores: Dict[str, float] = Field(default_factory=dict)
     tags: List[str] = Field(default_factory=list)
     recommendations: List[Dict[str, Any]] = Field(default_factory=list)
+    detected_intent: Optional[str] = None
+
