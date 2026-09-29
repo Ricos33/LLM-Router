@@ -5,3 +5,4 @@
 - Tue Sep 29 03:06:18 CEST 2026: Added unit tests for classification caching, budget, and provider filtering.
 - Tue Sep 29 03:06:49 CEST 2026: Added live classification with debounce in the frontend Playground.
 - Tue Sep 29 03:08:15 CEST 2026: Added Recent Requests table with cost metrics to the dashboard.
+- Tue Sep 29 03:10:19 CEST 2026: Added CSV export feature for request metrics in the Dashboard.

@@ -108,7 +108,12 @@ _curated_models = [
 
 @app.get("/v1/models", response_model=ModelListResponse)
 async def list_models():
-    return ModelListResponse(data=_curated_models)
+    models_with_scores = []
+    for m in _curated_models:
+        m_copy = m.model_copy()
+        m_copy.scores = MODEL_BENCHMARKS.get(m.id, {"Reasoning": 0.8, "Coding": 0.8, "Summary": 0.8, "Creative": 0.8})
+        models_with_scores.append(m_copy)
+    return ModelListResponse(data=models_with_scores)
 @app.get("/v1/models/tiers")
 async def get_tier_models():
     """Retrieve configured tier-to-model mapping and metadata."""

@@ -69,6 +69,7 @@ class ModelObject(BaseModel):
     price_in: Optional[float] = None
     price_out: Optional[float] = None
     context_length: Optional[int] = None
+    scores: Optional[Dict[str, float]] = None
 
 
 class ModelListResponse(BaseModel):

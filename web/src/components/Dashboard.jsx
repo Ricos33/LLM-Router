@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { getMetricsSummary } from '../api/client';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { getMetricsSummary, getModels } from '../api/client';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
-
   const [recent, setRecent] = useState([]);
+  const [models, setModels] = useState([]);
 
   useEffect(() => {
     const fetchMetrics = () => {
@@ -16,6 +16,7 @@ export default function Dashboard() {
         .then(res => res.json())
         .then(setRecent)
         .catch(console.warn);
+      getModels().then(setModels).catch(console.warn);
     };
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 8000);
@@ -49,6 +50,14 @@ export default function Dashboard() {
     { name: 'Actual', cost: summary.total_cost_actual || 0 },
     { name: 'Without Router', cost: summary.total_cost_if_frontier || 0 }
   ];
+
+  const scatterData = models.map(m => ({
+    name: m.name || m.id,
+    price: m.price_in || 0.1,
+    quality: (m.scores?.Reasoning || 0) * 100,
+    context: m.context_length || 100000,
+    tier: m.tier || 'cheap'
+  }));
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto h-full text-[#111]">
@@ -135,26 +144,43 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Cost Comparison Chart */}
+        {/* Value vs Cost Scatter Chart */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-sm font-semibold mb-6">Cost Comparison (USD)</h3>
+          <h3 className="text-sm font-semibold mb-6">Value (Reasoning) vs Cost</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={costData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <ScatterChart margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 500 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} tickFormatter={(val) => `$${val}`} />
+                <XAxis type="number" dataKey="price" name="Cost ($/M)" unit="$" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <YAxis type="number" dataKey="quality" name="Quality" domain={[60, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                <ZAxis type="number" dataKey="context" range={[50, 400]} />
                 <Tooltip 
-                  cursor={{ fill: '#f9fafb' }}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  formatter={(value) => [`$${value.toFixed(4)}`, 'Cost']}
+                  cursor={{ strokeDasharray: '3 3' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '13px', padding: '10px' }}
+                  formatter={(value, name) => [name === 'Cost ($/M)' ? `$${value}` : `${value.toFixed(1)}`, name]}
+                  labelFormatter={() => ''}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-gray-200 rounded-xl shadow-lg">
+                          <p className="font-bold text-sm mb-1">{data.name}</p>
+                          <p className="text-xs text-gray-500">Tier: <span className="font-semibold">{data.tier}</span></p>
+                          <p className="text-xs text-gray-500">Cost (In): <span className="font-semibold text-emerald-600">${data.price}/M</span></p>
+                          <p className="text-xs text-gray-500">Reasoning: <span className="font-semibold text-blue-600">{data.quality.toFixed(1)}</span></p>
+                          <p className="text-xs text-gray-500">Context: <span className="font-semibold">{data.context.toLocaleString()}</span></p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
-                <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
-                  {costData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#9ca3af'} />
+                <Scatter name="Models" data={scatterData} fill="#8884d8">
+                  {scatterData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[entry.tier] || '#999'} fillOpacity={0.7} />
                   ))}
-                </Bar>
-              </BarChart>
+                </Scatter>
+              </ScatterChart>
             </ResponsiveContainer>
           </div>
         </div>
