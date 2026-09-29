@@ -64,3 +64,4 @@
 - Tue Sep 29 08:14:00 UTC 2026: Quota épuisé pour claude-opus-4-6-thinking (RESOURCE_EXHAUSTED, reset ~4h47). Passage au modèle suivant.
 - Tue Sep 29 08:28:00 UTC 2026: Quota épuisé pour claude-sonnet-4-6 (RESOURCE_EXHAUSTED au démarrage, reset ~4h43). Passage au modèle suivant.
 - Tue Sep 29 08:31:43 UTC 2026: Upgraded Model Catalog with benchmark scores visualization (Reasoning, Coding, Summary, Creative), prompt caching discount pills, search bar, multi-criteria sorting (benchmarks, cost, context, name), and direct Route Prompt action. Tests: 91 passed, build OK.
+- Tue Sep 29 08:33:34 UTC 2026: Integrated live Token & Cost Estimation Engine into Playground UI: live token counter, interactive output token selector (150/500/1000/2000), cache hit ratio slider (0-100%), and cost breakdown table comparing cheapest vs recommended vs frontier models. Tests: 91 passed, build OK.
