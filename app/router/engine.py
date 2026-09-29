@@ -385,6 +385,13 @@ class RouterEngine:
     ) -> ChatCompletionResponse:
         start_time = time.perf_counter()
 
+        # Step 0: Budget check
+        if settings.monthly_budget_usd > 0:
+            current_cost = self.metrics.get_current_month_cost()
+            if current_cost >= settings.monthly_budget_usd:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=429, detail=f"Monthly budget of ${settings.monthly_budget_usd:.2f} exceeded.")
+
         # Step 1: Decision
         decision = self.decide_route(request, tier_header_override)
 

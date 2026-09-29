@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     jev_api_base_url: str = "https://api.typesafe.ai/v1"
     jev_model: str = "jev-latest"
     jev_timeout: float = 5.0
+    
+    # Budget tracking
+    monthly_budget_usd: float = 0.0 # 0.0 means no limit
 
     # Cheap Backend (e.g. Local Ollama)
     cheap_provider: str = "ollama"  # 'ollama' or 'openai_compatible'

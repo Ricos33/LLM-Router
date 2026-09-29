@@ -83,6 +83,20 @@ class MetricsTracker:
             conn.commit()
             return cursor.lastrowid
 
+    def get_current_month_cost(self) -> float:
+        import datetime
+        now = datetime.datetime.now()
+        start_of_month = datetime.datetime(now.year, now.month, 1).timestamp()
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT COALESCE(SUM(cost_actual), 0.0)
+                FROM metrics
+                WHERE timestamp >= ?
+            """, (start_of_month,))
+            row = cur.fetchone()
+            return row[0] if row else 0.0
+
     def get_summary(self) -> Dict[str, Any]:
         with self._get_connection() as conn:
             cur = conn.cursor()
@@ -124,6 +138,8 @@ class MetricsTracker:
                     "avg_latency_ms": 0.0,
                     "average_latency_ms": 0.0,
                     "total_errors": 0,
+                    "current_month_cost": 0.0,
+                    "monthly_budget_usd": getattr(__import__('app.config', fromlist=['settings']).settings, 'monthly_budget_usd', 0.0),
                 }
 
             total = row["total_requests"]
@@ -157,6 +173,8 @@ class MetricsTracker:
                 "avg_latency_ms": avg_lat,
                 "average_latency_ms": avg_lat,
                 "total_errors": 0,
+                "current_month_cost": self.get_current_month_cost(),
+                "monthly_budget_usd": getattr(__import__('app.config', fromlist=['settings']).settings, 'monthly_budget_usd', 0.0),
             }
 
     def get_recent_requests(self, limit: int = 50) -> List[Dict[str, Any]]:

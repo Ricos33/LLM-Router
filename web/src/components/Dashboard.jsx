@@ -115,6 +115,30 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {summary.monthly_budget_usd > 0 && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex justify-between items-end mb-2">
+            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <span>💳</span> Monthly Budget Tracking
+            </div>
+            <div className="text-[13px] font-medium text-gray-600">
+              ${summary.current_month_cost?.toFixed(2) || 0} / ${summary.monthly_budget_usd?.toFixed(2)}
+            </div>
+          </div>
+          <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 rounded-full ${summary.current_month_cost > summary.monthly_budget_usd * 0.9 ? 'bg-red-500' : 'bg-emerald-500'}`}
+              style={{ width: `${Math.min(100, (summary.current_month_cost / summary.monthly_budget_usd) * 100)}%` }}
+            ></div>
+          </div>
+          <div className="mt-2 flex justify-between text-[11px] text-gray-400">
+            <span>0%</span>
+            <span>{((summary.current_month_cost / summary.monthly_budget_usd) * 100).toFixed(1)}% used</span>
+            <span>100%</span>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tier Distribution Chart */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
