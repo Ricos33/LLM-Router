@@ -214,7 +214,7 @@ async def chat_completions(
         
     if x_provider_keys:
         try:
-            request.provider_keys = json.loads(x_provider_keys)
+            object.__setattr__(request, "provider_keys", json.loads(x_provider_keys))
         except:
             pass
 

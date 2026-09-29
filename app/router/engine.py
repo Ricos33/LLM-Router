@@ -1,4 +1,5 @@
 import time
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
@@ -671,6 +672,12 @@ class RouterEngine:
                 logger.warning(
                     f"Execution attempt {idx + 1} ({candidate.model_name}) failed: {e}. Retrying with next fallback."
                 )
+                if idx < len(attempt_queue) - 1:
+                    import random
+                    # Exponential backoff: 2^idx seconds + jitter (0-1s)
+                    backoff = (2 ** idx) + random.uniform(0, 1)
+                    logger.info(f"Sleeping {backoff:.2f}s before next fallback attempt")
+                    await asyncio.sleep(backoff)
 
         if response is None:
             raise RuntimeError(f"All {len(attempt_queue)} model execution attempts failed: {fallback_history}")

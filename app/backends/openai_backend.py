@@ -92,7 +92,7 @@ class OpenAICompatibleBackend(BaseBackend):
                     ),
                 )
         except Exception as e:
-            if not self.simulate_fallback:
+            if not self.simulate_fallback or api_key_override:
                 raise RuntimeError(f"Frontier backend error at {self.base_url}: {e}")
 
             logger.info(f"Frontier error ({e}); falling back to simulated response.")
