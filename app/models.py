@@ -117,3 +117,13 @@ class CompareResponse(BaseModel):
     cheapest_model: Optional[str] = None
     fastest_model: Optional[str] = None
     cost_spread_usd: float = 0.0
+
+
+class BudgetConfigRequest(BaseModel):
+    monthly_budget_usd: Optional[float] = None
+    webhook_url: Optional[str] = None
+    thresholds: Optional[List[float]] = None
+
+
+class BudgetTestAlertRequest(BaseModel):
+    webhook_url: Optional[str] = None

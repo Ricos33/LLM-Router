@@ -25,6 +25,8 @@ from app.models import (
     CompareRequest,
     CompareResponse,
     ModelCompareResult,
+    BudgetConfigRequest,
+    BudgetTestAlertRequest,
 )
 from app.catalog import CURATED_MODELS as _curated_models, MODEL_BENCHMARKS, get_model_by_id
 from app.classifier.types import ClassificationResult
@@ -770,6 +772,62 @@ async def estimate_cost_endpoint(request: EstimateCostRequest):
             "total_models_evaluated": len(estimates),
         },
     }
+
+
+@app.get("/v1/budget/status", tags=["Budget"])
+async def get_budget_status():
+    """
+    Get current enterprise monthly budget status, spending percentage,
+    threshold status (normal/caution/warning/critical), and recent alert events.
+    """
+    current_cost = router_engine.metrics.get_current_month_cost()
+    return router_engine.budget_manager.get_status(
+        current_cost=current_cost,
+        budget_limit=settings.monthly_budget_usd,
+    )
+
+
+@app.post("/v1/budget/test-alert", tags=["Budget"])
+async def test_budget_alert(request: Optional[BudgetTestAlertRequest] = None):
+    """
+    Trigger a synthetic budget threshold test alert to verify webhook plumbing.
+    """
+    custom_url = request.webhook_url if request else None
+    result = router_engine.budget_manager.trigger_test_alert(custom_webhook=custom_url)
+    return result
+
+
+@app.post("/v1/budget/configure", tags=["Budget"])
+async def configure_budget(config: BudgetConfigRequest):
+    """
+    Dynamically update monthly budget limit, webhook notification URL, and alerting thresholds.
+    """
+    if config.monthly_budget_usd is not None:
+        settings.monthly_budget_usd = max(0.0, float(config.monthly_budget_usd))
+    if config.webhook_url is not None:
+        settings.budget_alert_webhook_url = config.webhook_url.strip()
+        router_engine.budget_manager.webhook_url = config.webhook_url.strip()
+    if config.thresholds is not None:
+        valid_thresh = [float(t) for t in config.thresholds if 0 < float(t) <= 200]
+        if valid_thresh:
+            router_engine.budget_manager.thresholds = sorted(valid_thresh)
+            settings.budget_alert_thresholds = ",".join(str(t) for t in sorted(valid_thresh))
+
+    current_cost = router_engine.metrics.get_current_month_cost()
+    return {
+        "success": True,
+        "message": "Budget settings updated successfully.",
+        "status": router_engine.budget_manager.get_status(current_cost, settings.monthly_budget_usd),
+    }
+
+
+@app.post("/v1/budget/clear-alerts", tags=["Budget"])
+async def clear_budget_alerts():
+    """
+    Clear alert history and reset fired threshold triggers.
+    """
+    router_engine.budget_manager.clear_alerts()
+    return {"success": True, "message": "Alert history and fired thresholds cleared."}
 
 
 if __name__ == "__main__":

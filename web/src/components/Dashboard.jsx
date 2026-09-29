@@ -1,5 +1,12 @@
 import { useState, useEffect, Fragment } from 'react';
-import { getMetricsSummary, getModels } from '../api/client';
+import {
+  getMetricsSummary,
+  getModels,
+  getBudgetStatus,
+  testBudgetAlert,
+  configureBudget,
+  clearBudgetAlerts,
+} from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
@@ -18,6 +25,13 @@ export default function Dashboard({ onReplayPrompt }) {
   const [expandedRow, setExpandedRow] = useState(null);
   const [chaosLoading, setChaosLoading] = useState(false);
   const [chaosFeedback, setChaosFeedback] = useState(null);
+
+  // Enterprise Budget State
+  const [budgetStatus, setBudgetStatus] = useState(null);
+  const [budgetDrawerOpen, setBudgetDrawerOpen] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ monthly_budget_usd: '', webhook_url: '' });
+  const [budgetActionLoading, setBudgetActionLoading] = useState(false);
+  const [budgetFeedback, setBudgetFeedback] = useState(null);
 
   const handleTripProvider = async (provider) => {
     setChaosLoading(true);
@@ -63,10 +77,65 @@ export default function Dashboard({ onReplayPrompt }) {
     }
   };
 
+  const handleTestAlert = async () => {
+    setBudgetActionLoading(true);
+    try {
+      const res = await testBudgetAlert();
+      setBudgetFeedback(
+        res.webhook_tested
+          ? (res.webhook_dispatched ? 'Synthetic alert dispatched to webhook!' : 'Test alert generated (webhook HTTP error).')
+          : 'Synthetic test alert recorded in history.'
+      );
+      getBudgetStatus().then(setBudgetStatus).catch(console.warn);
+      setTimeout(() => setBudgetFeedback(null), 5000);
+    } catch (e) {
+      setBudgetFeedback('Failed to trigger test alert: ' + (e.message || e));
+    } finally {
+      setBudgetActionLoading(false);
+    }
+  };
+
+  const handleUpdateBudget = async (e) => {
+    e.preventDefault();
+    setBudgetActionLoading(true);
+    try {
+      const payload = {};
+      if (budgetForm.monthly_budget_usd !== '') {
+        payload.monthly_budget_usd = parseFloat(budgetForm.monthly_budget_usd);
+      }
+      if (budgetForm.webhook_url !== '') {
+        payload.webhook_url = budgetForm.webhook_url;
+      }
+      await configureBudget(payload);
+      const updated = await getBudgetStatus();
+      setBudgetStatus(updated);
+      setBudgetDrawerOpen(false);
+      setBudgetFeedback('Budget settings updated successfully.');
+      setTimeout(() => setBudgetFeedback(null), 4000);
+    } catch (e) {
+      setBudgetFeedback('Failed to update budget: ' + (e.message || e));
+    } finally {
+      setBudgetActionLoading(false);
+    }
+  };
+
+  const handleClearAlerts = async () => {
+    try {
+      await clearBudgetAlerts();
+      const updated = await getBudgetStatus();
+      setBudgetStatus(updated);
+      setBudgetFeedback('Budget alerts cleared.');
+      setTimeout(() => setBudgetFeedback(null), 3000);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   useEffect(() => {
     const fetchMetrics = () => {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       getMetricsSummary().then(setSummary).catch(console.warn);
+      getBudgetStatus().then(setBudgetStatus).catch(console.warn);
       fetch(`${apiUrl}/v1/metrics/recent?limit=50`)
         .then(res => res.json())
         .then(setRecent)
@@ -197,29 +266,203 @@ export default function Dashboard({ onReplayPrompt }) {
         </div>
       </div>
 
-      {summary.monthly_budget_usd > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex justify-between items-end mb-2">
-            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <span>💳</span> Monthly Budget Tracking
-            </div>
-            <div className="text-[13px] font-medium text-gray-600">
-              ${summary.current_month_cost?.toFixed(2) || 0} / ${summary.monthly_budget_usd?.toFixed(2)}
+      {/* Enterprise Budget & Threshold Alerting Hub */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex flex-wrap justify-between items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg">💳</span>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">Enterprise Budget & Alerts</h3>
+              <p className="text-[11px] text-gray-500">Monthly spend threshold monitoring & automated webhooks</p>
             </div>
           </div>
-          <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-500 rounded-full ${summary.current_month_cost > summary.monthly_budget_usd * 0.9 ? 'bg-red-500' : 'bg-emerald-500'}`}
-              style={{ width: `${Math.min(100, (summary.current_month_cost / summary.monthly_budget_usd) * 100)}%` }}
-            ></div>
-          </div>
-          <div className="mt-2 flex justify-between text-[11px] text-gray-400">
-            <span>0%</span>
-            <span>{((summary.current_month_cost / summary.monthly_budget_usd) * 100).toFixed(1)}% used</span>
-            <span>100%</span>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status Badge */}
+            {budgetStatus?.status === 'unlimited' ? (
+              <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+                Unlimited Tier
+              </span>
+            ) : budgetStatus?.status === 'critical' ? (
+              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700 border border-red-200 flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span> Budget Exceeded
+              </span>
+            ) : budgetStatus?.status === 'warning' ? (
+              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span> Warning (80%+)
+              </span>
+            ) : budgetStatus?.status === 'caution' ? (
+              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                Caution (50%+)
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Spend Normal
+              </span>
+            )}
+
+            {/* Webhook Status */}
+            <span className={`px-2 py-0.5 text-[11px] rounded border ${budgetStatus?.webhook_configured ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+              {budgetStatus?.webhook_configured ? '🔔 Webhook Active' : '🔕 Webhook Unset'}
+            </span>
+
+            {/* Action Buttons */}
+            <button
+              onClick={handleTestAlert}
+              disabled={budgetActionLoading}
+              className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+              title="Send a synthetic test alert"
+            >
+              ⚡ Test Alert
+            </button>
+
+            <button
+              onClick={() => {
+                if (budgetStatus) {
+                  setBudgetForm({
+                    monthly_budget_usd: budgetStatus.monthly_budget_usd || '',
+                    webhook_url: budgetStatus.webhook_url || '',
+                  });
+                }
+                setBudgetDrawerOpen(!budgetDrawerOpen);
+              }}
+              className="px-2.5 py-1 text-xs font-medium bg-black text-white hover:bg-gray-800 rounded-lg transition-colors shadow-2xs"
+            >
+              {budgetDrawerOpen ? 'Close' : '⚙️ Configure'}
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Feedback message */}
+        {budgetFeedback && (
+          <div className="text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 animate-in fade-in flex items-center justify-between">
+            <span>{budgetFeedback}</span>
+            <button onClick={() => setBudgetFeedback(null)} className="text-gray-400 hover:text-black">✕</button>
+          </div>
+        )}
+
+        {/* Inline Config Drawer */}
+        {budgetDrawerOpen && (
+          <form onSubmit={handleUpdateBudget} className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3 animate-in fade-in">
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Update Budget & Alert Settings</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-600 mb-1">Monthly Budget (USD, 0 = unlimited)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="e.g. 50.00"
+                  value={budgetForm.monthly_budget_usd}
+                  onChange={e => setBudgetForm({ ...budgetForm, monthly_budget_usd: e.target.value })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-600 mb-1">Alert Webhook URL (Slack, Discord, PagerDuty)</label>
+                <input
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={budgetForm.webhook_url}
+                  onChange={e => setBudgetForm({ ...budgetForm, webhook_url: e.target.value })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setBudgetDrawerOpen(false)}
+                className="px-3 py-1 text-xs text-gray-500 hover:text-black"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={budgetActionLoading}
+                className="px-4 py-1 text-xs font-medium bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
+              >
+                Save Settings
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Progress and Stats Row */}
+        {budgetStatus && budgetStatus.monthly_budget_usd > 0 ? (
+          <div>
+            <div className="flex justify-between items-end text-xs mb-1.5">
+              <span className="font-semibold text-gray-700">
+                ${budgetStatus.current_cost_usd?.toFixed(2) || '0.00'}{' '}
+                <span className="font-normal text-gray-400">/ ${budgetStatus.monthly_budget_usd?.toFixed(2)} monthly cap</span>
+              </span>
+              <span className="text-gray-500 font-mono text-[11px]">
+                {budgetStatus.remaining_usd !== null && `$${budgetStatus.remaining_usd?.toFixed(2)} remaining`} ({budgetStatus.percent_used?.toFixed(1)}%)
+              </span>
+            </div>
+
+            <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden relative">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${
+                  budgetStatus.percent_used >= 100
+                    ? 'bg-red-500'
+                    : budgetStatus.percent_used >= 80
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{ width: `${Math.min(100, budgetStatus.percent_used || 0)}%` }}
+              ></div>
+            </div>
+
+            <div className="flex justify-between text-[10px] text-gray-400 font-mono mt-1">
+              <span>0%</span>
+              <span className="text-blue-500">50% Notice</span>
+              <span className="text-amber-500">80% Warning</span>
+              <span className="text-red-500">100% Limit</span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-between text-xs text-gray-500">
+            <span>No monthly cap configured. Current cycle cost: <strong className="text-gray-800 font-mono">${(summary?.current_month_cost || 0).toFixed(4)}</strong></span>
+            <button
+              onClick={() => {
+                setBudgetForm({ monthly_budget_usd: '25.00', webhook_url: '' });
+                setBudgetDrawerOpen(true);
+              }}
+              className="text-xs font-semibold text-black hover:underline"
+            >
+              + Set Cap
+            </button>
+          </div>
+        )}
+
+        {/* Recent Alert Events Log */}
+        {budgetStatus?.recent_alerts && budgetStatus.recent_alerts.length > 0 && (
+          <div className="pt-2 border-t border-gray-100">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                Recent Alert History ({budgetStatus.alert_count})
+              </span>
+              <button
+                onClick={handleClearAlerts}
+                className="text-[11px] text-gray-400 hover:text-red-600 transition-colors"
+              >
+                Clear History
+              </button>
+            </div>
+            <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto">
+              {budgetStatus.recent_alerts.slice(0, 5).map((a, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 text-[11px] border border-gray-100 font-mono">
+                  <span className="text-gray-700 truncate mr-2">{a.message}</span>
+                  <span className="text-gray-400 flex-shrink-0">
+                    {new Date(a.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tier Distribution Chart */}

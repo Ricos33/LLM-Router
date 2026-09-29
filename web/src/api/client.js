@@ -90,3 +90,23 @@ export const resetRules = async () => {
   return data;
 };
 
+export const getBudgetStatus = async () => {
+  const { data } = await api.get('/v1/budget/status');
+  return data;
+};
+
+export const testBudgetAlert = async (webhookUrl = null) => {
+  const { data } = await api.post('/v1/budget/test-alert', { webhook_url: webhookUrl });
+  return data;
+};
+
+export const configureBudget = async (config) => {
+  const { data } = await api.post('/v1/budget/configure', config);
+  return data;
+};
+
+export const clearBudgetAlerts = async () => {
+  const { data } = await api.post('/v1/budget/clear-alerts');
+  return data;
+};
+

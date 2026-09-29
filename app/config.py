@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # Budget tracking
     monthly_budget_usd: float = 0.0 # 0.0 means no limit
     max_cost_per_request_usd: float = 0.10 # Hard cap on individual request cost
+    budget_alert_webhook_url: str = ""
+    budget_alert_thresholds: str = "50,80,90,100"
 
     # Cheap Backend (e.g. Local Ollama)
     cheap_provider: str = "ollama"  # 'ollama' or 'openai_compatible'

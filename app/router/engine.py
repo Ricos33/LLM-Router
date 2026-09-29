@@ -28,6 +28,7 @@ from app.storage import MetricsTracker, RequestMetric
 from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing, get_model_cache_pricing
 from app.router.circuit_breaker import ProviderCircuitBreaker
 from app.router.rules import RoutingRuleManager
+from app.router.budget import BudgetManager
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,18 @@ class RouterEngine:
 
         # 5. Enterprise Routing Rules Manager
         self.rules_manager = RoutingRuleManager()
+
+        # 6. Enterprise Budget Alert Manager
+        thresholds_list = []
+        if getattr(settings, "budget_alert_thresholds", None):
+            try:
+                thresholds_list = [float(x.strip()) for x in settings.budget_alert_thresholds.split(",") if x.strip()]
+            except Exception:
+                thresholds_list = [50.0, 80.0, 90.0, 100.0]
+        self.budget_manager = BudgetManager(
+            webhook_url=getattr(settings, "budget_alert_webhook_url", ""),
+            thresholds=thresholds_list or [50.0, 80.0, 90.0, 100.0],
+        )
 
     def get_tier_models(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -528,8 +541,9 @@ class RouterEngine:
                 return cached_resp
 
         # Step 0b: Budget check
+        current_cost = self.metrics.get_current_month_cost()
+        self.budget_manager.check_and_notify(current_cost, settings.monthly_budget_usd)
         if settings.monthly_budget_usd > 0:
-            current_cost = self.metrics.get_current_month_cost()
             if current_cost >= settings.monthly_budget_usd:
                 from fastapi import HTTPException
                 raise HTTPException(status_code=429, detail=f"Monthly budget of ${settings.monthly_budget_usd:.2f} exceeded.")
@@ -728,6 +742,11 @@ class RouterEngine:
             classifier_reasons=executed_decision.reasons,
         )
         self.metrics.record_request(metric)
+
+        # Notify if newly recorded cost trips a budget threshold
+        if settings.monthly_budget_usd > 0:
+            new_cost = self.metrics.get_current_month_cost()
+            self.budget_manager.check_and_notify(new_cost, settings.monthly_budget_usd)
 
         # Cache the successful response if enabled
         if settings.gateway_cache_enabled and not request.stream:
