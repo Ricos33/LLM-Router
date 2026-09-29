@@ -6,7 +6,7 @@ const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
 
 const AUTHORIZED_PROVIDERS = ['anthropic', 'openai', 'google', 'qwen', 'mistral', 'deepseek', 'meta', 'xai'];
 
-export default function Dashboard() {
+export default function Dashboard({ onReplayPrompt }) {
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [models, setModels] = useState([]);
@@ -636,6 +636,15 @@ export default function Dashboard() {
                         >
                           Copy
                         </button>
+                        {onReplayPrompt && (
+                          <button
+                            onClick={() => onReplayPrompt(req.prompt_preview || '')}
+                            title="Replay in Playground"
+                            className="px-2 py-1 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
+                          >
+                            Replay ↗
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -666,6 +675,17 @@ export default function Dashboard() {
                                   {reason}
                                 </span>
                               ))}
+                            </div>
+                          )}
+                          {onReplayPrompt && (
+                            <div className="pt-2">
+                              <button
+                                onClick={() => onReplayPrompt(req.prompt_preview || '')}
+                                className="text-xs bg-black text-white hover:bg-gray-800 px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 shadow-xs"
+                              >
+                                <span>Replay & Route in Playground</span>
+                                <span>→</span>
+                              </button>
                             </div>
                           )}
                         </div>

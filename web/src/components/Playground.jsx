@@ -21,8 +21,14 @@ const VOLUME_PRESETS = [
   { label: '2M', count: 2000000 },
 ];
 
-export default function Playground({ modelsCount }) {
+export default function Playground({ modelsCount, initialPrompt }) {
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (initialPrompt) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [temperature, setTemperature] = useState(0.7);
   const [jsonMode, setJsonMode] = useState(false);
@@ -94,6 +100,58 @@ export default function Playground({ modelsCount }) {
     const a = document.createElement('a');
     a.href = url;
     a.download = `llm_router_classification_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportComparisonJSON = () => {
+    if (!executions.length) return;
+    const data = {
+      prompt: input,
+      timestamp: new Date().toISOString(),
+      models_compared: executions.map(e => e.model),
+      results: executions.map(e => ({
+        model: e.model,
+        tier: e.meta?.tier,
+        provider: e.meta?.provider,
+        latency_ms: e.meta?.latency_ms,
+        cost_usd: e.meta?.cost_actual_usd,
+        prompt_tokens: e.meta?.prompt_tokens,
+        completion_tokens: e.meta?.completion_tokens,
+        is_cheapest: e.meta?.is_cheapest,
+        is_fastest: e.meta?.is_fastest,
+        result: e.result,
+      })),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm_router_comparison_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportComparisonCSV = () => {
+    if (!executions.length) return;
+    const headers = ['Model', 'Tier', 'Provider', 'Latency (ms)', 'Cost (USD)', 'Prompt Tokens', 'Completion Tokens', 'Fastest', 'Cheapest'];
+    const rows = executions.map(e => [
+      `"${e.model}"`,
+      `"${e.meta?.tier || ''}"`,
+      `"${e.meta?.provider || ''}"`,
+      e.meta?.latency_ms || 0,
+      (e.meta?.cost_actual_usd || 0).toFixed(6),
+      e.meta?.prompt_tokens || 0,
+      e.meta?.completion_tokens || 0,
+      e.meta?.is_fastest ? 'YES' : 'NO',
+      e.meta?.is_cheapest ? 'YES' : 'NO',
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm_router_comparison_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -965,8 +1023,28 @@ export default function Playground({ modelsCount }) {
             {/* EXECUTION RESULT */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-4">
               <div className="flex flex-wrap justify-between items-center gap-2">
-                <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
-                  Execution Compare
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                    Execution Compare
+                  </span>
+                  {executions.length > 0 && !isExecuting && (
+                    <div className="flex items-center gap-1 ml-2">
+                      <button
+                        onClick={handleExportComparisonCSV}
+                        title="Export comparison results as CSV"
+                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
+                      >
+                        <span>📥</span> CSV
+                      </button>
+                      <button
+                        onClick={handleExportComparisonJSON}
+                        title="Export comparison results as JSON"
+                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
+                      >
+                        <span>📄</span> JSON
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button 

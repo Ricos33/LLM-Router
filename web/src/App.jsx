@@ -18,6 +18,12 @@ function App() {
   const [modelCount, setModelCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [replayPrompt, setReplayPrompt] = useState('');
+
+  const handleReplayPrompt = useCallback((promptText) => {
+    setReplayPrompt(promptText);
+    setActiveTab('playground');
+  }, []);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -161,8 +167,8 @@ function App() {
       )}
 
       <main className="flex-1 overflow-hidden" role="tabpanel" aria-label={`${activeTab} panel`}>
-        {activeTab === 'playground' && <Playground modelsCount={modelCount} />}
-        {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'playground' && <Playground modelsCount={modelCount} initialPrompt={replayPrompt} />}
+        {activeTab === 'dashboard' && <Dashboard onReplayPrompt={handleReplayPrompt} />}
         {activeTab === 'benchmark' && <Benchmark />}
         {activeTab === 'catalog' && <Catalog onSelectModel={() => setActiveTab('playground')} />}
       </main>
