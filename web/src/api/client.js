@@ -48,3 +48,24 @@ export const compareModels = async (messages, models = null, providerKeys = null
   return data;
 };
 
+export const estimateCost = async (messages, opts = {}) => {
+  const payload = {
+    messages,
+    estimated_completion_tokens: opts.completionTokens || 500,
+    cache_hit_rate: opts.cacheHitRate || 0.0,
+    tier: opts.tier || null,
+    provider: opts.provider || null,
+  };
+  const { data } = await api.post('/v1/estimate-cost', payload);
+  return data;
+};
+
+export const getAnalytics = async () => {
+  const { data } = await api.get('/v1/analytics');
+  return data;
+};
+
+export const getProviderHealth = async () => {
+  const { data } = await api.get('/v1/providers/health');
+  return data;
+};

@@ -617,6 +617,60 @@ async def get_catalog_summary():
         "last_updated": "2026-09-29",
     }
 
+
+class EstimateCostRequest(BaseModel):
+    messages: List[dict]
+    estimated_completion_tokens: Optional[int] = 500
+    cache_hit_rate: Optional[float] = 0.0
+    tier: Optional[str] = None
+    provider: Optional[str] = None
+
+
+@app.post("/v1/estimate-cost", tags=["Cost"])
+async def estimate_cost_endpoint(request: EstimateCostRequest):
+    """
+    Pre-execution cost estimator: estimate token count and cost across all curated models.
+    Returns sorted results (cheapest first) with caching projections and context-fit checks.
+    """
+    from app.tokenizer import estimate_messages_tokens, estimate_cost_all_models
+
+    prompt_tokens = estimate_messages_tokens(request.messages)
+
+    estimates = estimate_cost_all_models(
+        prompt_tokens=prompt_tokens,
+        estimated_completion_tokens=request.estimated_completion_tokens or 500,
+        cache_hit_rate=request.cache_hit_rate or 0.0,
+        tier_filter=request.tier,
+        provider_filter=request.provider,
+    )
+
+    # Calculate savings summary
+    if len(estimates) >= 2:
+        cheapest = estimates[0]["cost_total_usd"]
+        most_expensive = estimates[-1]["cost_total_usd"]
+        savings_potential = round(most_expensive - cheapest, 6) if most_expensive > 0 else 0.0
+        savings_pct = round((1 - cheapest / most_expensive) * 100, 1) if most_expensive > 0 else 0.0
+    else:
+        savings_potential = 0.0
+        savings_pct = 0.0
+
+    return {
+        "prompt_tokens_estimated": prompt_tokens,
+        "completion_tokens_estimated": request.estimated_completion_tokens or 500,
+        "cache_hit_rate": request.cache_hit_rate or 0.0,
+        "estimates": estimates,
+        "summary": {
+            "cheapest_model": estimates[0]["model_id"] if estimates else None,
+            "cheapest_cost_usd": estimates[0]["cost_total_usd"] if estimates else 0.0,
+            "most_expensive_model": estimates[-1]["model_id"] if estimates else None,
+            "most_expensive_cost_usd": estimates[-1]["cost_total_usd"] if estimates else 0.0,
+            "savings_potential_usd": savings_potential,
+            "savings_percentage": savings_pct,
+            "total_models_evaluated": len(estimates),
+        },
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)
