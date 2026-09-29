@@ -10,3 +10,4 @@
 - Tue Sep 29 03:13:35 CEST 2026: Enhanced Recent Requests table with actual cost and detailed classifier score.
 - Tue Sep 29 03:15:09 CEST 2026: Added live Execution panel to the Playground, allowing users to send queries to the recommended model.
 - Tue Sep 29 03:23:00 CEST 2026: Implemented configurable API keys per provider from the UI (Settings modal), with dynamic backend key overrides.
+- Tue Sep 29 03:24:19 CEST 2026: Added Benchmark mode in a new UI tab with battery of test prompts, and comparative table of cost/latency per model.
