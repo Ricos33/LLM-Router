@@ -28,6 +28,40 @@ export default function SettingsModal({ onClose }) {
       .catch(() => {});
   }, []);
 
+  const handleTrip = async (provider) => {
+    const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiBase}/v1/chaos/trip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, reason: `Settings simulated outage on ${provider}` }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHealth(data.all_health);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const handleReset = async (provider = 'all') => {
+    const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiBase}/v1/chaos/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHealth(data.all_health);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleSave = () => {
     localStorage.setItem('provider_keys', JSON.stringify(keys));
     setSavedSuccess(true);
@@ -64,10 +98,24 @@ export default function SettingsModal({ onClose }) {
                     <label className="font-semibold text-gray-700 text-[11px] tracking-wide">{p.name}</label>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {isTripped && (
-                      <span className="text-[9px] text-red-600 font-bold bg-red-50 px-1.5 py-0.2 rounded uppercase">
-                        Tripped
-                      </span>
+                    {isTripped ? (
+                      <button
+                        type="button"
+                        onClick={() => handleReset(p.id)}
+                        className="text-[9px] text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-1.5 py-0.5 rounded font-bold transition-colors"
+                        title="Restore circuit breaker"
+                      >
+                        ↺ Restore
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleTrip(p.id)}
+                        className="text-[9px] text-gray-400 hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded font-medium transition-colors"
+                        title="Simulate upstream failure (trip circuit)"
+                      >
+                        ⚡ Trip
+                      </button>
                     )}
                     {keys[p.id] ? (
                       <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">Configured</span>

@@ -16,6 +16,52 @@ export default function Dashboard() {
   const [tierFilter, setTierFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [chaosLoading, setChaosLoading] = useState(false);
+  const [chaosFeedback, setChaosFeedback] = useState(null);
+
+  const handleTripProvider = async (provider) => {
+    setChaosLoading(true);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiUrl}/v1/chaos/trip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, reason: `Manual simulated outage on ${provider}` }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviderHealth(data.all_health);
+        setChaosFeedback(`Simulated outage active for ${provider}. Traffic will fail over automatically.`);
+        setTimeout(() => setChaosFeedback(null), 6000);
+      }
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setChaosLoading(false);
+    }
+  };
+
+  const handleResetProvider = async (provider = 'all') => {
+    setChaosLoading(true);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiUrl}/v1/chaos/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviderHealth(data.all_health);
+        setChaosFeedback(provider === 'all' ? 'All provider circuits reset to healthy.' : `${provider} circuit restored.`);
+        setTimeout(() => setChaosFeedback(null), 4000);
+      }
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setChaosLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchMetrics = () => {
@@ -248,17 +294,51 @@ export default function Dashboard() {
 
       {/* Provider Circuit Health Grid */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <span>🛡️</span> Upstream Provider Circuit Health
-            </h3>
-            <span className="text-[11px] text-gray-400 font-medium">Automatic failover & half-open probing</span>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <span>🛡️</span> Upstream Provider Circuit Health
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                Chaos Ready
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+              Automatic failover & half-open probing. Simulate upstream provider failure to observe live failover.
+            </p>
           </div>
-          <span className="text-xs px-2.5 py-0.5 bg-gray-100 rounded-full font-mono text-gray-600 font-medium">
-            8 Providers Tracked
-          </span>
+          <div className="flex items-center gap-2">
+            {Object.values(providerHealth).some(h => h.status === 'tripped') && (
+              <button
+                onClick={() => handleResetProvider('all')}
+                disabled={chaosLoading}
+                className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-medium transition-colors"
+              >
+                ↺ Reset All Circuits
+              </button>
+            )}
+            <span className="text-xs px-2.5 py-0.5 bg-gray-100 rounded-full font-mono text-gray-600 font-medium">
+              8 Providers Tracked
+            </span>
+          </div>
         </div>
+
+        {chaosFeedback && (
+          <div className="mb-4 text-xs font-medium px-3.5 py-2 rounded-xl bg-purple-50 text-purple-800 border border-purple-200 flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span>⚡</span>
+              <span>{chaosFeedback}</span>
+            </div>
+            <button
+              onClick={() => setChaosFeedback(null)}
+              className="text-purple-400 hover:text-purple-700 text-sm font-bold"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {AUTHORIZED_PROVIDERS.map(p => {
             const h = providerHealth[p] || { status: 'healthy', consecutive_failures: 0 };
@@ -267,30 +347,53 @@ export default function Dashboard() {
             return (
               <div 
                 key={p} 
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
-                  isTripped ? 'border-red-200 bg-red-50/50' :
+                className={`p-3 rounded-xl border flex flex-col items-center justify-between text-center transition-all ${
+                  isTripped ? 'border-red-300 bg-red-50/60 shadow-xs ring-1 ring-red-200' :
                   isDegraded ? 'border-amber-200 bg-amber-50/50' :
                   'border-gray-200 bg-gray-50/40 hover:border-gray-300'
                 }`}
               >
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${
-                    isTripped ? 'bg-red-500 animate-pulse' :
-                    isDegraded ? 'bg-amber-500' :
-                    'bg-emerald-500'
-                  }`} />
-                  <span className="text-xs font-semibold capitalize text-gray-800">{p}</span>
+                <div>
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <span className={`w-2 h-2 rounded-full ${
+                      isTripped ? 'bg-red-500 animate-pulse' :
+                      isDegraded ? 'bg-amber-500' :
+                      'bg-emerald-500'
+                    }`} />
+                    <span className="text-xs font-semibold capitalize text-gray-800">{p}</span>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                    isTripped ? 'text-red-700' :
+                    isDegraded ? 'text-amber-700' :
+                    'text-emerald-700'
+                  }`}>
+                    {h.status}
+                  </span>
+                  <span className="text-[9px] text-gray-400 font-mono mt-0.5 block">
+                    {h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '0 errors'}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                  isTripped ? 'text-red-700' :
-                  isDegraded ? 'text-amber-700' :
-                  'text-emerald-700'
-                }`}>
-                  {h.status}
-                </span>
-                <span className="text-[9px] text-gray-400 font-mono mt-0.5">
-                  {h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '0 errors'}
-                </span>
+                <div className="mt-2.5 pt-2 border-t border-gray-100 w-full flex justify-center">
+                  {isTripped ? (
+                    <button
+                      onClick={() => handleResetProvider(p)}
+                      disabled={chaosLoading}
+                      title="Reset circuit breaker to healthy"
+                      className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded transition-all shadow-2xs"
+                    >
+                      ↺ Restore
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleTripProvider(p)}
+                      disabled={chaosLoading}
+                      title="Simulate outage for chaos testing"
+                      className="text-[10px] font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
+                    >
+                      ⚡ Trip Outage
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

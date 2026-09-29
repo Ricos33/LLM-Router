@@ -93,6 +93,52 @@ async def get_providers_health():
     return router_engine.circuit_breaker.get_health_status()
 
 
+class ChaosTripRequest(BaseModel):
+    provider: str
+    reason: Optional[str] = "Simulated outage via Chaos Controller"
+
+
+class ChaosResetRequest(BaseModel):
+    provider: Optional[str] = "all"
+
+
+@app.post("/v1/chaos/trip")
+async def chaos_trip_provider(request: ChaosTripRequest):
+    """
+    Simulate a provider failure or outage by intentionally tripping its circuit breaker.
+    Tests live resilient failover and alternative routing without breaking real services.
+    """
+    if not request.provider:
+        raise HTTPException(status_code=400, detail="Provider name required")
+    res = router_engine.circuit_breaker.trip_provider(
+        request.provider,
+        reason=request.reason or "Simulated outage via Chaos Controller"
+    )
+    return {
+        "status": "tripped",
+        "provider": request.provider.lower(),
+        "provider_health": res,
+        "all_health": router_engine.circuit_breaker.get_health_status()
+    }
+
+
+@app.post("/v1/chaos/reset")
+async def chaos_reset_provider(request: Optional[ChaosResetRequest] = None):
+    """
+    Reset tripped circuit breakers back to healthy status.
+    """
+    target = (request.provider if request else "all") or "all"
+    if target.lower() in ("all", "*"):
+        router_engine.circuit_breaker.reset_all()
+    else:
+        router_engine.circuit_breaker.reset_provider(target)
+    return {
+        "status": "reset",
+        "target": target,
+        "all_health": router_engine.circuit_breaker.get_health_status()
+    }
+
+
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def chat_completions(
     request: ChatCompletionRequest,

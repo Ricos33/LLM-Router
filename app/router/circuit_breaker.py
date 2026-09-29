@@ -107,3 +107,35 @@ class ProviderCircuitBreaker:
                 "remaining_cooldown_seconds": remaining_cooldown if in_cooldown else 0.0,
             }
         return result
+
+    def trip_provider(self, provider: str, reason: str = "Simulated outage via Chaos Controller") -> Dict[str, Any]:
+        """Manually trip circuit breaker for chaos resilience simulation."""
+        data = self._get_or_create(provider)
+        data["consecutive_failures"] = self.failure_threshold
+        data["total_failures"] += 1
+        data["last_failure_time"] = time.time()
+        data["last_error"] = f"[Chaos Simulation] {reason[:100]}"
+        data["status"] = "tripped"
+        logger.warning(f"Chaos simulation: Circuit breaker manually TRIPPED for provider '{provider}'")
+        return self.get_health_status().get(provider.strip().lower(), {})
+
+    def reset_provider(self, provider: str) -> Dict[str, Any]:
+        """Manually reset a provider's circuit breaker to healthy."""
+        data = self._get_or_create(provider)
+        data["consecutive_failures"] = 0
+        data["last_failure_time"] = None
+        data["last_error"] = None
+        data["status"] = "healthy"
+        logger.info(f"Circuit breaker manually RESET to healthy for provider '{provider}'")
+        return self.get_health_status().get(provider.strip().lower(), {})
+
+    def reset_all(self) -> Dict[str, Any]:
+        """Reset all tracked providers to healthy status."""
+        for p in self._providers:
+            self._providers[p]["consecutive_failures"] = 0
+            self._providers[p]["last_failure_time"] = None
+            self._providers[p]["last_error"] = None
+            self._providers[p]["status"] = "healthy"
+        logger.info("Circuit breaker: all providers manually reset to healthy.")
+        return self.get_health_status()
+
