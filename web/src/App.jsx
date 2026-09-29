@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Playground from './components/Playground';
 import Dashboard from './components/Dashboard';
 import Benchmark from './components/Benchmark';
+import Catalog from './components/Catalog';
 import SettingsModal from './components/SettingsModal';
 import { getModels } from './api/client';
 
@@ -50,6 +51,12 @@ function App() {
             >
               Benchmark
             </button>
+            <button
+              onClick={() => setActiveTab('catalog')}
+              className={activeTab === 'catalog' ? 'text-black font-medium' : 'hover:text-black transition-colors'}
+            >
+              Catalog
+            </button>
           </div>
           <div className="flex items-center gap-1.5 text-gray-500 font-medium bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -64,6 +71,7 @@ function App() {
         {activeTab === 'playground' && <Playground modelsCount={modelCount} />}
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'benchmark' && <Benchmark />}
+        {activeTab === 'catalog' && <Catalog />}
       </main>
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
