@@ -481,6 +481,69 @@ def test_estimate_cost_with_custom_tier_and_provider_filter(client):
         assert est["provider"] == "mistral"
 
 
+def test_api_budget_lifecycle(client):
+    """Test full budget status, configuration, test-alert, and clear-alerts lifecycle via API."""
+    # 1. Fetch current status
+    res = client.get("/v1/budget/status")
+    assert res.status_code == 200
+    status_data = res.json()
+    assert "status" in status_data
+    assert "current_cost_usd" in status_data
+    assert "thresholds" in status_data
+
+    # 2. Configure budget
+    res = client.post("/v1/budget/configure", json={
+        "monthly_budget_usd": 150.0,
+        "webhook_url": "https://hooks.slack.com/services/T00/B00/X00",
+        "thresholds": [50.0, 80.0, 95.0, 100.0]
+    })
+    assert res.status_code == 200
+    cfg = res.json()
+    assert cfg["success"] is True
+    assert cfg["status"]["monthly_budget_usd"] == 150.0
+    assert cfg["status"]["webhook_configured"] is True
+
+    # 3. Trigger test alert
+    res = client.post("/v1/budget/test-alert", json={"webhook_url": None})
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+
+    # 4. Clear alerts
+    res = client.post("/v1/budget/clear-alerts")
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+
+
+def test_api_analytics_extended_keys(client):
+    """Verify that /v1/analytics exposes provider_stats and prompt_cache_analytics."""
+    res = client.get("/v1/analytics")
+    assert res.status_code == 200
+    data = res.json()
+    assert "provider_stats" in data
+    assert "prompt_cache_analytics" in data
+    pca = data["prompt_cache_analytics"]
+    assert "total_prompt_tokens" in pca
+    assert "projected_cache_savings_usd" in pca
+    assert "provider_discounts" in pca
+    assert pca["provider_discounts"]["anthropic"] == 90
+
+
+def test_api_providers_probe(client):
+    """Test /v1/providers/probe synthetic latency probing endpoint."""
+    res = client.post("/v1/providers/probe", json={})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert data["total_probed"] >= 8
+    assert data["healthy_count"] >= 1
+    assert "all_health" in data
+    assert "probes" in data
+    for provider, probe in data["probes"].items():
+        assert "latency_ms" in probe
+        assert probe["latency_ms"] > 0
+        assert probe["status"] in ("healthy", "tripped")
+
+
 
 
 

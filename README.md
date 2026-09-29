@@ -4,7 +4,7 @@
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-green.svg)
 ![React](https://img.shields.io/badge/React-18.3.1-blue.svg)
-![Tests: 109 passing](https://img.shields.io/badge/Tests-109%20passing-brightgreen.svg)
+![Tests: 112 passing](https://img.shields.io/badge/Tests-112%20passing-brightgreen.svg)
 
 An intelligent, OpenAI-Compatible API Gateway with cost-optimized dynamic routing, enterprise policy rules, and empirical benchmark intelligence.
 
@@ -175,7 +175,7 @@ Run the automated test suite covering classification heuristics, enterprise rout
 pytest -v
 ```
 
-109 comprehensive tests verifying routing integrity and failover safety.
+112 comprehensive tests verifying routing integrity and failover safety.
 
 ---
 
