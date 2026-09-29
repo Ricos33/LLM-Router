@@ -228,6 +228,20 @@ async def chat_completions(
         except:
             pass
 
+    # PII Guardrails — mask sensitive data before sending to provider
+    pii_detections = []
+    if settings.pii_guardrails_enabled:
+        from app.router.guardrails import pii_guardrail
+        masked_msgs = []
+        for msg in request.messages:
+            result = pii_guardrail.scan_and_mask(msg.content)
+            if result.pii_found:
+                pii_detections.extend(result.detections)
+                masked_msgs.append(ChatMessage(role=msg.role, content=result.masked_text, name=msg.name))
+            else:
+                masked_msgs.append(msg)
+        if pii_detections:
+            request = request.model_copy(update={"messages": masked_msgs})
     try:
         completion = await router_engine.route_and_execute(
             request,
@@ -930,6 +944,45 @@ async def validate_virtual_key(
         raise HTTPException(status_code=403, detail=reason)
     vk = _vk_manager.get_key(key_id)
     return {"valid": True, "key": vk.to_dict() if vk else None}
+
+
+# ── PII Guardrails ──────────────────────────────────────────────────────────
+
+from app.router.guardrails import pii_guardrail
+
+
+class PIIScanRequest(BaseModel):
+    text: str
+
+
+@app.post("/v1/guardrails/scan", tags=["Guardrails"])
+async def scan_pii(request: PIIScanRequest):
+    """
+    Scan text for PII (emails, phones, IBANs, credit cards, IPs, SSNs).
+    Returns masked text and detection summary (types only, never values).
+    """
+    result = pii_guardrail.scan_and_mask(request.text)
+    return {
+        "masked_text": result.masked_text,
+        "pii_found": result.pii_found,
+        "detections": result.summary(),
+    }
+
+
+@app.get("/v1/guardrails/stats", tags=["Guardrails"])
+async def get_guardrail_stats():
+    """Get cumulative PII guardrail statistics."""
+    return {
+        "enabled": settings.pii_guardrails_enabled,
+        **pii_guardrail.get_stats(),
+    }
+
+
+@app.post("/v1/guardrails/toggle", tags=["Guardrails"])
+async def toggle_guardrails(enable: Optional[bool] = True):
+    """Toggle PII guardrails on/off at runtime."""
+    settings.pii_guardrails_enabled = enable
+    return {"pii_guardrails_enabled": settings.pii_guardrails_enabled}
 
 
 if __name__ == "__main__":

@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     # Gateway Cache (Semantic/Exact Match)
     gateway_cache_enabled: bool = False
     gateway_cache_ttl_seconds: int = 3600
+
+    # PII Guardrails
+    pii_guardrails_enabled: bool = False
     
     # Context Management
     auto_truncate_context: bool = True
