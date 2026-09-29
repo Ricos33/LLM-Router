@@ -176,6 +176,29 @@ async def chat_completions(
 
 
 
+MODEL_BENCHMARKS = {
+    "anthropic/claude-3-5-sonnet-20240620": {"Reasoning": 0.92, "Coding": 0.93, "Summary": 0.90, "Creative": 0.88},
+    "anthropic/claude-3-haiku-20240307": {"Reasoning": 0.75, "Coding": 0.70, "Summary": 0.82, "Creative": 0.78},
+    "anthropic/claude-3-opus-20240229": {"Reasoning": 0.88, "Coding": 0.85, "Summary": 0.89, "Creative": 0.95},
+    "openai/gpt-4o": {"Reasoning": 0.91, "Coding": 0.92, "Summary": 0.88, "Creative": 0.90},
+    "openai/gpt-4o-mini": {"Reasoning": 0.82, "Coding": 0.81, "Summary": 0.85, "Creative": 0.80},
+    "openai/o1-preview": {"Reasoning": 0.98, "Coding": 0.95, "Summary": 0.85, "Creative": 0.75},
+    "openai/o1-mini": {"Reasoning": 0.95, "Coding": 0.96, "Summary": 0.75, "Creative": 0.65},
+    "google/gemini-1.5-pro": {"Reasoning": 0.90, "Coding": 0.89, "Summary": 0.94, "Creative": 0.91},
+    "google/gemini-1.5-flash": {"Reasoning": 0.80, "Coding": 0.78, "Summary": 0.87, "Creative": 0.83},
+    "qwen/qwen-2.5-72b-instruct": {"Reasoning": 0.87, "Coding": 0.86, "Summary": 0.85, "Creative": 0.84},
+    "qwen/qwen-2.5-7b-instruct": {"Reasoning": 0.74, "Coding": 0.73, "Summary": 0.75, "Creative": 0.72},
+    "mistral/mistral-large-2407": {"Reasoning": 0.88, "Coding": 0.85, "Summary": 0.86, "Creative": 0.85},
+    "mistral/mistral-nemo": {"Reasoning": 0.76, "Coding": 0.72, "Summary": 0.77, "Creative": 0.75},
+    "deepseek/deepseek-coder-v2": {"Reasoning": 0.86, "Coding": 0.94, "Summary": 0.80, "Creative": 0.75},
+    "deepseek/deepseek-chat-v2.5": {"Reasoning": 0.88, "Coding": 0.89, "Summary": 0.84, "Creative": 0.82},
+    "meta/llama-3.1-405b-instruct": {"Reasoning": 0.89, "Coding": 0.88, "Summary": 0.86, "Creative": 0.87},
+    "meta/llama-3.1-70b-instruct": {"Reasoning": 0.85, "Coding": 0.84, "Summary": 0.83, "Creative": 0.82},
+    "meta/llama-3.1-8b-instruct": {"Reasoning": 0.70, "Coding": 0.65, "Summary": 0.72, "Creative": 0.70},
+    "xai/grok-2": {"Reasoning": 0.89, "Coding": 0.88, "Summary": 0.85, "Creative": 0.92},
+    "xai/grok-2-mini": {"Reasoning": 0.81, "Coding": 0.79, "Summary": 0.80, "Creative": 0.84},
+}
+
 @app.post("/v1/classify", response_model=ClassificationResult)
 async def classify_prompt(request: ClassifyRequest):
     """
@@ -185,26 +208,38 @@ async def classify_prompt(request: ClassifyRequest):
         raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
     
     # Run classifier
-    chat_req = [m for m in request.messages] # just pass dicts or whatever format router_engine expects, it usually takes ChatMessage, but let's pass to classifier.
-    # Actually classifier.classify_async expects List[ChatMessage]
     from app.models import ChatMessage
     chat_msgs = [ChatMessage(**m) for m in request.messages]
     
     result = await router_engine.classifier.classify_async(chat_msgs)
     
-    # Generate scores based on complexity
     comp = result.score
-    category_scores = {
-        "Reasoning": min(1.0, comp * 1.2),
-        "Coding": min(1.0, comp * 0.9 if "def " not in str(request.messages) else comp * 1.5),
-        "Summary": min(1.0, comp * 0.8),
-        "Creative": min(1.0, (1 - comp) * 1.2)
-    }
+    
+    # Simple heuristic to determine prompt weights
+    full_text = " ".join([m.get("content", "") for m in request.messages]).lower()
+    
+    is_coding = any(k in full_text for k in ["def ", "class ", "function", "react", "html", "css", "bug", "error", "script"])
+    is_summary = any(k in full_text for k in ["summarize", "tldr", "tl;dr", "resume", "shorten"])
+    is_creative = any(k in full_text for k in ["poem", "story", "joke", "imagine", "write a", "blog"])
     
     tags = []
-    if category_scores["Reasoning"] > 0.6: tags.append("Reasoning")
-    if category_scores["Coding"] > 0.6: tags.append("Coding")
-    if sum(len(m.get("content", "")) for m in request.messages) > 1000: tags.append("Long")
+    if is_coding: tags.append("Coding")
+    if is_summary: tags.append("Summary")
+    if is_creative: tags.append("Creative")
+    if comp > 0.7 or not (is_coding or is_summary or is_creative): 
+        tags.append("Reasoning")
+    if len(full_text) > 1000: tags.append("Long")
+
+    # Weights for scoring
+    weights = {"Reasoning": 1.0, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0}
+    if is_coding: weights["Coding"] = 2.0; weights["Reasoning"] = 0.5
+    if is_summary: weights["Summary"] = 2.0; weights["Reasoning"] = 0.5
+    if is_creative: weights["Creative"] = 2.0; weights["Reasoning"] = 0.5
+    
+    # Target baseline score depending on complexity
+    target_score = 0.65 + (comp * 0.25) # from 0.65 to 0.90 based on complexity
+    
+    category_scores = {k: min(1.0, comp * (1.2 if k in tags else 0.8)) for k in ["Reasoning", "Coding", "Summary", "Creative"]}
     
     # Get available models
     models_resp = await list_models()
@@ -226,14 +261,29 @@ async def classify_prompt(request: ClassifyRequest):
         elif budget == "pro":
             all_models = [m for m in all_models if (m.price_in or 0) > 2.0]
             
-    # Sort models by how well they match complexity vs cost
+    # Calculate fit for each model
     recommendations = []
     for m in all_models:
-        # Fake logic: closer price to complexity = better
-        target_price = comp * 5.0
-        actual_price = m.price_in or 0.1
-        diff = abs(target_price - actual_price)
-        conf = max(0.01, 1.0 - (diff / 10.0))
+        scores = MODEL_BENCHMARKS.get(m.id, {"Reasoning": 0.8, "Coding": 0.8, "Summary": 0.8, "Creative": 0.8})
+        
+        weighted_sum = sum(scores[k] * weights[k] for k in weights)
+        total_weight = sum(weights.values())
+        model_score = weighted_sum / total_weight
+        
+        # Penalize models that don't meet the target_score (complexity requirement)
+        if model_score < target_score:
+            penalty = (target_score - model_score) * 2.0 # Heavy penalty for being too dumb
+        else:
+            penalty = 0.0
+            
+        # Reward cheaper models IF they meet the target score
+        price_factor = (m.price_in or 0.1) / 10.0 # Normalized roughly 0 to 1.5
+        cost_efficiency = 0.0
+        if model_score >= target_score:
+            cost_efficiency = max(0, 0.5 - price_factor) # Bonus for being cheap but smart enough
+            
+        conf = max(0.01, min(0.99, model_score - penalty + cost_efficiency))
+        
         recommendations.append({
             "model_id": m.id,
             "provider": m.provider,
