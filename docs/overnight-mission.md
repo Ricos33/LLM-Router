@@ -12,6 +12,15 @@ vont sur `overnight-improvements`, JAMAIS sur main.
 Boucle : choisir UNE amélioration → implémenter → tester (backend lancé + curl, pytest, build) → commit → push → itération suivante.
 Tu t'arrêtes uniquement si : (a) le fichier /home/hatch/workspace/llm-router-watch/STOP existe, ou (b) erreurs de quota/rate-limit (dans ce cas, commit+push final, écris "quota épuisé" dans docs/overnight-progress.md et crée le fichier /home/hatch/workspace/llm-router-watch/QUOTA_EXHAUSTED, puis termine).
 
+## CHANTIER FRONTEND — amélioration gigantesque (demandé par Youssef le 29/09 à 14h30)
+Le frontend doit passer au niveau "produit commercial". Travaille-le en parallèle du backlog backend : alterne les itérations (environ 1 itération frontend pour 2 backend).
+1. **Design system** : typographie soignée (pas de police système générique), palette restreinte et cohérente, dark mode premium + light mode propre, espacement rigoureux. Zéro esthétique "généré par IA".
+2. **Playground** : micro-interactions (transitions, skeletons pendant le chargement), streaming des réponses, boutons 👍/👎 de feedback, coût estimé AVANT envoi bien visible.
+3. **Nouvelles vues** : Analytics enrichie (graphiques coût/latence par modèle, taux de hit du cache, économies cumulées), page de gestion des clés API virtuelles, historique des requêtes consultable.
+4. **UI des features du backlog** : chaque feature backend (guardrails, A/B testing, feedback, cache sémantique) doit avoir son interface dédiée.
+5. **Responsive mobile + accessibilité** : utilisable au téléphone, navigation clavier, contrastes suffisants, états vides et erreurs soignés.
+Garde l'ADN validé par Youssef : 3 colonnes (prompt / analyse / catalogue), providers à cocher, slider budget, barres noires, classification live pendant la frappe.
+
 ## Direction 1 — Catalogue : restreint aux providers connus, derniers modèles uniquement
 - Providers AUTORISÉS uniquement : Anthropic (Claude), OpenAI (GPT), Google (Gemini), Qwen (Alibaba), Mistral, DeepSeek, Meta (Llama), xAI (Grok). Aucun autre.
 - Pour chaque provider : LES 2 À 4 DERNIERS MODÈLES UNIQUEMENT. Vérifie sur le web (docs officielles, annonces récentes, OpenRouter) quels sont les modèles actuels — pas l'historique complet, pas les vieux modèles.
