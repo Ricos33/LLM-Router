@@ -193,8 +193,18 @@ async def clear_gateway_cache():
     """
     Clear the in-memory gateway semantic response cache.
     """
+    stats = global_response_cache.get_stats()
     global_response_cache.clear()
-    return {"status": "ok", "message": "Gateway cache cleared"}
+    return {"status": "ok", "message": "Gateway cache cleared", "stats_before_clear": stats}
+
+
+@app.get("/v1/cache/stats", tags=["Gateway"])
+async def get_cache_stats():
+    """
+    Semantic cache statistics: hit/miss counts, semantic hit count,
+    hit rate percentage, and cumulative cost savings.
+    """
+    return global_response_cache.get_stats()
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
