@@ -12,7 +12,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchMetrics = () => {
       getMetricsSummary().then(setSummary).catch(console.warn);
-      fetch(import.meta.env.VITE_API_URL || 'http://localhost:8000' + '/v1/metrics/recent?limit=10')
+      fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/v1/metrics/recent?limit=10')
         .then(res => res.json())
         .then(setRecent)
         .catch(console.warn);

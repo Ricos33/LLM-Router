@@ -333,6 +333,56 @@ export default function Playground({ modelsCount }) {
               )}
             </div>
 
+            {/* SAVINGS ESTIMATE */}
+            {classification.recommendations?.length > 0 && (() => {
+              const top = classification.recommendations[0];
+              // Most expensive frontier model in the catalog as baseline
+              const allRecs = classification.recommendations;
+              const maxPriceIn = Math.max(...allRecs.map(r => r.price_in || 0), 10);
+              const maxPriceOut = Math.max(...allRecs.map(r => r.price_out || 0), 50);
+              // Estimate cost per request (avg ~500 input tokens, ~300 output tokens)
+              const avgInputTokens = 500;
+              const avgOutputTokens = 300;
+              const costRecommended = ((top.price_in || 0) * avgInputTokens / 1_000_000) + ((top.price_out || 0) * avgOutputTokens / 1_000_000);
+              const costFrontier = (maxPriceIn * avgInputTokens / 1_000_000) + (maxPriceOut * avgOutputTokens / 1_000_000);
+              const savedPerReq = Math.max(0, costFrontier - costRecommended);
+              const savedPct = costFrontier > 0 ? (savedPerReq / costFrontier * 100) : 0;
+              const savedPer1K = savedPerReq * 1000;
+
+              return (
+                <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-200 p-5 shadow-sm flex flex-col gap-4">
+                  <div className="text-[10px] font-bold tracking-widest text-emerald-600 uppercase flex items-center gap-2">
+                    <span>💰</span> Savings Estimate
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-col">
+                      <div className="text-[10px] text-gray-400 font-medium uppercase">Per Request</div>
+                      <div className="text-lg font-bold text-emerald-600">${costRecommended.toFixed(5)}</div>
+                      <div className="text-[10px] text-gray-400 line-through">${costFrontier.toFixed(5)}</div>
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="text-[10px] text-gray-400 font-medium uppercase">Per 1K Reqs</div>
+                      <div className="text-lg font-bold text-emerald-600">${savedPer1K.toFixed(2)}</div>
+                      <div className="text-[10px] text-emerald-500 font-semibold">saved</div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <div className="text-[10px] text-gray-400 font-medium uppercase">Reduction</div>
+                      <div className={`text-lg font-bold ${savedPct > 50 ? 'text-emerald-600' : savedPct > 20 ? 'text-emerald-500' : 'text-gray-600'}`}>
+                        {savedPct.toFixed(0)}%
+                      </div>
+                      <div className="text-[10px] text-gray-400">vs frontier</div>
+                    </div>
+                  </div>
+                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, savedPct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Raw Data */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
               <button 
