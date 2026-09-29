@@ -8,6 +8,12 @@ import {
   testBudgetAlert,
   configureBudget,
   clearBudgetAlerts,
+  getVirtualKeys,
+  createVirtualKey,
+  revokeVirtualKey,
+  deleteVirtualKey,
+  getGuardrailsStats,
+  toggleGuardrails,
 } from '../api/client';
 
 const AUTHORIZED_PROVIDERS = [
@@ -47,6 +53,22 @@ export default function SettingsModal({ onClose }) {
   const [budgetMessage, setBudgetMessage] = useState(null);
 
   const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+  const [virtualKeys, setVirtualKeys] = useState([]);
+  const [newVKey, setNewVKey] = useState({ name: '', budget_usd: 10.0, rate_limit_rpm: 60 });
+
+  const [guardrailsStats, setGuardrailsStats] = useState(null);
+  const [guardrailsEnabled, setGuardrailsEnabled] = useState(false);
+
+
+  const loadVirtualKeys = async () => {
+    try {
+      const data = await getVirtualKeys();
+      setVirtualKeys(data.keys || []);
+    } catch (e) {
+      console.warn('Failed to load virtual keys', e);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('provider_keys');
@@ -92,6 +114,13 @@ export default function SettingsModal({ onClose }) {
       loadRules();
     } else if (activeTab === 'budget') {
       loadBudget();
+    } else if (activeTab === 'virtual') {
+      loadVirtualKeys();
+    } else if (activeTab === 'guardrails') {
+      getGuardrailsStats().then(data => {
+        setGuardrailsStats(data.stats || {});
+        setGuardrailsEnabled(data.enabled);
+      }).catch(e => console.warn(e));
     }
   }, [activeTab]);
 
@@ -190,6 +219,47 @@ export default function SettingsModal({ onClose }) {
     }, 400);
   };
 
+  const handleCreateVirtualKey = async (e) => {
+    e.preventDefault();
+    try {
+      await createVirtualKey(newVKey);
+      setNewVKey({ name: '', budget_usd: 10.0, rate_limit_rpm: 60 });
+      await loadVirtualKeys();
+    } catch (err) {
+      console.warn('Failed to create key', err);
+    }
+  };
+
+  const handleRevokeVirtualKey = async (id) => {
+    try {
+      await revokeVirtualKey(id);
+      await loadVirtualKeys();
+    } catch (err) {
+      console.warn('Failed to revoke key', err);
+    }
+  };
+
+  const handleDeleteVirtualKey = async (id) => {
+    if (!confirm('Are you sure you want to delete this key?')) return;
+    try {
+      await deleteVirtualKey(id);
+      await loadVirtualKeys();
+    } catch (err) {
+      console.warn('Failed to delete key', err);
+    }
+  };
+
+  const handleToggleGuardrails = async () => {
+    try {
+      const res = await toggleGuardrails(!guardrailsEnabled);
+      setGuardrailsEnabled(res.enabled);
+      setBudgetMessage(res.enabled ? 'Guardrails enabled' : 'Guardrails disabled');
+      setTimeout(() => setBudgetMessage(null), 3000);
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleCreateRule = async (e) => {
     e.preventDefault();
     if (!newRule.name.trim()) return;
@@ -255,6 +325,22 @@ export default function SettingsModal({ onClose }) {
                 }`}
               >
                 API Keys & Health
+              </button>
+              <button
+                onClick={() => setActiveTab('virtual')}
+                className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${
+                  activeTab === 'virtual'
+                    ? 'border-black text-txt-base'
+                    : 'border-transparent text-txt-muted hover:text-txt-base'
+                }`}
+              >
+                Virtual Keys
+              </button>
+              <button
+                onClick={() => setActiveTab('guardrails')}
+                className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${activeTab === 'guardrails' ? 'border-black text-txt-base' : 'border-transparent text-txt-muted hover:text-txt-base'}`}
+              >
+                PII Guardrails
               </button>
               <button
                 onClick={() => setActiveTab('rules')}
@@ -348,6 +434,102 @@ export default function SettingsModal({ onClose }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Tab Virtual Keys */}
+        {activeTab === 'virtual' && (
+          <div className="p-5 flex flex-col gap-4 text-[13px] overflow-y-auto">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-txt-muted">
+                Manage virtual API keys for client applications with budget and rate limits.
+              </span>
+            </div>
+
+            <form onSubmit={handleCreateVirtualKey} className="flex flex-col gap-3 p-4 bg-gray-50 border border-brd rounded-lg">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] text-txt-muted mb-0.5">Key Name / App ID</label>
+                  <input required type="text" placeholder="e.g. prod-frontend" value={newVKey.name} onChange={e => setNewVKey({...newVKey, name: e.target.value})} className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-txt-muted mb-0.5">Monthly Budget ($)</label>
+                  <input required type="number" step="0.01" value={newVKey.budget_usd} onChange={e => setNewVKey({...newVKey, budget_usd: parseFloat(e.target.value)})} className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-txt-muted mb-0.5">Rate Limit (RPM)</label>
+                  <input required type="number" value={newVKey.rate_limit_rpm} onChange={e => setNewVKey({...newVKey, rate_limit_rpm: parseInt(e.target.value)})} className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs" />
+                </div>
+              </div>
+              <button type="submit" className="self-end bg-black text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-gray-800">
+                Create Virtual Key
+              </button>
+            </form>
+
+            <div className="flex flex-col gap-2">
+              {virtualKeys.map(k => (
+                <div key={k.id} className="p-3 border border-brd rounded-lg flex items-center justify-between bg-surface">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-txt-base">{k.id}</span>
+                      {!k.active && <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase">Revoked</span>}
+                    </div>
+                    <span className="text-[11px] text-txt-muted">
+                      {k.name} • Budget: ${k.budget_usd} • {k.rate_limit_rpm} RPM
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {k.active && (
+                      <button type="button" onClick={() => handleRevokeVirtualKey(k.id)} className="text-[11px] text-amber-600 hover:underline">
+                        Revoke
+                      </button>
+                    )}
+                    <button type="button" onClick={() => handleDeleteVirtualKey(k.id)} className="text-[11px] text-red-600 hover:underline">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {virtualKeys.length === 0 && <div className="text-center py-4 text-xs text-txt-muted">No virtual keys created.</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Tab PII Guardrails */}
+        {activeTab === 'guardrails' && (
+          <div className="p-5 flex flex-col gap-4 text-[13px] overflow-y-auto">
+            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-brd">
+              <div>
+                <h3 className="font-semibold text-txt-base">PII Guardrails Enabled</h3>
+                <p className="text-xs text-txt-muted mt-1">Automatically detect and mask sensitive data (emails, phones, IBANs, etc.) before sending to external providers.</p>
+              </div>
+              <button
+                onClick={handleToggleGuardrails}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  guardrailsEnabled ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                }`}
+              >
+                {guardrailsEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+
+            {guardrailsStats && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-3">Masking Statistics (All time)</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-surface border border-brd rounded-lg">
+                    <div className="text-[10px] text-txt-muted uppercase font-bold tracking-wider">Total Detections</div>
+                    <div className="text-xl font-bold mt-1">{guardrailsStats.total_detections || 0}</div>
+                  </div>
+                  {Object.entries(guardrailsStats.by_type || {}).map(([type, count]) => (
+                    <div key={type} className="p-3 bg-surface border border-brd rounded-lg">
+                      <div className="text-[10px] text-txt-muted uppercase font-bold tracking-wider">{type}</div>
+                      <div className="text-lg font-bold mt-1">{count}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

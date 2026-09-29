@@ -143,3 +143,8 @@
 - Fixed `app/router/engine.py` routing strategy: `_build_classification_candidates` now correctly sorts models based on the selected `strategy` (cost_optimized, quality_optimized), and `decide_route` now correctly extracts `best_fit_model` from the classification metadata instead of always defaulting to the tier's default model.
 - Added `tests/test_router_strategies.py` and curl tests confirming the routing strategy properly changes model selection dynamically.
 - Tests (151) pass. Web build pass. Push successful.
+## 29/09 15:49 - UI polish for Backlog features
+- Created dedicated UIs for Virtual API Keys (creation, budget setup, RPM limits, revocation, deletion) in SettingsModal.
+- Created dedicated UI for PII Guardrails (toggle enable/disable, all-time masking statistics grouped by PII type) in SettingsModal.
+- Connected to `/v1/keys` and `/v1/guardrails` endpoints.
+- Frontend build OK.

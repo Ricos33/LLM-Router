@@ -110,3 +110,33 @@ export const clearBudgetAlerts = async () => {
   return data;
 };
 
+
+export const getVirtualKeys = async () => {
+  const { data } = await api.get('/v1/keys');
+  return data;
+};
+
+export const createVirtualKey = async (payload) => {
+  const { data } = await api.post('/v1/keys', payload);
+  return data;
+};
+
+export const revokeVirtualKey = async (id) => {
+  const { data } = await api.post(`/v1/keys/${id}/revoke`);
+  return data;
+};
+
+export const deleteVirtualKey = async (id) => {
+  const { data } = await api.delete(`/v1/keys/${id}`);
+  return data;
+};
+
+export const getGuardrailsStats = async () => {
+  const { data } = await api.get('/v1/guardrails/stats');
+  return data;
+};
+
+export const toggleGuardrails = async (enabled) => {
+  const { data } = await api.post('/v1/guardrails/toggle', { enabled });
+  return data;
+};
