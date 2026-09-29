@@ -485,9 +485,19 @@ async def classify_prompt(request: ClassifyRequest):
         # Quality gate: does this model meet the complexity threshold?
         quality_meets = model_score >= target_score
 
+        # Strategy multipliers
+        strat_cost_mult = 1.0
+        strat_qual_mult = 1.0
+        if strategy_val == "cost_optimized":
+            strat_cost_mult = 2.5
+            strat_qual_mult = 0.5
+        elif strategy_val == "quality_optimized":
+            strat_cost_mult = 0.0
+            strat_qual_mult = 1.5
+
         # Cost factor: logarithmic penalty for expensive models
         price = max(m.price_in or 0.01, 0.01)
-        cost_penalty = math.log10(1 + price) * 0.15  # mild penalty for cost
+        cost_penalty = math.log10(1 + price) * 0.15 * strat_cost_mult
 
         # Tier alignment bonus: models matching the classified tier get a clear boost
         classified_tier = result.tier.value if hasattr(result.tier, "value") else str(result.tier)
@@ -495,31 +505,30 @@ async def classify_prompt(request: ClassifyRequest):
 
         # For LOW complexity prompts (score < 0.4), strongly prefer cheap models
         if comp < 0.4:
-            # Ultra-cheap models (<= 0.15) get highest bonus, cheap (<= 0.50) good bonus, frontier heavy penalty
             if (m.price_in or 0) <= 0.15:
-                cost_bonus = 0.35
+                cost_bonus = 0.35 * strat_cost_mult
             elif (m.price_in or 0) <= 0.5:
-                cost_bonus = 0.20
+                cost_bonus = 0.20 * strat_cost_mult
             elif (m.price_in or 0) <= 2.0:
-                cost_bonus = -0.10
+                cost_bonus = -0.10 * strat_cost_mult
             else:
-                cost_bonus = -0.35  # heavy penalty for frontier on simple tasks
-            conf = max(0.01, min(0.99, model_score * 0.45 + cost_bonus + tier_bonus - cost_penalty))
+                cost_bonus = -0.35 * strat_cost_mult
+            conf = max(0.01, min(0.99, (model_score * 0.45 * strat_qual_mult) + cost_bonus + tier_bonus - cost_penalty))
         elif comp < 0.65:
             # MEDIUM complexity: balanced approach
             if quality_meets:
-                cost_bonus = max(0, 0.25 - price / 15.0)
+                cost_bonus = max(0, 0.25 - price / 15.0) * strat_cost_mult
             else:
-                cost_bonus = -0.15
-            conf = max(0.01, min(0.99, model_score * 0.65 + cost_bonus + tier_bonus - cost_penalty * 0.5))
+                cost_bonus = -0.15 * strat_cost_mult
+            conf = max(0.01, min(0.99, (model_score * 0.65 * strat_qual_mult) + cost_bonus + tier_bonus - cost_penalty * 0.5))
         else:
             # HIGH complexity: quality is paramount, cost secondary
             if model_score < target_score:
-                penalty = (target_score - model_score) * 2.5
+                penalty = (target_score - model_score) * 2.5 * strat_qual_mult
             else:
                 penalty = 0.0
-            cost_bonus = max(0, 0.15 - price / 30.0) if quality_meets else 0
-            conf = max(0.01, min(0.99, model_score - penalty + cost_bonus + tier_bonus))
+            cost_bonus = max(0, 0.15 - price / 30.0) * strat_cost_mult if quality_meets else 0
+            conf = max(0.01, min(0.99, (model_score * strat_qual_mult) - penalty + cost_bonus + tier_bonus))
 
         recommendations.append({
             "model_id": m.id,
