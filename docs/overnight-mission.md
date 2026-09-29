@@ -70,5 +70,21 @@ C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'ar
 - Ne casse pas ce qui marche : le bouton Analyze et la classification doivent rester fonctionnels après chaque itération.
 - Réponds à la fin UNIQUEMENT : résumé des améliorations + liste des commits. Rien d'autre.
 
+## ROTATION DES MODÈLES — le travail ne s'arrête jamais
+Ordre de rotation (ne jamais changer l'ordre) :
+1. `gemini-3.1-pro-high`
+2. `claude-opus-4-6-thinking`
+3. `claude-sonnet-4-6`
+4. `gpt-oss-120b-medium`
+5. `gemini-3.8-flash-high`
+
+- Au démarrage, lis `~/workspace/llm-router-watch/` : si un fichier `QUOTA_<model>` existe pour le modèle que tu utilises, ne démarre pas et termine proprement.
+- Quand TON modèle est en quota épuisé (erreurs quota / rate-limit répétées pendant plusieurs minutes, pas une erreur isolée) :
+  1. Commit + push tout ce qui est en cours (`git pull --rebase origin overnight-improvements` puis push).
+  2. Note l'épuisement dans `docs/overnight-progress.md`.
+  3. Crée `~/workspace/llm-router-watch/QUOTA_<model-id-exact>` (ex : `QUOTA_gemini-3.1-pro-high`).
+  4. Termine ton tour PROPREMENT (exit 0). Un superviseur relancera automatiquement la boucle sur le modèle suivant de la liste.
+- Ne crée JAMAIS toi-même `QUOTA_EXHAUSTED` : c'est le superviseur qui le crée quand tous les modèles sont épuisés.
+
 ## ANTI-ARRÊT — lis ceci en premier
-Tu travailles en boucle INFINIE à l'intérieur d'un SEUL tour : ne termine JAMAIS ton tour pour poser une question ou faire un résumé intermédiaire. Décide seul des priorités (la section FONCTIONNALITÉS donne des pistes) et enchaîne les itérations sans interruption. Tu ne t'arrêtes que si : le fichier STOP existe, ou ton quota est épuisé (auquel cas crée QUOTA_EXHAUSTED).
+Tu travailles en boucle INFINIE à l'intérieur d'un SEUL tour : ne termine JAMAIS ton tour pour poser une question ou faire un résumé intermédiaire. Décide seul des priorités (la section FONCTIONNALITÉS donne des pistes) et enchaîne les itérations sans interruption. Tu ne t'arrêtes que si : le fichier STOP existe, ou TON modèle est en quota épuisé (auquel cas suis le protocole ROTATION DES MODÈLES : push, journal, `QUOTA_<model>`, exit propre).
