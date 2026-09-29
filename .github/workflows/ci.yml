@@ -2,9 +2,9 @@ name: CI
 
 "on":
   push:
-    branches: [ main ]
+    branches: [ main, overnight-improvements ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, overnight-improvements ]
 
 jobs:
   test:
