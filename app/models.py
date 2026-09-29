@@ -75,3 +75,31 @@ class ModelObject(BaseModel):
 class ModelListResponse(BaseModel):
     object: str = "list"
     data: List[ModelObject]
+
+
+class ModelCompareResult(BaseModel):
+    model: str
+    provider: Optional[str] = "unknown"
+    tier: Optional[str] = "medium"
+    content: str
+    latency_ms: float
+    prompt_tokens: int
+    completion_tokens: int
+    cost_usd: float
+    error: Optional[str] = None
+
+
+class CompareRequest(BaseModel):
+    messages: List[ChatMessage]
+    models: Optional[List[str]] = None
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = None
+    provider_keys: Optional[Dict[str, str]] = None
+
+
+class CompareResponse(BaseModel):
+    prompt: str
+    results: List[ModelCompareResult]
+    cheapest_model: Optional[str] = None
+    fastest_model: Optional[str] = None
+    cost_spread_usd: float = 0.0

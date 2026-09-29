@@ -292,3 +292,39 @@ def test_analytics_endpoint(client):
     assert "total_requests" in data
 
 
+def test_compare_endpoint_default_models(client):
+    """Test /v1/compare selects top models and returns comparison."""
+    payload = {
+        "messages": [{"role": "user", "content": "How do I optimize a PostgreSQL index for full text search?"}],
+    }
+    res = client.post("/v1/compare", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "results" in data
+    assert len(data["results"]) >= 2
+    assert "prompt" in data
+    assert "cheapest_model" in data
+    assert "fastest_model" in data
+    assert "cost_spread_usd" in data
+    for r in data["results"]:
+        assert "model" in r
+        assert "latency_ms" in r
+        assert "cost_usd" in r
+
+
+def test_compare_endpoint_explicit_models(client):
+    """Test /v1/compare with explicitly specified models."""
+    payload = {
+        "models": ["openai/gpt-6-astra", "google/gemini-3.8-flash"],
+        "messages": [{"role": "user", "content": "Explain quicksort."}],
+    }
+    res = client.post("/v1/compare", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["results"]) == 2
+    models_returned = [r["model"] for r in data["results"]]
+    assert "openai/gpt-6-astra" in models_returned
+    assert "google/gemini-3.8-flash" in models_returned
+
+
+

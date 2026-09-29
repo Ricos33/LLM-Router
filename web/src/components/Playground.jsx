@@ -96,35 +96,37 @@ export default function Playground({ modelsCount }) {
     if (!input.trim() || isExecuting || !modelIds.length) return;
     setIsExecuting(true);
     setExecutions(modelIds.map(id => ({ model: id, loading: true, result: '', meta: null })));
-    
+
     try {
-      const promises = modelIds.map(async (modelId, index) => {
-        try {
-          const res = await fetch(API_BASE + '/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
-            body: JSON.stringify({
-              model: modelId,
-              messages: [{ role: 'user', content: input }],
-              stream: false
-            })
-          });
-          if (!res.ok) throw new Error('API error');
-          const data = await res.json();
-          setExecutions(prev => {
-            const next = [...prev];
-            next[index] = { model: modelId, loading: false, result: data.choices[0].message.content, meta: data.router_metadata };
-            return next;
-          });
-        } catch (e) {
-          setExecutions(prev => {
-            const next = [...prev];
-            next[index] = { model: modelId, loading: false, result: 'Error executing request.', meta: null };
-            return next;
-          });
-        }
+      const res = await fetch(API_BASE + '/v1/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
+        body: JSON.stringify({
+          models: modelIds,
+          messages: [{ role: 'user', content: input }],
+        })
       });
-      await Promise.all(promises);
+      if (!res.ok) throw new Error('API error ' + res.status);
+      const data = await res.json();
+      const updated = data.results.map(r => ({
+        model: r.model,
+        loading: false,
+        result: r.error ? `Error: ${r.error}` : r.content,
+        meta: {
+          latency_ms: r.latency_ms,
+          cost_actual_usd: r.cost_usd,
+          prompt_tokens: r.prompt_tokens,
+          completion_tokens: r.completion_tokens,
+          provider: r.provider,
+          tier: r.tier,
+          is_cheapest: r.model === data.cheapest_model,
+          is_fastest: r.model === data.fastest_model,
+        }
+      }));
+      setExecutions(updated);
+    } catch (e) {
+      console.error(e);
+      setExecutions(prev => prev.map(item => ({ ...item, loading: false, result: 'Error executing comparison.' })));
     } finally {
       setIsExecuting(false);
     }
@@ -449,7 +451,7 @@ export default function Playground({ modelsCount }) {
 
             {/* EXECUTION RESULT */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-4">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-wrap justify-between items-center gap-2">
                 <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                   Execution Compare
                 </div>
@@ -457,39 +459,91 @@ export default function Playground({ modelsCount }) {
                   <button 
                     onClick={() => handleExecute([classification.recommendations[0]?.model_id])}
                     disabled={isExecuting || !classification.recommendations?.length}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-[11px] font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-[11px] font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                   >
                     Run Top
                   </button>
                   <button 
                     onClick={() => handleExecute(classification.recommendations.slice(0, 2).map(r => r.model_id))}
                     disabled={isExecuting || classification.recommendations?.length < 2}
-                    className="px-4 py-1.5 bg-emerald-600 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                    className="px-3.5 py-1.5 bg-emerald-600 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
                   >
                     {isExecuting ? 'Running...' : 'Compare Top 2'}
                   </button>
+                  {classification.recommendations?.length >= 3 && (
+                    <button 
+                      onClick={() => handleExecute(classification.recommendations.slice(0, 3).map(r => r.model_id))}
+                      disabled={isExecuting}
+                      className="px-3 py-1.5 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      Compare Top 3
+                    </button>
+                  )}
                 </div>
               </div>
               
               {executions.length > 0 && (
-                <div className={`grid gap-4 ${executions.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <div className={`grid gap-4 ${executions.length > 2 ? 'grid-cols-1 md:grid-cols-3' : executions.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
                   {executions.map((exec, idx) => (
-                    <div key={idx} className="flex flex-col gap-2 border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 text-[11px] font-semibold text-gray-600 truncate flex justify-between items-center">
-                        <span className="truncate" title={exec.model}>{exec.model}</span>
-                        {exec.loading && <span className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></span>}
+                    <div key={idx} className="flex flex-col gap-2 border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 shadow-sm">
+                      <div className="px-3 py-2 bg-gray-100/80 border-b border-gray-200 text-[11px] font-semibold text-gray-700 flex justify-between items-center">
+                        <div className="flex items-center gap-1.5 truncate max-w-[70%]">
+                          <span className="truncate" title={exec.model}>{exec.model}</span>
+                          {exec.meta?.tier && (
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
+                              exec.meta.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                              exec.meta.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                              'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              {exec.meta.tier}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {exec.loading && <span className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></span>}
+                          {!exec.loading && exec.result && (
+                            <button
+                              onClick={() => navigator.clipboard.writeText(exec.result)}
+                              title="Copy output"
+                              className="text-[10px] text-gray-500 hover:text-black px-1.5 py-0.5 border border-gray-300 rounded bg-white"
+                            >
+                              Copy
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="p-3 text-[12px] text-gray-700 h-[250px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
+
+                      {/* Badges for fastest/cheapest in comparison */}
+                      {executions.length > 1 && exec.meta && (
+                        <div className="px-3 pt-1 flex gap-1.5 flex-wrap">
+                          {exec.meta.is_fastest && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 flex items-center gap-1">
+                              ⚡ Fastest
+                            </span>
+                          )}
+                          {exec.meta.is_cheapest && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                              💰 Lowest Cost
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="p-3 text-[12px] text-gray-700 h-[220px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
                         {exec.loading ? (
                           <div className="flex justify-center items-center h-full opacity-50">
-                            <span className="animate-pulse">Waiting for model...</span>
+                            <span className="animate-pulse">Waiting for model response...</span>
                           </div>
                         ) : exec.result}
                       </div>
+
                       {exec.meta && (
                         <div className="px-3 py-2 bg-white border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-medium">
                           <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
-                          <span>${(exec.meta.cost_actual_usd || 0).toFixed(4)}</span>
+                          {exec.meta.prompt_tokens !== undefined && (
+                            <span className="text-gray-400">{exec.meta.prompt_tokens}+{exec.meta.completion_tokens} toks</span>
+                          )}
+                          <span className="font-semibold text-gray-700">${(exec.meta.cost_actual_usd || 0).toFixed(5)}</span>
                         </div>
                       )}
                     </div>

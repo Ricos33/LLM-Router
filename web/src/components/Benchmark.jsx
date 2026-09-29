@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getModels } from '../api/client';
 
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 const BENCHMARK_PROMPTS = [
   { id: 'simple', label: 'Simple Greeting', text: 'Hello, how are you?' },
   { id: 'coding', label: 'Coding Test', text: 'Write a Python function to reverse a linked list.' },
@@ -45,7 +47,7 @@ export default function Benchmark() {
         setResults(prev => ({ ...prev, [modelId]: { ...prev[modelId], [prompt.id]: { loading: true } } }));
         
         try {
-          const res = await fetch('http://localhost:8000/v1/chat/completions', {
+          const res = await fetch(`${API_BASE}/v1/chat/completions`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',

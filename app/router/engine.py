@@ -24,6 +24,7 @@ from app.backends import (
     AgyBackend,
 )
 from app.storage import MetricsTracker, RequestMetric
+from app.catalog import get_model_by_id, get_model_pricing
 
 logger = logging.getLogger(__name__)
 
@@ -329,6 +330,22 @@ class RouterEngine:
                 reasons=[f"Explicit Agy model target requested: {request.model}"],
             )
 
+        # Check if explicit curated catalog model was requested
+        catalog_model = get_model_by_id(req_model)
+        if catalog_model and req_model not in ("router-auto", "auto", ""):
+            tier_val = catalog_model.tier or "medium"
+            tier_enum = ModelTier(tier_val) if tier_val in [t.value for t in ModelTier] else ModelTier.MEDIUM
+            backend = self.cheap_backend if tier_enum == ModelTier.CHEAP else self.frontier_backend
+            score = 1.0 if tier_enum == ModelTier.FRONTIER else 0.5 if tier_enum == ModelTier.MEDIUM else 0.1
+            return RoutingDecision(
+                tier=tier_enum,
+                model_name=catalog_model.id,
+                backend=backend,
+                provider_name=catalog_model.provider or "unknown",
+                classifier_score=score,
+                reasons=[f"Explicit curated model requested: {catalog_model.id} ({tier_val} tier)"],
+            )
+
         # Rule 3: Intelligent classification
         classification: ClassificationResult = self.classifier.classify(request.messages)
 
@@ -426,7 +443,13 @@ class RouterEngine:
         )
 
         # Actual cost depending on provider and tier
-        if decision.provider_name == "agy":
+        price_in, price_out = get_model_pricing(decision.model_name)
+        if price_in > 0 or price_out > 0:
+            cost_actual = (
+                (prompt_tokens / 1_000_000.0) * price_in
+                + (completion_tokens / 1_000_000.0) * price_out
+            )
+        elif decision.provider_name == "agy":
             cost_actual = (
                 (prompt_tokens / 1_000_000.0) * settings.agy_prompt_price_per_m
                 + (completion_tokens / 1_000_000.0) * settings.agy_completion_price_per_m

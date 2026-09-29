@@ -39,3 +39,12 @@ export const getModels = async () => {
   const { data } = await api.get('/v1/models');
   return data.data; // ModelListResponse format
 };
+
+export const compareModels = async (messages, models = null, providerKeys = null) => {
+  const headers = providerKeys ? { 'X-Provider-Keys': JSON.stringify(providerKeys) } : {};
+  const payload = { messages };
+  if (models && models.length > 0) payload.models = models;
+  const { data } = await api.post('/v1/compare', payload, { headers });
+  return data;
+};
+
