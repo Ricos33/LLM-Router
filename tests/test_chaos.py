@@ -91,3 +91,29 @@ def test_router_prioritizes_healthy_providers_over_tripped():
 
     # Clean up
     engine.circuit_breaker.reset_all()
+
+
+def test_circuit_breaker_latency_tracking():
+    cb = ProviderCircuitBreaker()
+    cb.record_latency("mistral", 45.2)
+    cb.record_latency("mistral", 55.8)
+    cb.record_success("mistral")
+
+    health = cb.get_health_status()
+    assert "mistral" in health
+    assert health["mistral"]["last_latency_ms"] == 55.8
+    assert health["mistral"]["avg_latency_ms"] == 50.5
+    assert health["mistral"]["availability_rate_pct"] == 100.0
+
+
+def test_probe_providers_endpoint(client):
+    res = client.post("/v1/providers/probe", json={"providers": ["anthropic", "openai"]})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert data["total_probed"] == 2
+    assert "anthropic" in data["probes"]
+    assert "openai" in data["probes"]
+    assert data["probes"]["anthropic"]["latency_ms"] > 0
+    assert data["probes"]["anthropic"]["available"] is True
+

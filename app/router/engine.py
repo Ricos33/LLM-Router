@@ -630,6 +630,7 @@ class RouterEngine:
             raise RuntimeError(f"All {len(attempt_queue)} model execution attempts failed: {fallback_history}")
 
         latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+        self.circuit_breaker.record_latency(executed_decision.provider_name, latency_ms)
 
         # Step 3: Cost calculation
         prompt_tokens = response.usage.prompt_tokens

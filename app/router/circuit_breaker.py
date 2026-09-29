@@ -32,8 +32,19 @@ class ProviderCircuitBreaker:
                 "last_success_time": None,
                 "last_error": None,
                 "status": "healthy",
+                "last_latency_ms": None,
+                "latency_samples": [],
             }
         return self._providers[p]
+
+    def record_latency(self, provider: str, latency_ms: float) -> None:
+        """Record request latency sample for provider."""
+        data = self._get_or_create(provider)
+        data["last_latency_ms"] = round(latency_ms, 2)
+        samples = data.setdefault("latency_samples", [])
+        samples.append(latency_ms)
+        if len(samples) > 20:
+            samples.pop(0)
 
     def record_success(self, provider: str) -> None:
         """Record successful completion, resetting consecutive failures to zero."""
@@ -97,6 +108,11 @@ class ProviderCircuitBreaker:
                     in_cooldown = True
                     remaining_cooldown = round(self.cooldown_seconds - elapsed, 1)
 
+            samples = d.get("latency_samples", [])
+            avg_lat = round(sum(samples) / len(samples), 1) if samples else None
+            total_reqs = d["total_successes"] + d["total_failures"]
+            avail_rate = round(d["total_successes"] / total_reqs * 100, 1) if total_reqs > 0 else 100.0
+
             result[p] = {
                 "status": d["status"],
                 "available": not in_cooldown,
@@ -105,6 +121,9 @@ class ProviderCircuitBreaker:
                 "total_failures": d["total_failures"],
                 "last_error": d["last_error"],
                 "remaining_cooldown_seconds": remaining_cooldown if in_cooldown else 0.0,
+                "last_latency_ms": d.get("last_latency_ms"),
+                "avg_latency_ms": avg_lat,
+                "availability_rate_pct": avail_rate,
             }
         return result
 
