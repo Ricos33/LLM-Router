@@ -204,9 +204,7 @@ class RouterEngine:
     def _build_classification_candidates(self, strategy: str) -> List[Dict[str, Any]]:
         """Shortlist catalog models for per-model Jev evaluation.
 
-        Picks up to 2 models per tier (cheap/medium/frontier) so Jev can
-        score each candidate's fit against its own profile (pricing, context
-        window, benchmarks) instead of answering generic tier questions.
+        Picks up to 2 models per tier (cheap/medium/frontier) based on strategy.
         """
         try:
             from app.catalog import MODEL_BENCHMARKS
@@ -214,11 +212,19 @@ class RouterEngine:
             by_tier: Dict[str, List[Any]] = {}
             for m in CURATED_MODELS:
                 tier = str(getattr(m, "tier", "") or "").lower()
-                # Normalize enum-ish values ("ModelTier.FRONTIER", "frontier") 
                 tier = tier.split(".")[-1]
                 by_tier.setdefault(tier, []).append(m)
+            
             for tier in ("cheap", "medium", "frontier"):
-                shortlist.extend(by_tier.get(tier, [])[:2])
+                tier_models = by_tier.get(tier, [])
+                if strategy == "cost_optimized":
+                    tier_models.sort(key=lambda x: (x.price_in or 0) + (x.price_out or 0))
+                elif strategy == "quality_optimized":
+                    tier_models.sort(key=lambda x: -sum(MODEL_BENCHMARKS.get(x.id, {}).values()))
+                else:  # balanced
+                    # default order in CURATED_MODELS
+                    pass
+                shortlist.extend(tier_models[:2])
             
             dumped = []
             for m in shortlist[:6]:
@@ -462,33 +468,35 @@ class RouterEngine:
                 reasons=classification.reasons,
             )
 
-        if classification.tier == ModelTier.FRONTIER:
-            return RoutingDecision(
-                tier=ModelTier.FRONTIER,
-                model_name=self.frontier_backend.default_model,
-                backend=self.frontier_backend,
-                provider_name=settings.frontier_provider,
-                classifier_score=classification.score,
-                reasons=classification.reasons,
-            )
+        # Try to use best fit model if available, otherwise default to tier backend
+        best_fit = classification.metadata.get("best_fit_model") if classification.metadata else None
+        best_model_obj = get_model_by_id(best_fit) if best_fit else None
+
+        if best_model_obj:
+            backend = self.cheap_backend if classification.tier == ModelTier.CHEAP else self.frontier_backend
+            provider = best_model_obj.provider or "unknown"
+            model_name = best_model_obj.id
+        elif classification.tier == ModelTier.FRONTIER:
+            backend = self.frontier_backend
+            provider = settings.frontier_provider
+            model_name = self.frontier_backend.default_model
         elif classification.tier == ModelTier.MEDIUM:
-            return RoutingDecision(
-                tier=ModelTier.MEDIUM,
-                model_name=self.frontier_backend.default_model,
-                backend=self.frontier_backend,
-                provider_name=settings.frontier_provider,
-                classifier_score=classification.score,
-                reasons=classification.reasons,
-            )
+            backend = self.frontier_backend
+            provider = settings.frontier_provider
+            model_name = self.frontier_backend.default_model
         else:
-            return RoutingDecision(
-                tier=ModelTier.CHEAP,
-                model_name=self.cheap_backend.default_model,
-                backend=self.cheap_backend,
-                provider_name=settings.cheap_provider,
-                classifier_score=classification.score,
-                reasons=classification.reasons,
-            )
+            backend = self.cheap_backend
+            provider = settings.cheap_provider
+            model_name = self.cheap_backend.default_model
+
+        return RoutingDecision(
+            tier=classification.tier,
+            model_name=model_name,
+            backend=backend,
+            provider_name=provider,
+            classifier_score=classification.score,
+            reasons=classification.reasons,
+        )
 
     def get_fallback_candidates(self, primary_decision: RoutingDecision) -> List[RoutingDecision]:
         """

@@ -43,17 +43,17 @@ def _build_fit_question(candidate: Dict[str, Any]) -> Dict[str, Any]:
         "type": "score",
         "instructions": (
             f"Rate how well suited the model '{name}' (provider: {provider}, tier: {tier}) "
-            f"is for THIS request. Model profile — {price_txt}; context window {context_txt}; "
-            f"benchmarks [{bench_txt}]. "
-            "Weigh: (1) whether the request complexity justifies the cost — prefer cheaper "
-            "models for simple requests; (2) whether the model's strengths match the request "
-            "type (reasoning, coding, summarization, creativity, conversation); "
-            "(3) whether the request fits comfortably in the context window."
+            f"is for THIS request. Context window: {context_txt}, Pricing: {price_txt}. "
+            f"Benchmarks: [{bench_txt}]. "
+            "Consider: 1) Is the cost justified for this request? Prefer cheaper models for simple tasks. "
+            "2) Does the model's capabilities (from benchmarks) align with the prompt's requirements? "
+            "3) Will the context length suffice? "
+            "Provide a score from 0.0 to 1.0 reflecting the optimal balance of cost, capability, and constraints."
         ),
         "criteria": [
-            "0.0-0.3: poor fit — overkill cost for the complexity, or mismatched capabilities",
-            "0.4-0.6: acceptable fit — can handle the request but not the optimal choice",
-            "0.7-1.0: strong fit — complexity, strengths and cost are well aligned",
+            "0.0-0.3: poor fit (overkill cost, underpowered, or mismatched capabilities)",
+            "0.4-0.7: acceptable fit (viable but not the ideal balance)",
+            "0.8-1.0: strong fit (excellent balance of cost, capability, and constraints)",
         ],
     }
 
@@ -107,21 +107,33 @@ class JevClassifier(BaseClassifier):
         questions: Dict[str, Any] = {
             "tier": {
                 "type": "choice",
-                "instructions": "Determine the optimal LLM model tier (cheap, medium, or frontier) to handle this conversation/request based on complexity, reasoning depth, and technical requirements.",
+                "instructions": "Determine the optimal LLM model tier (cheap, medium, or frontier) to handle this conversation/request based on complexity, reasoning depth, and technical requirements. Focus on minimizing cost without sacrificing quality.",
                 "criteria": {
-                    "cheap": "Simple, routine queries, greetings, basic facts, straightforward translations or summaries.",
-                    "medium": "Moderate complexity, intermediate tasks, multi-step instructions, standard code snippets.",
-                    "frontier": "Complex reasoning, advanced coding, system architecture, mathematical proofs, deep technical troubleshooting."
+                    "cheap": "Simple, routine queries, greetings, basic facts, straightforward translations or summaries. Low risk of failure.",
+                    "medium": "Moderate complexity, intermediate tasks, multi-step instructions, standard code snippets, structured outputs.",
+                    "frontier": "Complex reasoning, advanced coding, system architecture, mathematical proofs, deep technical troubleshooting, nuance-heavy creative tasks."
                 }
             },
             "complexity": {
                 "type": "score",
-                "instructions": "Rate the overall technical and reasoning complexity of the request.",
+                "instructions": "Rate the overall technical and reasoning complexity of the request from 0.0 (simplest) to 1.0 (hardest).",
                 "criteria": [
-                    "Low complexity: routine or simple query",
-                    "Moderate complexity: intermediate tasks",
-                    "High complexity: intricate reasoning or advanced problem-solving"
+                    "0.0-0.3: Low complexity - routine, factual, conversational.",
+                    "0.4-0.7: Moderate complexity - multi-step, structural, analytical.",
+                    "0.8-1.0: High complexity - intricate reasoning, novel problem-solving, advanced algorithms."
                 ]
+            },
+            "domain": {
+                "type": "choice",
+                "instructions": "Identify the primary domain or topic of the request.",
+                "criteria": {
+                    "code_engineering": "Programming, software development, debugging, system design.",
+                    "data_engineering": "Data manipulation, SQL, ETL, analytics.",
+                    "complex_reasoning": "Math, logic, puzzles, deep analysis.",
+                    "creative_writing": "Storytelling, poetry, ideation, drafting content.",
+                    "content_summary": "Summarization, extraction, parsing.",
+                    "conversational": "General chat, greetings, casual interaction."
+                }
             }
         }
         # Per-model fit questions, tailored to each candidate's profile
