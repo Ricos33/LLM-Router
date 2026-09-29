@@ -153,3 +153,7 @@
 - Built interactive 👍/👎 Feedback buttons in Playground execution panel connected to `/v1/feedback`.
 - Feedback logic tracks per-execution state avoiding duplicates.
 - All tests pass (152). Frontend build OK.
+## 29/09 16:01 - Semantic Cache UI
+- Added Semantic Cache stats dashboard card visualizing hit rate, hits vs semantic hits, and cumulative USD savings.
+- Wired frontend `Dashboard.jsx` to fetch data from `/v1/cache/stats`.
+- Tested build. Build OK. Pushed.
