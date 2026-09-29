@@ -4,7 +4,7 @@
 Nouveau cycle demandé par Youssef le 29/09 à 14h20. En plus de la boucle d'amélioration continue, ces 3 chantiers sont PRIORITAIRES :
 1. **Fine-tuning du JSON envoyé à Jev** : le payload SystemOne doit être affiné pour de meilleurs résultats de routage. Améliore le schéma (champs, pondérations, fit scoring par modèle candidat), la sélection des candidats, et la calibration des scores. La clé Jev est encore vide (mock actif) : tout doit être excellent ET testé en mock, prêt pour la vraie clé.
 2. **La partie "routing strategy" ne fonctionne pas bien** (constat de Youssef) : diagnostique pourquoi (les stratégies ne changent pas réellement le routage ? UI déconnectée du backend ?), répare, et prouve avec des tests + curl que chaque stratégie (balanced, cost_optimized, quality_optimized, etc.) produit un routage différent et cohérent.
-3. **Améliorations de fonctionnalités** : continue d'ajouter des features utiles (voir section FONCTIONNALITÉS), en gardant le repo propre et présentable pour GitHub/LinkedIn.
+3. **Améliorations de fonctionnalités** : implémente le BACKLOG VERROUILLÉ ci-dessous (validé par Youssef), dans l'ordre, en gardant le repo propre et présentable pour GitHub/LinkedIn.
 
 Tu travailles de façon AUTONOME toute la nuit sur /home/hatch/workspace/LLM-Router,
 SUR LA BRANCHE `overnight-improvements` (déjà créée, déjà checkout). Tous les commits et pushs
@@ -30,27 +30,27 @@ Tu t'arrêtes uniquement si : (a) le fichier /home/hatch/workspace/llm-router-wa
 - Garde l'ADN validé : 3 colonnes (prompt / analyse / catalogue), bouton Analyze, providers à cocher, slider budget, barres noires.
 - Chaque élément doit avoir une raison d'être. Teste visuellement via le build (pas de screenshot possible sur cette VM).
 
-## CARTE BLANCHE — pousse les limites
-Youssef donne carte blanche totale : toutes les améliorations possibles, en te référant au web en continu (derniers modèles, prix à jour, benchmarks, best practices UI/UX), et en poussant chaque sujet au fond. Pistes à explorer (non exhaustif, ajoute les tiennes) :
-- **Économies** : le pitch d'origine du projet — montre l'argent économisé. Estimation du coût par requête (modèle recommandé vs frontier systématique), dashboard des économies, stats de distribution des tiers recommandés.
-- **Classifier excellent sans clé** : le fallback heuristique local doit être très bon (c'est ce que la démo utilisera sans clés API).
-- **Performance** : cache des classifications, debounce de la classification live, builds optimisés.
-- **Playground premium** : responsive mobile, accessibilité, micro-interactions, états vides/erreurs soignés.
-- **README portfolio** : badges, quickstart impeccable, architecture mermaid à jour avec les nouveaux modules.
-- **Tests** : coverage du classifier (cas limites), tests du filtrage providers/budget, tests des nouveaux endpoints.
-- **Hygiène** : refactorise proprement tout module devenu confus ; supprime le code mort.
-Chaque idée suivie jusqu'au bout : implémentée, testée, committée, poussée.
+## BACKLOG VERROUILLÉ — imposé par Lmoudir, validé par Youssef le 29/09 à 14h30
+La carte blanche est TERMINÉE. Tu n'inventes plus de fonctionnalités : tu implémentes CE backlog, DANS L'ORDRE, un item à la fois. Chaque item = une itération (découpe en sous-itérations si trop gros, chacune testée et committée).
+Contexte marché (recherche Lmoudir 29/09) : les gateways de référence sont LiteLLM (virtual keys, budgets, fallbacks), Portkey (cache sémantique, 50+ guardrails), Cloudflare AI Gateway (cache, rate limiting), OpenRouter (fallbacks). Ce backlog aligne le routeur sur ces standards.
 
-## FONCTIONNALITÉS — ton jugement, recherche web profonde
-Au-delà de la liste ci-dessus : ajoute TOUTE fonctionnalité que tu juges bonne pour le projet. Passe du temps sur le web : étudie les routeurs et gateways existants (OpenRouter, Jev Router, LiteLLM, Portkey, OpenAI, Vercel AI Gateway...), repère ce qui fait leur force, et implémente ce qui rendrait ce routeur objectivement meilleur et plus impressionnant en portfolio. Exemples pour démarrer (dépasse-les) :
-- Fallback automatique : si le modèle recommandé échoue ou timeout, retry transparent sur le suivant.
-- Comparaison côte-à-côte : même prompt envoyé à 2-3 modèles, résultats et coûts comparés.
-- Mode benchmark : batterie de prompts types, tableau coût/qualité/vitesse estimés par modèle.
-- Historique des requêtes + analytics enrichies (persistance locale).
-- Export des résultats (JSON/CSV).
-- Clés API par provider configurables depuis l'UI (stockage local).
-- Rate limiting / budget mensuel avec alertes.
-Ne te limite pas : si une fonctionnalité sert la vision (routeur intelligent, économique, présentable), construis-la.
+### Ordre d'exécution (ne pas changer l'ordre)
+1. **Fallback réel sur échec** — `get_fallback_candidates()` existe dans app/router/engine.py : vérifie qu'il est branché sur l'EXÉCUTION réelle. Si le backend primaire timeout ou renvoie une erreur, retry transparent sur le candidat suivant avec backoff exponentiel + jitter. Preuve : test qui simule un backend en échec et vérifie que la réponse vient du fallback.
+2. **Timeouts configurables par tier** — chaque tier (cheap/medium/frontier) a son timeout propre, configurable via settings/env. Le timeout déclenche le fallback (item 1).
+3. **Cache sémantique** — le ResponseCache actuel ne fait que l'exact-match. Ajoute la détection de prompts quasi-identiques (normalisation agressive + similarité textuelle robuste ; embeddings seulement si une clé est disponible). Le dashboard montre le taux de hit et les $ économisés.
+4. **Clés API virtuelles** — émettre des clés par application/équipe (ex: `sk-router-...`), chacune avec son budget et son rate limit propres. Les vraies clés providers restent cachées côté serveur. Endpoints : créer/lister/révoquer. Standard LiteLLM/Portkey.
+5. **Guardrails PII** — avant d'envoyer un prompt au provider : détection et masquage des données personnelles (emails, téléphones, IBAN, noms propres configurables). Opt-in par clé virtuelle ou global. Logger CE QUI a été masqué (type de donnée), jamais la valeur.
+6. **Feedback loop** — endpoint pour noter une réponse (👍/👎) ; le feedback ajuste les fit scores du classifier au fil du temps (poids croissant avec le nombre de votes, anti-abus basique). UI : boutons dans le Playground.
+7. **A/B testing** — router un % configurable du trafic vers un modèle "challenger" et comparer coût/latence/feedback dans le dashboard.
+
+### Definition of Done (chaque item, sans exception)
+- `pytest -q` vert, avec nouveaux tests couvrant le comportement (cas limites inclus).
+- Preuve `curl` contre le backend lancé : l'item se comporte comme décrit.
+- Entrée datée dans docs/overnight-progress.md.
+- Commit (anglais, style existant) + push sur overnight-improvements. JAMAIS main.
+
+### Quand le backlog est épuisé
+Reviens sur : affinage des scores Jev / calibration, vérification de prix sur le web, polish UI, ajout de tests. Ne réinvente pas de features hors backlog.
 
 ## RÈGLE D'OR — NE RESTE JAMAIS BLOQUÉ
 C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'arrêter en attendant quoi que ce soit.
@@ -58,7 +58,7 @@ C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'ar
 - Si une étape échoue 3 fois de suite (build, test, curl, push...) : abandonne cette amélioration précise (`git checkout -- .` pour annuler le sale), note l'échec dans docs/overnight-progress.md, et passe IMMÉDIATEMENT à l'amélioration suivante.
 - Git : toujours `git pull --rebase origin overnight-improvements` avant push. Si le push échoue après 2 tentatives, garde les commits en local et continue — la prochaine itération retentera le push.
 - Ne demande JAMAIS de confirmation, ne pose JAMAIS de question, n'attends JAMAIS une entrée : décide seul et avance.
-- Si tu es à court d'idées d'améliorations : affine les scores Jev, vérifie un prix de modèle sur le web, polis un détail UI, ajoute un test. Il y a toujours quelque chose.
+- Si tu es à court d'idées d'améliorations : prends le prochain item du BACKLOG VERROUILLÉ. Si le backlog est épuisé : affine les scores Jev, vérifie un prix de modèle sur le web, polis un détail UI, ajoute un test. Il y a toujours quelque chose.
 
 ## Boucle de travail — À CHAQUE itération, dans l'ordre :
 1. Choisis UNE amélioration concrète (alterne intelligemment : catalogue/jev/backend/frontend).
@@ -93,4 +93,4 @@ Ordre de rotation (ne jamais changer l'ordre) :
 - Ne crée JAMAIS toi-même `QUOTA_EXHAUSTED` : c'est le superviseur qui le crée quand tous les modèles sont épuisés.
 
 ## ANTI-ARRÊT — lis ceci en premier
-Tu travailles en boucle INFINIE à l'intérieur d'un SEUL tour : ne termine JAMAIS ton tour pour poser une question ou faire un résumé intermédiaire. Décide seul des priorités (la section FONCTIONNALITÉS donne des pistes) et enchaîne les itérations sans interruption. Tu ne t'arrêtes que si : le fichier STOP existe, ou TON modèle est en quota épuisé (auquel cas suis le protocole ROTATION DES MODÈLES : push, journal, `QUOTA_<model>`, exit propre).
+Tu travailles en boucle INFINIE à l'intérieur d'un SEUL tour : ne termine JAMAIS ton tour pour poser une question ou faire un résumé intermédiaire. Décide seul des priorités (le BACKLOG VERROUILLÉ donne l'ordre exact) et enchaîne les itérations sans interruption. Tu ne t'arrêtes que si : le fichier STOP existe, ou TON modèle est en quota épuisé (auquel cas suis le protocole ROTATION DES MODÈLES : push, journal, `QUOTA_<model>`, exit propre).
