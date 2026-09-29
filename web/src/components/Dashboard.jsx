@@ -1,27 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { getMetricsSummary, getModels } from '../api/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
+
+const AUTHORIZED_PROVIDERS = ['anthropic', 'openai', 'google', 'qwen', 'mistral', 'deepseek', 'meta', 'xai'];
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [models, setModels] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [providerHealth, setProviderHealth] = useState({});
   const [timeseriesMetric, setTimeseriesMetric] = useState('requests');
+  const [tierFilter, setTierFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
     const fetchMetrics = () => {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       getMetricsSummary().then(setSummary).catch(console.warn);
-      fetch(`${apiUrl}/v1/metrics/recent?limit=10`)
+      fetch(`${apiUrl}/v1/metrics/recent?limit=50`)
         .then(res => res.json())
         .then(setRecent)
         .catch(console.warn);
       fetch(`${apiUrl}/v1/analytics`)
         .then(res => res.json())
         .then(setAnalytics)
+        .catch(console.warn);
+      fetch(`${apiUrl}/v1/providers/health`)
+        .then(res => res.json())
+        .then(setProviderHealth)
         .catch(console.warn);
       getModels().then(setModels).catch(console.warn);
     };
@@ -74,6 +84,15 @@ export default function Dashboard() {
       saved: Number((h.saved || 0).toFixed(4)),
       cost: Number((h.cost || 0).toFixed(4))
     };
+  });
+
+  const filteredRecent = recent.filter(req => {
+    const matchesTier = tierFilter === 'all' || req.routed_tier?.toLowerCase() === tierFilter.toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || 
+      (req.prompt_preview || '').toLowerCase().includes(query) ||
+      (req.actual_model || '').toLowerCase().includes(query);
+    return matchesTier && matchesSearch;
   });
 
   return (
@@ -227,6 +246,57 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Provider Circuit Health Grid */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span>🛡️</span> Upstream Provider Circuit Health
+            </h3>
+            <span className="text-[11px] text-gray-400 font-medium">Automatic failover & half-open probing</span>
+          </div>
+          <span className="text-xs px-2.5 py-0.5 bg-gray-100 rounded-full font-mono text-gray-600 font-medium">
+            8 Providers Tracked
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          {AUTHORIZED_PROVIDERS.map(p => {
+            const h = providerHealth[p] || { status: 'healthy', consecutive_failures: 0 };
+            const isTripped = h.status === 'tripped';
+            const isDegraded = h.status === 'degraded';
+            return (
+              <div 
+                key={p} 
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                  isTripped ? 'border-red-200 bg-red-50/50' :
+                  isDegraded ? 'border-amber-200 bg-amber-50/50' :
+                  'border-gray-200 bg-gray-50/40 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className={`w-2 h-2 rounded-full ${
+                    isTripped ? 'bg-red-500 animate-pulse' :
+                    isDegraded ? 'bg-amber-500' :
+                    'bg-emerald-500'
+                  }`} />
+                  <span className="text-xs font-semibold capitalize text-gray-800">{p}</span>
+                </div>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                  isTripped ? 'text-red-700' :
+                  isDegraded ? 'text-amber-700' :
+                  'text-emerald-700'
+                }`}>
+                  {h.status}
+                </span>
+                <span className="text-[9px] text-gray-400 font-mono mt-0.5">
+                  {h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '0 errors'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Hourly Activity & Top Models Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Timeseries Chart */}
@@ -332,22 +402,62 @@ export default function Dashboard() {
       
       {/* Recent Requests Table */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mt-6">
-        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <span>📋</span> Recent Requests
-          </h3>
-          <div className="flex items-center gap-2">
+        <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 justify-between items-center bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span>📋</span> Recent Requests
+            </h3>
+            <span className="text-xs bg-gray-200/70 text-gray-600 px-2 py-0.5 rounded-full font-mono">
+              {filteredRecent.length} / {recent.length}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Tier Filter Pills */}
+            <div className="flex bg-white border border-gray-200 rounded-lg p-0.5 text-[11px] font-medium shadow-2xs">
+              {['all', 'cheap', 'medium', 'frontier'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTierFilter(t)}
+                  className={`px-2 py-0.5 rounded capitalize transition-colors ${
+                    tierFilter === t ? 'bg-black text-white font-semibold' : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search prompt or model..."
+                className="px-2.5 py-1 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-black w-44 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1 text-gray-400 hover:text-black text-xs"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
             <a
               href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/csv`}
               download="llm_router_metrics.csv"
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
             >
               <span>📥</span> CSV
             </a>
             <a
               href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/json`}
               download="llm_router_metrics.json"
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
             >
               <span>📄</span> JSON
             </a>
@@ -364,42 +474,91 @@ export default function Dashboard() {
                 <th className="px-5 py-3 text-right">Latency</th>
                 <th className="px-5 py-3 text-right">Cost</th>
                 <th className="px-5 py-3 text-right">Saved</th>
-                <th className="px-4 py-3 text-center">Action</th>
+                <th className="px-4 py-3 text-center">Inspect</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {recent.length > 0 ? recent.map((req, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[200px]" title={req.prompt_preview}>
-                    {req.prompt_preview || 'Empty prompt'}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold tracking-wide uppercase ${
-                      req.routed_tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
-                      req.routed_tier === 'medium' ? 'bg-blue-100 text-blue-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {req.routed_tier}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 font-mono text-[12px] truncate max-w-[150px]">{req.actual_model}</td>
-                  <td className="px-5 py-3 text-right font-mono text-[12px] text-gray-500">{(req.classifier_score || 0).toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
-                  <td className="px-5 py-3 text-right font-mono text-[12px]">${(req.cost_actual || 0).toFixed(4)}</td>
-                  <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => navigator.clipboard.writeText(req.prompt_preview || '')}
-                      title="Copy prompt"
-                      className="px-2 py-1 text-[11px] text-gray-500 hover:text-black border border-gray-200 rounded hover:bg-white transition-colors"
-                    >
-                      Copy
-                    </button>
-                  </td>
-                </tr>
+              {filteredRecent.length > 0 ? filteredRecent.map((req, i) => (
+                <Fragment key={i}>
+                  <tr 
+                    onClick={() => setExpandedRow(expandedRow === i ? null : i)}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[200px]" title={req.prompt_preview}>
+                      {req.prompt_preview || 'Empty prompt'}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold tracking-wide uppercase ${
+                        req.routed_tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                        req.routed_tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {req.routed_tier}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 font-mono text-[12px] truncate max-w-[150px]">{req.actual_model}</td>
+                    <td className="px-5 py-3 text-right font-mono text-[12px] text-gray-500">{(req.classifier_score || 0).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
+                    <td className="px-5 py-3 text-right font-mono text-[12px]">${(req.cost_actual || 0).toFixed(4)}</td>
+                    <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
+                    <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => setExpandedRow(expandedRow === i ? null : i)}
+                          title="Toggle details"
+                          className="px-2 py-1 text-[11px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-white transition-colors"
+                        >
+                          {expandedRow === i ? '▲' : '▼'}
+                        </button>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(req.prompt_preview || '')}
+                          title="Copy prompt"
+                          className="px-2 py-1 text-[11px] text-gray-500 hover:text-black border border-gray-200 rounded hover:bg-white transition-colors"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedRow === i && (
+                    <tr className="bg-gray-50/80">
+                      <td colSpan="8" className="p-4 border-t border-gray-100">
+                        <div className="flex flex-col gap-2.5 text-xs text-gray-700">
+                          <div className="font-semibold text-gray-900 flex justify-between items-center">
+                            <span>Full Prompt Preview:</span>
+                            <span className="font-mono text-[11px] text-gray-400">
+                              {req.timestamp ? new Date(req.timestamp * 1000).toLocaleString() : ''}
+                            </span>
+                          </div>
+                          <p className="bg-white p-3 rounded-lg border border-gray-200 font-mono text-xs whitespace-pre-wrap leading-relaxed text-gray-800">
+                            {req.prompt_preview || 'Empty prompt'}
+                          </p>
+                          <div className="flex flex-wrap gap-4 text-[11px] font-mono text-gray-500 pt-1">
+                            <span>Tokens: <strong className="text-gray-800">{req.prompt_tokens || 0}</strong> in / <strong className="text-gray-800">{req.completion_tokens || 0}</strong> out (Total: {req.total_tokens || 0})</span>
+                            <span>Actual Cost: <strong className="text-gray-800">${(req.cost_actual || 0).toFixed(5)}</strong></span>
+                            <span>Frontier Baseline: <strong className="text-gray-400 line-through">${(req.cost_if_frontier || 0).toFixed(5)}</strong></span>
+                            <span>Net Saved: <strong className="text-emerald-600">${(req.cost_saved || req.cost_saved_usd || 0).toFixed(5)}</strong></span>
+                          </div>
+                          {req.classifier_reasons && (
+                            <div className="flex flex-wrap gap-1.5 items-center mt-1">
+                              <span className="text-[11px] font-medium text-gray-400 mr-1">Classification Signals:</span>
+                              {(typeof req.classifier_reasons === 'string' ? JSON.parse(req.classifier_reasons || '[]') : req.classifier_reasons).map((reason, rIdx) => (
+                                <span key={rIdx} className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px] font-medium">
+                                  {reason}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )) : (
                 <tr>
-                  <td colSpan="8" className="px-5 py-8 text-center text-gray-400">No requests yet</td>
+                  <td colSpan="8" className="px-5 py-8 text-center text-gray-400">
+                    {recent.length === 0 ? 'No requests recorded yet' : 'No requests matching filters'}
+                  </td>
                 </tr>
               )}
             </tbody>

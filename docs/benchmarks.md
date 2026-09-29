@@ -38,31 +38,31 @@ Scores normalized to 0.0–1.0 from composite benchmarks. All scores verified ag
 
 ## Pricing ($/1M tokens — September 2026)
 
-| Model | Input | Output |
-|---|---|---|
-| Claude Opus 5.5 | $4.00 | $20.00 |
-| Claude Fable 5.1 | $10.00 | $50.00 |
-| Claude Sonnet 5 | $2.00 | $10.00 |
-| Claude Haiku 4.5 | $1.00 | $5.00 |
-| GPT-6 Astra | $10.00 | $50.00 |
-| GPT-5.6 Sol | $4.00 | $20.00 |
-| GPT-5.6 Terra | $2.00 | $12.00 |
-| GPT-5.6 Luna | $0.20 | $1.20 |
-| Gemini 3.1 Pro | $2.00 | $12.00 |
-| Gemini 3.8 Flash | $0.75 | $3.75 |
-| Gemini 3.5 Flash-Lite | $0.30 | $2.50 |
-| Qwen 3.8 Max | $2.00 | $6.00 |
-| Qwen 3.8 Max Prime | $4.00 | $12.00 |
-| Qwen 3.8 27B | $0.10 | $0.50 |
-| Mistral Large 3 | $0.50 | $1.50 |
-| Mistral Small 4 | $0.15 | $0.60 |
-| DeepSeek V4 Pro | $1.32 | $3.96 |
-| DeepSeek V4.1 Flash | $0.30 | $1.20 |
-| Muse Spark 1.3 | $1.25 | $4.25 |
-| Llama 4 Scout | $0.05 | $0.30 |
-| Llama 4 Maverick | $0.20 | $0.80 |
-| Grok 4.7 | $2.00 | $6.00 |
-| Grok 4.7 Fast | $1.00 | $3.00 |
+| Model | Input | Output | Cached Read | Discount |
+|---|---|---|---|---|
+| Claude Opus 5.5 | $4.00 | $20.00 | $0.40 | 90% |
+| Claude Fable 5.1 | $10.00 | $50.00 | $1.00 | 90% |
+| Claude Sonnet 5 | $2.00 | $10.00 | $0.20 | 90% |
+| Claude Haiku 4.5 | $1.00 | $5.00 | $0.10 | 90% |
+| GPT-6 Astra | $10.00 | $50.00 | $5.00 | 50% |
+| GPT-5.6 Sol | $4.00 | $20.00 | $2.00 | 50% |
+| GPT-5.6 Terra | $2.00 | $12.00 | $1.00 | 50% |
+| GPT-5.6 Luna | $0.20 | $1.20 | $0.10 | 50% |
+| Gemini 3.1 Pro | $2.00 | $12.00 | $0.50 | 75% |
+| Gemini 3.8 Flash | $0.75 | $3.75 | $0.1875 | 75% |
+| Gemini 3.5 Flash-Lite | $0.30 | $2.50 | $0.075 | 75% |
+| Qwen 3.8 Max | $2.00 | $6.00 | $0.40 | 80% |
+| Qwen 3.8 Max Prime | $4.00 | $12.00 | $0.80 | 80% |
+| Qwen 3.8 27B | $0.10 | $0.50 | $0.02 | 80% |
+| Mistral Large 3 | $0.50 | $1.50 | $0.25 | 50% |
+| Mistral Small 4 | $0.15 | $0.60 | $0.075 | 50% |
+| DeepSeek V4 Pro | $1.32 | $3.96 | $0.132 | 90% |
+| DeepSeek V4.1 Flash | $0.30 | $1.20 | $0.03 | 90% |
+| Muse Spark 1.3 | $1.25 | $4.25 | $0.25 | 80% |
+| Llama 4 Scout | $0.05 | $0.30 | $0.01 | 80% |
+| Llama 4 Maverick | $0.20 | $0.80 | $0.04 | 80% |
+| Grok 4.7 | $2.00 | $6.00 | $0.50 | 75% |
+| Grok 4.7 Fast | $1.00 | $3.00 | $0.25 | 75% |
 
 ## Notes
 - Google Gemini 3.8 Flash pricing is introductory through Dec 31, 2026 (doubles Jan 1, 2027).
