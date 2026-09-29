@@ -14,6 +14,12 @@ const PRESETS = [
 ];
 
 const BUDGET_LEVELS = ['Free', 'Budget', 'Value', 'Pro', 'Any'];
+const VOLUME_PRESETS = [
+  { label: '10K', count: 10000 },
+  { label: '100K', count: 100000 },
+  { label: '500K', count: 500000 },
+  { label: '2M', count: 2000000 },
+];
 
 export default function Playground({ modelsCount }) {
   const [input, setInput] = useState('');
@@ -33,8 +39,19 @@ export default function Playground({ modelsCount }) {
   const [showRaw, setShowRaw] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
   const [showSnippets, setShowSnippets] = useState(false);
+  const [volumeTier, setVolumeTier] = useState(1);
+  const [customCompareModels, setCustomCompareModels] = useState(new Set());
   const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
+
+  const toggleCustomCompare = (modelId) => {
+    setCustomCompareModels(prev => {
+      const next = new Set(prev);
+      if (next.has(modelId)) next.delete(modelId);
+      else next.add(modelId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     getModels().then(data => {
@@ -461,6 +478,37 @@ export default function Playground({ modelsCount }) {
                       style={{ width: `${Math.min(100, savedPct)}%` }}
                     />
                   </div>
+
+                  {/* Volume Projection */}
+                  <div className="pt-2 border-t border-emerald-100 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-gray-500 font-medium">Monthly volume scale:</span>
+                      <div className="flex gap-1">
+                        {VOLUME_PRESETS.map((vol, vIdx) => (
+                          <button
+                            key={vol.label}
+                            onClick={() => setVolumeTier(vIdx)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
+                              volumeTier === vIdx
+                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                : 'bg-emerald-100/60 text-emerald-800 hover:bg-emerald-200'
+                            }`}
+                          >
+                            {vol.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs bg-white/80 p-2 rounded-lg border border-emerald-100 font-mono">
+                      <span className="text-gray-500 font-sans">Projected Net Savings:</span>
+                      <span className="text-emerald-700 font-bold">
+                        ${(savedPerReq * VOLUME_PRESETS[volumeTier].count).toFixed(2)}/mo
+                        <span className="text-[10px] text-emerald-600 font-normal ml-1">
+                          (${((savedPerReq * VOLUME_PRESETS[volumeTier].count) * 12).toFixed(0)}/yr)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
@@ -584,6 +632,15 @@ export default function Playground({ modelsCount }) {
                       className="px-3 py-1.5 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1.5"
                     >
                       Compare Top 3
+                    </button>
+                  )}
+                  {customCompareModels.size > 0 && (
+                    <button 
+                      onClick={() => handleExecute(Array.from(customCompareModels))}
+                      disabled={isExecuting}
+                      className="px-3.5 py-1.5 bg-black text-white text-[11px] font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                    >
+                      {isExecuting ? 'Running...' : `Compare Selected (${customCompareModels.size})`}
                     </button>
                   )}
                 </div>
@@ -744,13 +801,26 @@ export default function Playground({ modelsCount }) {
                   <div className="font-semibold text-[13px] leading-tight truncate" title={m.name || m.id}>
                     {m.name || m.id}
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex-shrink-0 ${
-                    m.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
-                    m.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
-                    'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {m.tier || 'cheap'}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => toggleCustomCompare(m.id)}
+                      title={customCompareModels.has(m.id) ? "Remove from custom comparison" : "Add to custom comparison"}
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors ${
+                        customCompareModels.has(m.id)
+                          ? 'bg-black text-white'
+                          : 'bg-gray-100 text-gray-500 hover:text-black hover:bg-gray-200'
+                      }`}
+                    >
+                      {customCompareModels.has(m.id) ? '✓ Compare' : '+ Compare'}
+                    </button>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                      m.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                      m.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                      'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {m.tier || 'cheap'}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-[11px] text-gray-500 font-mono truncate" title={m.id}>{m.id}</div>
                 {m.scores && (
