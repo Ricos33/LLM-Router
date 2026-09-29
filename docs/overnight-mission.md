@@ -24,6 +24,14 @@ Tu t'arrêtes uniquement si : (a) le fichier /home/hatch/workspace/llm-router-wa
 - Garde l'ADN validé : 3 colonnes (prompt / analyse / catalogue), bouton Analyze, providers à cocher, slider budget, barres noires.
 - Chaque élément doit avoir une raison d'être. Teste visuellement via le build (pas de screenshot possible sur cette VM).
 
+## RÈGLE D'OR — NE RESTE JAMAIS BLOQUÉ
+C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'arrêter en attendant quoi que ce soit.
+- Timebox : 25 minutes max par itération. Au-delà, termine l'itération (commit ce qui marche, ou revert) et passe à la suivante.
+- Si une étape échoue 3 fois de suite (build, test, curl, push...) : abandonne cette amélioration précise (`git checkout -- .` pour annuler le sale), note l'échec dans docs/overnight-progress.md, et passe IMMÉDIATEMENT à l'amélioration suivante.
+- Git : toujours `git pull --rebase origin overnight-improvements` avant push. Si le push échoue après 2 tentatives, garde les commits en local et continue — la prochaine itération retentera le push.
+- Ne demande JAMAIS de confirmation, ne pose JAMAIS de question, n'attends JAMAIS une entrée : décide seul et avance.
+- Si tu es à court d'idées d'améliorations : affine les scores Jev, vérifie un prix de modèle sur le web, polis un détail UI, ajoute un test. Il y a toujours quelque chose.
+
 ## Boucle de travail — À CHAQUE itération, dans l'ordre :
 1. Choisis UNE amélioration concrète (alterne intelligemment : catalogue/jev/backend/frontend).
 2. Implémente-la proprement.
