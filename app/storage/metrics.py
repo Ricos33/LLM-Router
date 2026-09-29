@@ -305,9 +305,48 @@ class MetricsTracker:
             total = cur.fetchone()[0]
             efficiency_pct = round((non_frontier / total * 100), 1) if total > 0 else 0
 
+            # Upstream provider distribution
+            provider_counts = {}
+            for m_item in model_stats:
+                m_name = m_item.get("model_used", "")
+                p_name = m_name.split("/")[0] if "/" in m_name else "local/other"
+                if p_name not in provider_counts:
+                    provider_counts[p_name] = {
+                        "provider": p_name,
+                        "requests": 0,
+                        "total_cost": 0.0,
+                    }
+                provider_counts[p_name]["requests"] += m_item.get("count", 0)
+                provider_counts[p_name]["total_cost"] += round(float(m_item.get("avg_cost", 0.0)) * m_item.get("count", 0), 6)
+
+            provider_stats = sorted(provider_counts.values(), key=lambda x: x["requests"], reverse=True)
+
+            # Prompt cache economics analytics across all recorded prompt tokens
+            cur.execute("SELECT SUM(prompt_tokens) FROM metrics")
+            total_prompt_tokens = cur.fetchone()[0] or 0
+            prompt_cache_savings_projected = round((total_prompt_tokens / 1_000_000.0) * 1.50 * 0.75 * 0.5, 6)
+
+            prompt_cache_analytics = {
+                "total_prompt_tokens": total_prompt_tokens,
+                "projected_cache_savings_usd": prompt_cache_savings_projected,
+                "provider_discounts": {
+                    "anthropic": 90,
+                    "deepseek": 90,
+                    "qwen": 80,
+                    "meta": 80,
+                    "google": 75,
+                    "xai": 75,
+                    "openai": 50,
+                    "mistral": 50,
+                },
+                "average_industry_discount_pct": 73.8,
+            }
+
             return {
                 "model_stats": model_stats,
                 "tier_stats": tier_stats,
+                "provider_stats": provider_stats,
+                "prompt_cache_analytics": prompt_cache_analytics,
                 "hourly_timeseries": hourly,
                 "efficiency_percentage": efficiency_pct,
                 "total_requests": total,

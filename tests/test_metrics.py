@@ -66,3 +66,12 @@ def test_metrics_tracker_crud():
         assert recent[1]["model_used"] == "llama3.2:3b"
         assert recent[1]["actual_model"] == "llama3.2:3b"
 
+        # Check enhanced analytics: provider distribution and prompt cache economics
+        analytics = tracker.get_analytics()
+        assert "provider_stats" in analytics
+        assert "prompt_cache_analytics" in analytics
+        assert analytics["prompt_cache_analytics"]["total_prompt_tokens"] == 110
+        assert analytics["prompt_cache_analytics"]["projected_cache_savings_usd"] >= 0
+        assert "anthropic" in analytics["prompt_cache_analytics"]["provider_discounts"]
+        assert len(analytics["provider_stats"]) >= 1
+

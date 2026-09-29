@@ -783,6 +783,94 @@ export default function Dashboard({ onReplayPrompt }) {
           </div>
         </div>
       </div>
+
+      {/* Provider Distribution & Prompt Caching Economics Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Provider Traffic Distribution */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span>🌐</span> Upstream Provider Traffic
+            </h3>
+            <span className="text-xs text-gray-400 font-mono">
+              {(analytics?.provider_stats || []).length} active providers
+            </span>
+          </div>
+
+          {(analytics?.provider_stats || []).length > 0 ? (
+            <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+              {(analytics.provider_stats).map((p, idx) => {
+                const totalReqs = summary.total_requests || 1;
+                const pct = Math.round((p.requests / totalReqs) * 100);
+                return (
+                  <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold capitalize text-gray-800">{p.provider}</span>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-gray-600 font-medium">{p.requests} reqs</span>
+                        <span className="text-gray-400">({pct}%)</span>
+                        <span className="text-emerald-600 font-semibold">${p.total_cost.toFixed(4)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-purple-600 rounded-full" style={{ width: `${Math.max(3, pct)}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-44 flex flex-col items-center justify-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              No multi-provider traffic logged yet.
+            </div>
+          )}
+        </div>
+
+        {/* Prompt Caching Economics & Savings Card */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <span>⚡</span> Prompt Caching Economics
+              </h3>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                Up to 90% Savings
+              </span>
+            </div>
+            
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              When repetitive context (system instructions, codebases, documents) is reused, modern providers offer steep cache read discounts.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="text-[11px] text-gray-400 uppercase font-semibold">Total Prompt Tokens</div>
+                <div className="text-lg font-bold text-gray-900 font-mono mt-1">
+                  {(analytics?.prompt_cache_analytics?.total_prompt_tokens || 0).toLocaleString()}
+                </div>
+              </div>
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
+                <div className="text-[11px] text-emerald-700 uppercase font-semibold">Projected Cache Savings</div>
+                <div className="text-lg font-bold text-emerald-600 font-mono mt-1">
+                  ${(analytics?.prompt_cache_analytics?.projected_cache_savings_usd || 0).toFixed(4)}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Provider Cache Discounts:</div>
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Anthropic: <strong>-90%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">DeepSeek: <strong>-90%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Qwen: <strong>-80%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Meta: <strong>-80%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Google: <strong>-75%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">OpenAI: <strong>-50%</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Recent Requests Table */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mt-6">
