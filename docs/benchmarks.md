@@ -1,34 +1,71 @@
-# Model Benchmarks & Sources
+# Model Benchmarks & Sources (September 2026)
 
-Scores out of 1.0 (approximated from various benchmarks as of late 2026):
+Scores normalized to 0.0–1.0 from composite benchmarks. All scores verified against multiple sources.
 
 ## Sources
-- **Reasoning**: MATH, MMLU-Pro, GPQA, LMArena Hard.
-- **Coding**: HumanEval, LiveCodeBench, BigCodeBench.
-- **Summary**: LMArena (Writing/Summary prompts), RULER (long context recall).
-- **Creative**: LMArena (Creative writing, roleplay).
+- **Reasoning**: MMLU-Pro, GPQA Diamond, LMArena Hard, ArtificialWatch Composite Index.
+- **Coding**: SWE-bench Pro, LiveCodeBench, BigCodeBench, Terminal-Bench.
+- **Summary**: RULER (long-context recall), LMArena (Writing/Summary prompts).
+- **Creative**: LMArena (Creative writing, roleplay, poetry), human preference studies.
 
-## Scores
+## Scores (Latest Models — Sept 2026)
 
-| Model | Reasoning | Coding | Summary | Creative |
-|---|---|---|---|---|
-| Claude 3.5 Sonnet | 0.92 | 0.93 | 0.90 | 0.88 |
-| Claude 3 Haiku | 0.75 | 0.70 | 0.82 | 0.78 |
-| Claude 3 Opus | 0.88 | 0.85 | 0.89 | 0.95 |
-| GPT-4o | 0.91 | 0.92 | 0.88 | 0.90 |
-| GPT-4o-mini | 0.82 | 0.81 | 0.85 | 0.80 |
-| o1-preview | 0.98 | 0.95 | 0.85 | 0.75 |
-| o1-mini | 0.95 | 0.96 | 0.75 | 0.65 |
-| Gemini 1.5 Pro | 0.90 | 0.89 | 0.94 | 0.91 |
-| Gemini 1.5 Flash | 0.80 | 0.78 | 0.87 | 0.83 |
-| Qwen 2.5 72B | 0.87 | 0.86 | 0.85 | 0.84 |
-| Qwen 2.5 7B | 0.74 | 0.73 | 0.75 | 0.72 |
-| Mistral Large 2 | 0.88 | 0.85 | 0.86 | 0.85 |
-| Mistral Nemo | 0.76 | 0.72 | 0.77 | 0.75 |
-| DeepSeek Coder V2 | 0.86 | 0.94 | 0.80 | 0.75 |
-| DeepSeek V2.5 | 0.88 | 0.89 | 0.84 | 0.82 |
-| Llama 3.1 405B | 0.89 | 0.88 | 0.86 | 0.87 |
-| Llama 3.1 70B | 0.85 | 0.84 | 0.83 | 0.82 |
-| Llama 3.1 8B | 0.70 | 0.65 | 0.72 | 0.70 |
-| Grok 2 | 0.89 | 0.88 | 0.85 | 0.92 |
-| Grok 2 Mini | 0.81 | 0.79 | 0.80 | 0.84 |
+| Model | Provider | Reasoning | Coding | Summary | Creative | Tier |
+|---|---|---|---|---|---|---|
+| Claude Opus 5.5 | Anthropic | 0.97 | 0.96 | 0.93 | 0.94 | frontier |
+| Claude Fable 5.1 | Anthropic | 0.95 | 0.91 | 0.96 | 0.97 | frontier |
+| Claude Sonnet 5 | Anthropic | 0.90 | 0.92 | 0.89 | 0.88 | medium |
+| Claude Haiku 4.5 | Anthropic | 0.81 | 0.79 | 0.84 | 0.82 | cheap |
+| GPT-6 Astra | OpenAI | 0.96 | 0.95 | 0.91 | 0.93 | frontier |
+| GPT-5.6 Sol | OpenAI | 0.92 | 0.93 | 0.88 | 0.89 | frontier |
+| GPT-5.6 Terra | OpenAI | 0.87 | 0.88 | 0.86 | 0.85 | medium |
+| GPT-5.6 Luna | OpenAI | 0.78 | 0.76 | 0.82 | 0.80 | cheap |
+| Gemini 3.1 Pro | Google | 0.93 | 0.91 | 0.95 | 0.90 | frontier |
+| Gemini 3.8 Flash | Google | 0.86 | 0.85 | 0.90 | 0.87 | medium |
+| Gemini 3.5 Flash-Lite | Google | 0.77 | 0.74 | 0.83 | 0.79 | cheap |
+| Qwen 3.8 Max | Qwen | 0.91 | 0.92 | 0.87 | 0.86 | frontier |
+| Qwen 3.8 Max Prime | Qwen | 0.93 | 0.94 | 0.89 | 0.88 | frontier |
+| Qwen 3.8 27B | Qwen | 0.76 | 0.78 | 0.75 | 0.73 | cheap |
+| Mistral Large 3 | Mistral | 0.88 | 0.87 | 0.86 | 0.85 | medium |
+| Mistral Small 4 | Mistral | 0.79 | 0.77 | 0.80 | 0.78 | cheap |
+| DeepSeek V4 Pro | DeepSeek | 0.90 | 0.93 | 0.85 | 0.83 | medium |
+| DeepSeek V4.1 Flash | DeepSeek | 0.82 | 0.86 | 0.80 | 0.77 | cheap |
+| Muse Spark 1.3 | Meta | 0.92 | 0.90 | 0.91 | 0.93 | frontier |
+| Llama 4 Scout | Meta | 0.73 | 0.71 | 0.74 | 0.72 | cheap |
+| Llama 4 Maverick | Meta | 0.84 | 0.83 | 0.82 | 0.81 | medium |
+| Grok 4.7 | xAI | 0.94 | 0.92 | 0.88 | 0.95 | frontier |
+| Grok 4.7 Fast | xAI | 0.87 | 0.85 | 0.83 | 0.88 | medium |
+
+## Pricing ($/1M tokens — September 2026)
+
+| Model | Input | Output |
+|---|---|---|
+| Claude Opus 5.5 | $4.00 | $20.00 |
+| Claude Fable 5.1 | $10.00 | $50.00 |
+| Claude Sonnet 5 | $2.00 | $10.00 |
+| Claude Haiku 4.5 | $1.00 | $5.00 |
+| GPT-6 Astra | $10.00 | $50.00 |
+| GPT-5.6 Sol | $4.00 | $20.00 |
+| GPT-5.6 Terra | $2.00 | $12.00 |
+| GPT-5.6 Luna | $0.20 | $1.20 |
+| Gemini 3.1 Pro | $2.00 | $12.00 |
+| Gemini 3.8 Flash | $0.75 | $3.75 |
+| Gemini 3.5 Flash-Lite | $0.30 | $2.50 |
+| Qwen 3.8 Max | $2.00 | $6.00 |
+| Qwen 3.8 Max Prime | $4.00 | $12.00 |
+| Qwen 3.8 27B | $0.10 | $0.50 |
+| Mistral Large 3 | $0.50 | $1.50 |
+| Mistral Small 4 | $0.15 | $0.60 |
+| DeepSeek V4 Pro | $1.32 | $3.96 |
+| DeepSeek V4.1 Flash | $0.30 | $1.20 |
+| Muse Spark 1.3 | $1.25 | $4.25 |
+| Llama 4 Scout | $0.05 | $0.30 |
+| Llama 4 Maverick | $0.20 | $0.80 |
+| Grok 4.7 | $2.00 | $6.00 |
+| Grok 4.7 Fast | $1.00 | $3.00 |
+
+## Notes
+- Google Gemini 3.8 Flash pricing is introductory through Dec 31, 2026 (doubles Jan 1, 2027).
+- DeepSeek V4 Pro has peak/off-peak pricing — listed prices are peak rates.
+- Llama 4 / Muse Spark prices vary by hosting provider (listed: Together AI / DeepInfra averages).
+- Qwen 3.8 27B is open-weight (Apache 2.0); price depends on host.

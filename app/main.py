@@ -69,41 +69,44 @@ async def health_check():
 
 
 _curated_models = [
-    # Anthropic
-    ModelObject(id="anthropic/claude-3-5-sonnet-20240620", name="Claude 3.5 Sonnet", provider="anthropic", tier="frontier", price_in=3.0, price_out=15.0, context_length=200000),
-    ModelObject(id="anthropic/claude-3-haiku-20240307", name="Claude 3 Haiku", provider="anthropic", tier="cheap", price_in=0.25, price_out=1.25, context_length=200000),
-    ModelObject(id="anthropic/claude-3-opus-20240229", name="Claude 3 Opus", provider="anthropic", tier="frontier", price_in=15.0, price_out=75.0, context_length=200000),
-    
-    # OpenAI
-    ModelObject(id="openai/gpt-4o", name="GPT-4o", provider="openai", tier="frontier", price_in=5.0, price_out=15.0, context_length=128000),
-    ModelObject(id="openai/gpt-4o-mini", name="GPT-4o Mini", provider="openai", tier="cheap", price_in=0.15, price_out=0.6, context_length=128000),
-    ModelObject(id="openai/o1-preview", name="o1-preview", provider="openai", tier="frontier", price_in=15.0, price_out=60.0, context_length=128000),
-    ModelObject(id="openai/o1-mini", name="o1-mini", provider="openai", tier="medium", price_in=3.0, price_out=12.0, context_length=128000),
-    
-    # Google
-    ModelObject(id="google/gemini-1.5-pro", name="Gemini 1.5 Pro", provider="google", tier="frontier", price_in=3.5, price_out=10.5, context_length=2000000),
-    ModelObject(id="google/gemini-1.5-flash", name="Gemini 1.5 Flash", provider="google", tier="cheap", price_in=0.075, price_out=0.3, context_length=1000000),
-    
-    # Qwen (Alibaba)
-    ModelObject(id="qwen/qwen-2.5-72b-instruct", name="Qwen 2.5 72B", provider="qwen", tier="medium", price_in=0.4, price_out=0.4, context_length=128000),
-    ModelObject(id="qwen/qwen-2.5-7b-instruct", name="Qwen 2.5 7B", provider="qwen", tier="cheap", price_in=0.1, price_out=0.1, context_length=128000),
-    
-    # Mistral
-    ModelObject(id="mistral/mistral-large-2407", name="Mistral Large 2", provider="mistral", tier="frontier", price_in=2.0, price_out=6.0, context_length=128000),
-    ModelObject(id="mistral/mistral-nemo", name="Mistral Nemo", provider="mistral", tier="cheap", price_in=0.15, price_out=0.15, context_length=128000),
-    
-    # DeepSeek
-    ModelObject(id="deepseek/deepseek-coder-v2", name="DeepSeek Coder V2", provider="deepseek", tier="medium", price_in=0.14, price_out=0.28, context_length=128000),
-    ModelObject(id="deepseek/deepseek-chat-v2.5", name="DeepSeek V2.5", provider="deepseek", tier="medium", price_in=0.14, price_out=0.28, context_length=128000),
-    
-    # Meta (Llama)
-    ModelObject(id="meta/llama-3.1-405b-instruct", name="Llama 3.1 405B", provider="meta", tier="frontier", price_in=2.7, price_out=2.7, context_length=128000),
-    ModelObject(id="meta/llama-3.1-70b-instruct", name="Llama 3.1 70B", provider="meta", tier="medium", price_in=0.4, price_out=0.4, context_length=128000),
-    ModelObject(id="meta/llama-3.1-8b-instruct", name="Llama 3.1 8B", provider="meta", tier="cheap", price_in=0.05, price_out=0.05, context_length=128000),
-    
-    # xAI (Grok)
-    ModelObject(id="xai/grok-2", name="Grok 2", provider="xai", tier="frontier", price_in=2.0, price_out=4.0, context_length=128000),
-    ModelObject(id="xai/grok-2-mini", name="Grok 2 Mini", provider="xai", tier="medium", price_in=0.2, price_out=0.4, context_length=128000),
+    # ── Anthropic (Claude) ── latest Sept 2026
+    ModelObject(id="anthropic/claude-opus-5.5", name="Claude Opus 5.5", provider="anthropic", tier="frontier", price_in=4.0, price_out=20.0, context_length=200000),
+    ModelObject(id="anthropic/claude-fable-5.1", name="Claude Fable 5.1", provider="anthropic", tier="frontier", price_in=10.0, price_out=50.0, context_length=200000),
+    ModelObject(id="anthropic/claude-sonnet-5", name="Claude Sonnet 5", provider="anthropic", tier="medium", price_in=2.0, price_out=10.0, context_length=200000),
+    ModelObject(id="anthropic/claude-haiku-4.5", name="Claude Haiku 4.5", provider="anthropic", tier="cheap", price_in=1.0, price_out=5.0, context_length=200000),
+
+    # ── OpenAI (GPT) ── latest Sept 2026
+    ModelObject(id="openai/gpt-6-astra", name="GPT-6 Astra", provider="openai", tier="frontier", price_in=10.0, price_out=50.0, context_length=256000),
+    ModelObject(id="openai/gpt-5.6-sol", name="GPT-5.6 Sol", provider="openai", tier="frontier", price_in=4.0, price_out=20.0, context_length=200000),
+    ModelObject(id="openai/gpt-5.6-terra", name="GPT-5.6 Terra", provider="openai", tier="medium", price_in=2.0, price_out=12.0, context_length=200000),
+    ModelObject(id="openai/gpt-5.6-luna", name="GPT-5.6 Luna", provider="openai", tier="cheap", price_in=0.20, price_out=1.20, context_length=128000),
+
+    # ── Google (Gemini) ── latest Sept 2026
+    ModelObject(id="google/gemini-3.1-pro", name="Gemini 3.1 Pro", provider="google", tier="frontier", price_in=2.0, price_out=12.0, context_length=2000000),
+    ModelObject(id="google/gemini-3.8-flash", name="Gemini 3.8 Flash", provider="google", tier="medium", price_in=0.75, price_out=3.75, context_length=1000000),
+    ModelObject(id="google/gemini-3.5-flash-lite", name="Gemini 3.5 Flash-Lite", provider="google", tier="cheap", price_in=0.30, price_out=2.50, context_length=1000000),
+
+    # ── Qwen (Alibaba) ── latest Sept 2026
+    ModelObject(id="qwen/qwen3.8-max", name="Qwen 3.8 Max", provider="qwen", tier="frontier", price_in=2.0, price_out=6.0, context_length=128000),
+    ModelObject(id="qwen/qwen3.8-max-prime", name="Qwen 3.8 Max Prime", provider="qwen", tier="frontier", price_in=4.0, price_out=12.0, context_length=128000),
+    ModelObject(id="qwen/qwen3.8-27b", name="Qwen 3.8 27B", provider="qwen", tier="cheap", price_in=0.10, price_out=0.50, context_length=128000),
+
+    # ── Mistral ── latest Sept 2026
+    ModelObject(id="mistral/mistral-large-3", name="Mistral Large 3", provider="mistral", tier="medium", price_in=0.50, price_out=1.50, context_length=128000),
+    ModelObject(id="mistral/mistral-small-4", name="Mistral Small 4", provider="mistral", tier="cheap", price_in=0.15, price_out=0.60, context_length=128000),
+
+    # ── DeepSeek ── latest Sept 2026
+    ModelObject(id="deepseek/deepseek-v4-pro", name="DeepSeek V4 Pro", provider="deepseek", tier="medium", price_in=1.32, price_out=3.96, context_length=128000),
+    ModelObject(id="deepseek/deepseek-v4.1-flash", name="DeepSeek V4.1 Flash", provider="deepseek", tier="cheap", price_in=0.30, price_out=1.20, context_length=128000),
+
+    # ── Meta (Llama / Muse) ── latest Sept 2026
+    ModelObject(id="meta/muse-spark-1.3", name="Muse Spark 1.3", provider="meta", tier="frontier", price_in=1.25, price_out=4.25, context_length=256000),
+    ModelObject(id="meta/llama-4-scout", name="Llama 4 Scout", provider="meta", tier="cheap", price_in=0.05, price_out=0.30, context_length=128000),
+    ModelObject(id="meta/llama-4-maverick", name="Llama 4 Maverick", provider="meta", tier="medium", price_in=0.20, price_out=0.80, context_length=128000),
+
+    # ── xAI (Grok) ── latest Sept 2026
+    ModelObject(id="xai/grok-4.7", name="Grok 4.7", provider="xai", tier="frontier", price_in=2.0, price_out=6.0, context_length=200000),
+    ModelObject(id="xai/grok-4.7-fast", name="Grok 4.7 Fast", provider="xai", tier="medium", price_in=1.0, price_out=3.0, context_length=200000),
 ]
 
 @app.get("/v1/models", response_model=ModelListResponse)
@@ -189,26 +192,37 @@ async def chat_completions(
 
 
 MODEL_BENCHMARKS = {
-    "anthropic/claude-3-5-sonnet-20240620": {"Reasoning": 0.92, "Coding": 0.93, "Summary": 0.90, "Creative": 0.88},
-    "anthropic/claude-3-haiku-20240307": {"Reasoning": 0.75, "Coding": 0.70, "Summary": 0.82, "Creative": 0.78},
-    "anthropic/claude-3-opus-20240229": {"Reasoning": 0.88, "Coding": 0.85, "Summary": 0.89, "Creative": 0.95},
-    "openai/gpt-4o": {"Reasoning": 0.91, "Coding": 0.92, "Summary": 0.88, "Creative": 0.90},
-    "openai/gpt-4o-mini": {"Reasoning": 0.82, "Coding": 0.81, "Summary": 0.85, "Creative": 0.80},
-    "openai/o1-preview": {"Reasoning": 0.98, "Coding": 0.95, "Summary": 0.85, "Creative": 0.75},
-    "openai/o1-mini": {"Reasoning": 0.95, "Coding": 0.96, "Summary": 0.75, "Creative": 0.65},
-    "google/gemini-1.5-pro": {"Reasoning": 0.90, "Coding": 0.89, "Summary": 0.94, "Creative": 0.91},
-    "google/gemini-1.5-flash": {"Reasoning": 0.80, "Coding": 0.78, "Summary": 0.87, "Creative": 0.83},
-    "qwen/qwen-2.5-72b-instruct": {"Reasoning": 0.87, "Coding": 0.86, "Summary": 0.85, "Creative": 0.84},
-    "qwen/qwen-2.5-7b-instruct": {"Reasoning": 0.74, "Coding": 0.73, "Summary": 0.75, "Creative": 0.72},
-    "mistral/mistral-large-2407": {"Reasoning": 0.88, "Coding": 0.85, "Summary": 0.86, "Creative": 0.85},
-    "mistral/mistral-nemo": {"Reasoning": 0.76, "Coding": 0.72, "Summary": 0.77, "Creative": 0.75},
-    "deepseek/deepseek-coder-v2": {"Reasoning": 0.86, "Coding": 0.94, "Summary": 0.80, "Creative": 0.75},
-    "deepseek/deepseek-chat-v2.5": {"Reasoning": 0.88, "Coding": 0.89, "Summary": 0.84, "Creative": 0.82},
-    "meta/llama-3.1-405b-instruct": {"Reasoning": 0.89, "Coding": 0.88, "Summary": 0.86, "Creative": 0.87},
-    "meta/llama-3.1-70b-instruct": {"Reasoning": 0.85, "Coding": 0.84, "Summary": 0.83, "Creative": 0.82},
-    "meta/llama-3.1-8b-instruct": {"Reasoning": 0.70, "Coding": 0.65, "Summary": 0.72, "Creative": 0.70},
-    "xai/grok-2": {"Reasoning": 0.89, "Coding": 0.88, "Summary": 0.85, "Creative": 0.92},
-    "xai/grok-2-mini": {"Reasoning": 0.81, "Coding": 0.79, "Summary": 0.80, "Creative": 0.84},
+    # ── Anthropic ──
+    "anthropic/claude-opus-5.5":    {"Reasoning": 0.97, "Coding": 0.96, "Summary": 0.93, "Creative": 0.94},
+    "anthropic/claude-fable-5.1":   {"Reasoning": 0.95, "Coding": 0.91, "Summary": 0.96, "Creative": 0.97},
+    "anthropic/claude-sonnet-5":    {"Reasoning": 0.90, "Coding": 0.92, "Summary": 0.89, "Creative": 0.88},
+    "anthropic/claude-haiku-4.5":   {"Reasoning": 0.81, "Coding": 0.79, "Summary": 0.84, "Creative": 0.82},
+    # ── OpenAI ──
+    "openai/gpt-6-astra":          {"Reasoning": 0.96, "Coding": 0.95, "Summary": 0.91, "Creative": 0.93},
+    "openai/gpt-5.6-sol":          {"Reasoning": 0.92, "Coding": 0.93, "Summary": 0.88, "Creative": 0.89},
+    "openai/gpt-5.6-terra":        {"Reasoning": 0.87, "Coding": 0.88, "Summary": 0.86, "Creative": 0.85},
+    "openai/gpt-5.6-luna":         {"Reasoning": 0.78, "Coding": 0.76, "Summary": 0.82, "Creative": 0.80},
+    # ── Google ──
+    "google/gemini-3.1-pro":       {"Reasoning": 0.93, "Coding": 0.91, "Summary": 0.95, "Creative": 0.90},
+    "google/gemini-3.8-flash":     {"Reasoning": 0.86, "Coding": 0.85, "Summary": 0.90, "Creative": 0.87},
+    "google/gemini-3.5-flash-lite": {"Reasoning": 0.77, "Coding": 0.74, "Summary": 0.83, "Creative": 0.79},
+    # ── Qwen ──
+    "qwen/qwen3.8-max":            {"Reasoning": 0.91, "Coding": 0.92, "Summary": 0.87, "Creative": 0.86},
+    "qwen/qwen3.8-max-prime":      {"Reasoning": 0.93, "Coding": 0.94, "Summary": 0.89, "Creative": 0.88},
+    "qwen/qwen3.8-27b":            {"Reasoning": 0.76, "Coding": 0.78, "Summary": 0.75, "Creative": 0.73},
+    # ── Mistral ──
+    "mistral/mistral-large-3":     {"Reasoning": 0.88, "Coding": 0.87, "Summary": 0.86, "Creative": 0.85},
+    "mistral/mistral-small-4":     {"Reasoning": 0.79, "Coding": 0.77, "Summary": 0.80, "Creative": 0.78},
+    # ── DeepSeek ──
+    "deepseek/deepseek-v4-pro":    {"Reasoning": 0.90, "Coding": 0.93, "Summary": 0.85, "Creative": 0.83},
+    "deepseek/deepseek-v4.1-flash": {"Reasoning": 0.82, "Coding": 0.86, "Summary": 0.80, "Creative": 0.77},
+    # ── Meta ──
+    "meta/muse-spark-1.3":         {"Reasoning": 0.92, "Coding": 0.90, "Summary": 0.91, "Creative": 0.93},
+    "meta/llama-4-scout":          {"Reasoning": 0.73, "Coding": 0.71, "Summary": 0.74, "Creative": 0.72},
+    "meta/llama-4-maverick":       {"Reasoning": 0.84, "Coding": 0.83, "Summary": 0.82, "Creative": 0.81},
+    # ── xAI ──
+    "xai/grok-4.7":                {"Reasoning": 0.94, "Coding": 0.92, "Summary": 0.88, "Creative": 0.95},
+    "xai/grok-4.7-fast":           {"Reasoning": 0.87, "Coding": 0.85, "Summary": 0.83, "Creative": 0.88},
 }
 
 import hashlib
@@ -286,34 +300,54 @@ async def classify_prompt(request: ClassifyRequest):
     recommendations = []
     for m in all_models:
         scores = MODEL_BENCHMARKS.get(m.id, {"Reasoning": 0.8, "Coding": 0.8, "Summary": 0.8, "Creative": 0.8})
-        
+
         weighted_sum = sum(scores[k] * weights[k] for k in weights)
         total_weight = sum(weights.values())
         model_score = weighted_sum / total_weight
-        
-        # Penalize models that don't meet the target_score (complexity requirement)
-        if model_score < target_score:
-            penalty = (target_score - model_score) * 2.0 # Heavy penalty for being too dumb
+
+        import math
+        # Quality gate: does this model meet the complexity threshold?
+        quality_meets = model_score >= target_score
+
+        # Cost factor: logarithmic penalty for expensive models
+        price = max(m.price_in or 0.01, 0.01)
+        cost_penalty = math.log10(1 + price) * 0.15  # mild penalty for cost
+
+        # For LOW complexity prompts (score < 0.4), strongly prefer cheap models
+        if comp < 0.4:
+            # Cheap models get a big bonus; frontier models get heavy cost penalty
+            if (m.price_in or 0) <= 0.5:
+                cost_bonus = 0.25  # strong bonus for being cheap
+            elif (m.price_in or 0) <= 2.0:
+                cost_bonus = 0.10
+            else:
+                cost_bonus = -0.20  # penalty for frontier on simple tasks
+            conf = max(0.01, min(0.99, model_score * 0.6 + cost_bonus - cost_penalty))
+        elif comp < 0.65:
+            # MEDIUM complexity: balanced approach
+            if quality_meets:
+                cost_bonus = max(0, 0.3 - price / 15.0)
+            else:
+                cost_bonus = -0.15
+            conf = max(0.01, min(0.99, model_score * 0.7 + cost_bonus - cost_penalty * 0.5))
         else:
-            penalty = 0.0
-            
-        # Reward cheaper models IF they meet the target score
-        price_factor = (m.price_in or 0.1) / 10.0 # Normalized roughly 0 to 1.5
-        cost_efficiency = 0.0
-        if model_score >= target_score:
-            cost_efficiency = max(0, 0.5 - price_factor) # Bonus for being cheap but smart enough
-            
-        conf = max(0.01, min(0.99, model_score - penalty + cost_efficiency))
-        
+            # HIGH complexity: quality is paramount, cost secondary
+            if model_score < target_score:
+                penalty = (target_score - model_score) * 2.5
+            else:
+                penalty = 0.0
+            cost_bonus = max(0, 0.15 - price / 30.0) if quality_meets else 0
+            conf = max(0.01, min(0.99, model_score - penalty + cost_bonus))
+
         recommendations.append({
             "model_id": m.id,
             "provider": m.provider,
-            "confidence": conf,
+            "confidence": round(conf, 4),
             "price_in": m.price_in,
             "price_out": m.price_out,
             "context_length": m.context_length
         })
-        
+
     recommendations.sort(key=lambda x: x["confidence"], reverse=True)
     
     top_model = recommendations[0]["model_id"] if recommendations else "None"
