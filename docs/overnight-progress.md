@@ -1,1 +1,2 @@
 - Tue Sep 29 03:01:50 CEST 2026: Updated default mock models to realistic ones.
+- Tue Sep 29 03:02:53 CEST 2026: Added real benchmark scores for accurate model recommendations in classify endpoint.

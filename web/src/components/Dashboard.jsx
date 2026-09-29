@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getMetricsSummary } from '../api/client';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
 
@@ -14,7 +14,14 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!summary) return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading metrics...</div>;
+  if (!summary) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-pulse flex flex-col items-center gap-4">
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+        <div className="text-gray-400 text-sm font-medium">Loading telemetry...</div>
+      </div>
+    </div>
+  );
 
   const tierDistribution = summary.tier_distribution || {
     cheap: summary.cheap_requests || 0,
@@ -30,48 +37,118 @@ export default function Dashboard() {
       value 
     }));
 
+  const costData = [
+    { name: 'Actual', cost: summary.total_cost_actual || 0 },
+    { name: 'Without Router', cost: summary.total_cost_if_frontier || 0 }
+  ];
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8 overflow-y-auto h-full">
-      <h2 className="text-xl font-semibold text-gray-900">Dashboard</h2>
+    <div className="p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto h-full text-[#111]">
+      <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Telemetry & Savings</h2>
+          <p className="text-sm text-gray-500 mt-1">Real-time metrics from the LLM Router gateway</p>
+        </div>
+        <div className="text-xs font-semibold px-3 py-1 bg-green-100 text-green-700 rounded-full flex items-center gap-2">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+          Live
+        </div>
+      </div>
       
+      {/* Top Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Total Requests</div>
+        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+            <span>📉</span> Savings
+          </div>
+          <div className="text-3xl font-bold text-emerald-600">${(summary.total_cost_saved || 0).toFixed(2)}</div>
+          <div className="mt-2 text-xs font-medium text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded-md">
+            -{summary.savings_percentage?.toFixed(1) || 0}% vs Frontier
+          </div>
+        </div>
+
+        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+            <span>⚡</span> Avg Latency
+          </div>
+          <div className="text-3xl font-bold text-gray-900">
+            {(summary.avg_latency_ms || summary.average_latency_ms || 0).toFixed(0)} <span className="text-lg font-medium text-gray-400">ms</span>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">Across all requests</div>
+        </div>
+
+        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+            <span>🎯</span> Total Requests
+          </div>
           <div className="text-3xl font-bold text-gray-900">{summary.total_requests}</div>
+          <div className="mt-2 text-xs text-gray-500">{(summary.total_tokens || 0).toLocaleString()} tokens processed</div>
         </div>
-        <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Cost Saved</div>
-          <div className="text-3xl font-bold text-green-600">${(summary.total_cost_saved || 0).toFixed(4)}</div>
-        </div>
-        <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Avg Latency</div>
-          <div className="text-3xl font-bold text-gray-900">{(summary.avg_latency_ms || summary.average_latency_ms || 0).toFixed(0)} <span className="text-lg font-medium text-gray-400">ms</span></div>
-        </div>
-        <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Cheap Tier</div>
-          <div className="text-3xl font-bold text-gray-900">{summary.cheap_percentage || 0}<span className="text-lg font-medium text-gray-400">%</span></div>
+
+        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+            <span>🏎️</span> Offloaded
+          </div>
+          <div className="text-3xl font-bold text-blue-600">
+            {summary.cheap_percentage || 0}<span className="text-lg font-medium text-blue-400">%</span>
+          </div>
+          <div className="mt-2 text-xs text-blue-700 bg-blue-50 inline-block px-2 py-0.5 rounded-md">
+            Routed to Cheap tier
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-sm font-semibold mb-6">Tier Distribution</h3>
+        {/* Tier Distribution Chart */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-semibold mb-6 flex items-center gap-2">
+            Tier Distribution
+          </h3>
           {pieData.length > 0 ? (
-            <div className="h-64">
+            <div className="h-64 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={4} dataKey="value">
-                    {pieData.map((e, i) => <Cell key={i} fill={COLORS[e.tierKey] || '#999'} stroke="none" />)}
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
+                    {pieData.map((e, i) => <Cell key={i} fill={COLORS[e.tierKey] || '#999'} />)}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ fontSize: '13px', fontWeight: '500' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                <span className="text-2xl font-bold">{summary.total_requests}</span>
+                <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Reqs</span>
+              </div>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-sm text-gray-400">No data available</div>
+            <div className="h-64 flex items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">No routing data available</div>
           )}
+        </div>
+
+        {/* Cost Comparison Chart */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-semibold mb-6">Cost Comparison (USD)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={costData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 500 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} tickFormatter={(val) => `$${val}`} />
+                <Tooltip 
+                  cursor={{ fill: '#f9fafb' }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  formatter={(value) => [`$${value.toFixed(4)}`, 'Cost']}
+                />
+                <Bar dataKey="cost" radius={[4, 4, 0, 0]}>
+                  {costData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#9ca3af'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>
