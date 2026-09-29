@@ -21,6 +21,7 @@ export default function Playground({ modelsCount }) {
   const [allModels, setAllModels] = useState([]);
   const [selectedProviders, setSelectedProviders] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [contextFilter, setContextFilter] = useState('All');
   const [showMore, setShowMore] = useState(false);
   
   const [classification, setClassification] = useState(null);
@@ -175,8 +176,13 @@ export default function Playground({ modelsCount }) {
       else if (b === 'value') res = res.filter(m => (m.price_in || 0) <= 2.0);
       else if (b === 'pro') res = res.filter(m => (m.price_in || 0) > 2.0);
     }
+    if (contextFilter !== 'All') {
+      if (contextFilter === '128k+') res = res.filter(m => (m.context_length || 0) >= 128000);
+      else if (contextFilter === '200k+') res = res.filter(m => (m.context_length || 0) >= 200000);
+      else if (contextFilter === '1M+') res = res.filter(m => (m.context_length || 0) >= 1000000);
+    }
     return res.sort((a, b) => a.id.localeCompare(b.id));
-  }, [allModels, selectedProviders, searchQuery, budget]);
+  }, [allModels, selectedProviders, searchQuery, budget, contextFilter]);
 
   const modelsToShow = showMore ? filteredModels : filteredModels.slice(0, 10);
 
@@ -206,12 +212,27 @@ export default function Playground({ modelsCount }) {
             placeholder="Enter your prompt to find the best model..."
             className="w-full h-full p-4 pb-12 rounded-xl border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-[14px] shadow-sm font-sans"
           />
-          <div className="absolute bottom-3 left-4 text-xs text-gray-400 font-mono">
-            {input.length} chars
+          <div className="absolute bottom-3 left-4 text-xs text-gray-400 font-mono flex items-center gap-2">
+            <span>~{Math.ceil(input.length / 4)} tokens</span>
+            <span>·</span>
+            <span>{input.length} chars</span>
           </div>
           <div className="absolute bottom-3 right-4 flex gap-2">
-            <button onClick={() => setInput('')} className="px-3 py-1 text-xs text-gray-500 hover:text-black font-medium">Clear</button>
-            <button className="px-3 py-1 text-xs text-gray-500 hover:text-black font-medium bg-gray-100 rounded-md">Local</button>
+            {input && (
+              <button 
+                onClick={() => setInput('')} 
+                className="px-2.5 py-1 text-xs text-gray-500 hover:text-black font-medium border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+            <button 
+              onClick={() => handleAnalyze(input)} 
+              disabled={isAnalyzing || !input.trim()}
+              className="px-3 py-1 text-xs text-white font-medium bg-black rounded-md hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-sm"
+            >
+              {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+            </button>
           </div>
         </div>
 
@@ -578,6 +599,23 @@ export default function Playground({ modelsCount }) {
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
             />
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mr-1">Context:</span>
+            {['All', '128k+', '200k+', '1M+'].map(lbl => (
+              <button
+                key={lbl}
+                onClick={() => setContextFilter(lbl)}
+                className={`px-2 py-0.5 text-[11px] font-medium rounded-md transition-colors ${
+                  contextFilter === lbl 
+                    ? 'bg-black text-white shadow-xs' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {lbl}
+              </button>
+            ))}
           </div>
         </div>
 

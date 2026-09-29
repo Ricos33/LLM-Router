@@ -232,13 +232,22 @@ export default function Dashboard() {
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <span>📋</span> Recent Requests
           </h3>
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/csv`}
-            download="llm_router_metrics.csv"
-            className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
-          >
-            <span>📥</span> Export CSV
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/csv`}
+              download="llm_router_metrics.csv"
+              className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+            >
+              <span>📥</span> CSV
+            </a>
+            <a
+              href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/json`}
+              download="llm_router_metrics.json"
+              className="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-1.5"
+            >
+              <span>📄</span> JSON
+            </a>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
@@ -251,6 +260,7 @@ export default function Dashboard() {
                 <th className="px-5 py-3 text-right">Latency</th>
                 <th className="px-5 py-3 text-right">Cost</th>
                 <th className="px-5 py-3 text-right">Saved</th>
+                <th className="px-4 py-3 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -273,10 +283,19 @@ export default function Dashboard() {
                   <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
                   <td className="px-5 py-3 text-right font-mono text-[12px]">${(req.cost_actual || 0).toFixed(4)}</td>
                   <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => navigator.clipboard.writeText(req.prompt_preview || '')}
+                      title="Copy prompt"
+                      className="px-2 py-1 text-[11px] text-gray-500 hover:text-black border border-gray-200 rounded hover:bg-white transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-gray-400">No requests yet</td>
+                  <td colSpan="8" className="px-5 py-8 text-center text-gray-400">No requests yet</td>
                 </tr>
               )}
             </tbody>

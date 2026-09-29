@@ -413,6 +413,16 @@ async def export_metrics_csv():
     })
 
 
+@app.get("/v1/metrics/export/json")
+async def export_metrics_json():
+    """Export all metrics as a JSON file."""
+    json_data = router_engine.metrics.get_all_requests_json()
+    return Response(content=json_data, media_type="application/json", headers={
+        "Content-Disposition": "attachment; filename=llm_router_metrics.json"
+    })
+
+
+
 @app.get("/v1/analytics")
 async def get_analytics():
     """Rich analytics: model distribution, tier stats, time-series, efficiency."""

@@ -234,6 +234,27 @@ class MetricsTracker:
                 ])
             return output.getvalue()
 
+    def get_all_requests_json(self) -> str:
+        """Export all request metrics as pretty-printed JSON."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT id, timestamp, prompt_preview, routed_tier, model_used,
+                       prompt_tokens, completion_tokens, total_tokens,
+                       latency_ms, cost_actual, cost_if_frontier, cost_saved,
+                       classifier_score, classifier_reasons
+                FROM metrics
+                ORDER BY id DESC
+            """)
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                try:
+                    r["classifier_reasons"] = json.loads(r["classifier_reasons"])
+                except Exception:
+                    pass
+            return json.dumps(rows, indent=2)
+
+
 
     def get_analytics(self) -> Dict[str, Any]:
         """Rich analytics: model distribution, avg scores per tier, top models, time-series."""
