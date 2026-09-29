@@ -20,8 +20,19 @@
   --color-brd: #e4e4e7;
 }
 
+/* Explicit theme override (set by the theme toggle, persisted in localStorage) */
+:root[data-theme="dark"] {
+  --color-base: #09090b;
+  --color-surface: #18181b;
+  --color-elevated: #27272a;
+  --color-txt-base: #fafafa;
+  --color-txt-muted: #a1a1aa;
+  --color-brd: #3f3f46;
+}
+
+/* Fallback: follow the OS preference when no explicit choice was made */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --color-base: #09090b;
     --color-surface: #18181b;
     --color-elevated: #27272a;
