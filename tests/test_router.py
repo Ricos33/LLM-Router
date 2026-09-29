@@ -1,7 +1,8 @@
 import pytest
 from app.router import RouterEngine
 from app.models import ChatCompletionRequest, ChatMessage
-from app.classifier import ModelTier
+from app.classifier import ModelTier, RuleBasedClassifier
+from app.backends import OllamaBackend, OpenAICompatibleBackend
 
 
 @pytest.mark.asyncio
@@ -245,6 +246,45 @@ def test_provider_circuit_breaker():
     status = cb.get_health_status()
     assert status[provider]["status"] == "healthy"
     assert status[provider]["consecutive_failures"] == 0
+
+
+def test_catalog_prompt_caching_validity():
+    from app.catalog import CURATED_MODELS, get_model_cache_pricing
+
+    assert len(CURATED_MODELS) >= 20
+    for m in CURATED_MODELS:
+        assert m.price_cache_read is not None, f"Model {m.id} missing price_cache_read"
+        assert m.price_cache_read > 0, f"Model {m.id} has invalid price_cache_read"
+        assert m.price_cache_read <= (m.price_in or 0.0), f"Model {m.id} cache price {m.price_cache_read} exceeds input price {m.price_in}"
+
+    assert get_model_cache_pricing("anthropic/claude-opus-5.5") == 0.40
+    assert get_model_cache_pricing("openai/gpt-6-astra") == 5.00
+    assert get_model_cache_pricing("google/gemini-3.1-pro") == 0.50
+    assert get_model_cache_pricing("unknown/model-xyz") is None
+
+
+@pytest.mark.asyncio
+async def test_prompt_caching_metadata_calculation():
+    router = RouterEngine(
+        classifier=RuleBasedClassifier(threshold=0.6),
+        cheap_backend=OllamaBackend(default_model="meta/llama-4-scout", simulate_fallback=True),
+        frontier_backend=OpenAICompatibleBackend(default_model="anthropic/claude-opus-5.5", simulate_fallback=True),
+    )
+
+    req = ChatCompletionRequest(
+        model="anthropic/claude-opus-5.5",
+        messages=[
+            ChatMessage(role="system", content="You are a senior systems engineer analyzing distributed concensus protocols."),
+            ChatMessage(role="user", content="Explain Raft log compaction."),
+        ]
+    )
+
+    res = await router.route_and_execute(req)
+    assert res.router_metadata is not None
+    assert res.router_metadata.cost_cached_usd is not None
+    assert res.router_metadata.cost_cached_usd <= res.router_metadata.cost_actual_usd
+    assert res.router_metadata.cache_savings_pct is not None
+    assert res.router_metadata.cache_savings_pct > 0
 
 
 

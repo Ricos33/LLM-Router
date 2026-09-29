@@ -49,6 +49,8 @@ class RouterMetadata(BaseModel):
     fallback_triggered: bool = False
     fallback_chain: List[str] = Field(default_factory=list)
     circuit_status: Optional[str] = "healthy"
+    cost_cached_usd: Optional[float] = None
+    cache_savings_pct: Optional[float] = None
 
 
 
@@ -72,6 +74,7 @@ class ModelObject(BaseModel):
     tier: Optional[str] = None
     price_in: Optional[float] = None
     price_out: Optional[float] = None
+    price_cache_read: Optional[float] = None
     context_length: Optional[int] = None
     scores: Optional[Dict[str, float]] = None
 

@@ -40,6 +40,7 @@ export default function Playground({ modelsCount }) {
   const [showTrace, setShowTrace] = useState(false);
   const [showSnippets, setShowSnippets] = useState(false);
   const [volumeTier, setVolumeTier] = useState(1);
+  const [enablePromptCache, setEnablePromptCache] = useState(false);
   const [customCompareModels, setCustomCompareModels] = useState(new Set());
   const [executions, setExecutions] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -442,7 +443,11 @@ export default function Playground({ modelsCount }) {
               // Estimate cost per request (avg ~500 input tokens, ~300 output tokens)
               const avgInputTokens = 500;
               const avgOutputTokens = 300;
-              const costRecommended = ((top.price_in || 0) * avgInputTokens / 1_000_000) + ((top.price_out || 0) * avgOutputTokens / 1_000_000);
+              const hasCacheSupport = top.price_cache_read !== undefined && top.price_cache_read !== null;
+              const effectiveInPrice = (enablePromptCache && hasCacheSupport)
+                ? (top.price_cache_read * 0.8 + (top.price_in || 0) * 0.2)
+                : (top.price_in || 0);
+              const costRecommended = (effectiveInPrice * avgInputTokens / 1_000_000) + ((top.price_out || 0) * avgOutputTokens / 1_000_000);
               const costFrontier = (maxPriceIn * avgInputTokens / 1_000_000) + (maxPriceOut * avgOutputTokens / 1_000_000);
               const savedPerReq = Math.max(0, costFrontier - costRecommended);
               const savedPct = costFrontier > 0 ? (savedPerReq / costFrontier * 100) : 0;
@@ -450,12 +455,29 @@ export default function Playground({ modelsCount }) {
 
               return (
                 <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-200 p-5 shadow-sm flex flex-col gap-4">
-                  <div className="text-[10px] font-bold tracking-widest text-emerald-600 uppercase flex items-center gap-2">
-                    <span>💰</span> Savings Estimate
+                  <div className="flex justify-between items-center">
+                    <div className="text-[10px] font-bold tracking-widest text-emerald-600 uppercase flex items-center gap-2">
+                      <span>💰</span> Savings Estimate
+                    </div>
+                    {hasCacheSupport && (
+                      <button
+                        onClick={() => setEnablePromptCache(!enablePromptCache)}
+                        className={`text-[10px] px-2 py-0.5 rounded font-semibold transition-all flex items-center gap-1 ${
+                          enablePromptCache
+                            ? 'bg-emerald-700 text-white shadow-2xs'
+                            : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                        }`}
+                        title="Simulate prompt prefix caching with 80% cache hit ratio"
+                      >
+                        ⚡ {enablePromptCache ? 'Prompt Cache: Active (80%)' : '+ Prompt Cache'}
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col">
-                      <div className="text-[10px] text-gray-400 font-medium uppercase">Per Request</div>
+                      <div className="text-[10px] text-gray-400 font-medium uppercase">
+                        {enablePromptCache && hasCacheSupport ? 'Per Req (Cached)' : 'Per Request'}
+                      </div>
                       <div className="text-lg font-bold text-emerald-600">${costRecommended.toFixed(5)}</div>
                       <div className="text-[10px] text-gray-400 line-through">${costFrontier.toFixed(5)}</div>
                     </div>
@@ -829,7 +851,7 @@ export default function Playground({ modelsCount }) {
                     <span>Coding: {Math.round((m.scores.Coding || 0) * 100)}%</span>
                   </div>
                 )}
-                <div className="flex gap-4 text-[11px] text-gray-600 mt-0.5 font-medium">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600 mt-0.5 font-medium">
                   <span className="flex items-center gap-1">
                     <span className="text-gray-400">Context:</span> {(m.context_length || 0).toLocaleString()}
                   </span>
@@ -839,6 +861,11 @@ export default function Playground({ modelsCount }) {
                   <span className="flex items-center gap-1">
                     <span className="text-gray-400">Out:</span> ${(m.price_out || 0).toFixed(2)}/M
                   </span>
+                  {m.price_cache_read !== undefined && m.price_cache_read !== null && (
+                    <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100 font-mono text-[10px]" title="Prompt cache read price">
+                      ⚡ Cache: ${(m.price_cache_read).toFixed(2)}/M
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

@@ -374,9 +374,11 @@ async def classify_prompt(request: ClassifyRequest):
         recommendations.append({
             "model_id": m.id,
             "provider": m.provider,
+            "tier": m.tier,
             "confidence": round(conf, 4),
             "price_in": m.price_in,
             "price_out": m.price_out,
+            "price_cache_read": m.price_cache_read,
             "context_length": m.context_length
         })
 
@@ -488,11 +490,23 @@ async def get_catalog_summary():
     if price_range["min_out"] == float("inf"):
         price_range["min_out"] = 0.0
 
+    caching_models = [m for m in _curated_models if m.price_cache_read is not None]
+    cache_discounts = [
+        round((1.0 - (m.price_cache_read / m.price_in)) * 100, 1)
+        for m in caching_models if m.price_in and m.price_in > 0
+    ]
+    prompt_caching_summary = {
+        "supported_models": len(caching_models),
+        "max_discount_pct": max(cache_discounts) if cache_discounts else 0.0,
+        "avg_discount_pct": round(sum(cache_discounts) / len(cache_discounts), 1) if cache_discounts else 0.0,
+    }
+
     return {
         "total_models": len(_curated_models),
         "providers": providers,
         "tier_distribution": tiers,
         "price_range_per_m": price_range,
+        "prompt_caching": prompt_caching_summary,
         "last_updated": "2026-09-29",
     }
 

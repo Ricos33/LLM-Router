@@ -24,7 +24,7 @@ from app.backends import (
     AgyBackend,
 )
 from app.storage import MetricsTracker, RequestMetric
-from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing
+from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing, get_model_cache_pricing
 from app.router.circuit_breaker import ProviderCircuitBreaker
 
 logger = logging.getLogger(__name__)
@@ -554,6 +554,21 @@ class RouterEngine:
 
         cost_saved = max(0.0, cost_frontier - cost_actual)
 
+        # Step 3b: Prompt caching economics estimate (assuming 80% prefix cache hit)
+        price_cache_read = get_model_cache_pricing(executed_decision.model_name)
+        cost_cached = None
+        cache_savings_pct = None
+        if price_cache_read is not None and prompt_tokens > 0:
+            cached_in = prompt_tokens * 0.8
+            uncached_in = prompt_tokens * 0.2
+            cost_cached = (
+                (cached_in / 1_000_000.0) * price_cache_read
+                + (uncached_in / 1_000_000.0) * (price_in or 0.0)
+                + (completion_tokens / 1_000_000.0) * (price_out or 0.0)
+            )
+            if cost_actual > 0:
+                cache_savings_pct = round(max(0.0, (cost_actual - cost_cached) / cost_actual * 100), 1)
+
         # Step 4: Record metadata
         circuit_status = self.circuit_breaker.get_health_status().get(
             executed_decision.provider_name.lower(), {}
@@ -569,6 +584,8 @@ class RouterEngine:
             cost_actual_usd=round(cost_actual, 6),
             cost_frontier_usd=round(cost_frontier, 6),
             cost_saved_usd=round(cost_saved, 6),
+            cost_cached_usd=round(cost_cached, 6) if cost_cached is not None else None,
+            cache_savings_pct=cache_savings_pct,
             fallback_triggered=fallback_triggered,
             fallback_chain=fallback_history,
             circuit_status=circuit_status,
