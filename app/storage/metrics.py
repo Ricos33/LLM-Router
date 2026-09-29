@@ -312,3 +312,10 @@ class MetricsTracker:
                 "efficiency_percentage": efficiency_pct,
                 "total_requests": total,
             }
+
+    def clear_all(self) -> None:
+        """Clear all metrics from the database."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM metrics")
+            conn.commit()

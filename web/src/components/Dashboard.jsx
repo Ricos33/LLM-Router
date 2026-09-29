@@ -564,6 +564,22 @@ export default function Dashboard() {
             >
               <span>📄</span> JSON
             </a>
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to delete all analytics data? This cannot be undone.')) {
+                  try {
+                    const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+                    await fetch(`${apiBase}/v1/analytics`, { method: 'DELETE' });
+                    window.location.reload();
+                  } catch (e) {
+                    alert('Error clearing analytics');
+                  }
+                }
+              }}
+              className="px-2.5 py-1 bg-red-50 border border-red-200 rounded-lg text-[11px] font-semibold text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors shadow-2xs flex items-center gap-1 ml-2"
+            >
+              <span>🗑️</span> Clear
+            </button>
           </div>
         </div>
         <div className="overflow-x-auto">

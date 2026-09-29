@@ -560,6 +560,13 @@ async def get_analytics():
     return router_engine.metrics.get_analytics()
 
 
+@app.delete("/v1/analytics")
+async def clear_analytics():
+    """Clear all request metrics and analytics from the database."""
+    router_engine.metrics.clear_all()
+    return {"status": "ok", "message": "All analytics cleared"}
+
+
 @app.get("/v1/catalog/summary")
 async def get_catalog_summary():
     """Quick overview of the curated model catalog."""
