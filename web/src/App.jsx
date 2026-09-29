@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Playground from './components/Playground';
 import Dashboard from './components/Dashboard';
 import Benchmark from './components/Benchmark';
-import Catalog from './components/Catalog';
+import Catalog from "./components/Catalog";
+import ABTesting from "./components/ABTesting"; './components/Catalog';
 import SettingsModal from './components/SettingsModal';
 import { getModels } from './api/client';
 
@@ -11,6 +12,7 @@ const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'benchmark', label: 'Benchmark' },
   { key: 'catalog', label: 'Catalog' },
+  { key: 'abtest', label: 'A/B Test' },
 ];
 
 function App() {
