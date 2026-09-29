@@ -35,13 +35,20 @@ class Settings(BaseSettings):
     cheap_completion_price_per_m: float = 0.60  # $ / 1M completion tokens
 
     # Frontier Backend (OpenAI / OpenRouter / Anthropic)
-    frontier_provider: str = "openai_compatible"
+    frontier_provider: str = "openai"  # 'openai', 'anthropic', or 'openai_compatible'
     frontier_api_base_url: str = "https://api.openai.com/v1"
     frontier_api_key: str = ""
     frontier_model: str = "gpt-4o"
     frontier_prompt_price_per_m: float = 5.00      # $ / 1M prompt tokens
     frontier_completion_price_per_m: float = 15.00  # $ / 1M completion tokens
 
+    # OpenAI Specific (for demo setup)
+    openai_api_key: str = ""
+    openai_model: str = "gpt-5"
+
+    # Anthropic Specific (for demo setup)
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-opus-4-6"
     # Agy Backend (Local Antigravity CLI)
     agy_enabled: bool = False
     agy_binary_path: str = "~/workspace/cli-tools/bin/agy"

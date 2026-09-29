@@ -65,6 +65,8 @@ async def list_models():
         ModelObject(id="router-frontier"),
         ModelObject(id=settings.cheap_model),
         ModelObject(id=settings.frontier_model),
+        ModelObject(id=settings.openai_model),
+        ModelObject(id=settings.anthropic_model),
     ]
     if settings.agy_enabled:
         models.extend([

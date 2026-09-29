@@ -17,6 +17,7 @@ from app.classifier import (
     JevClassifier,
 )
 from app.backends import (
+    AnthropicBackend,
     BaseBackend,
     OllamaBackend,
     OpenAICompatibleBackend,
@@ -195,7 +196,7 @@ class RouterEngine:
                     )
                 return RoutingDecision(
                     tier=ModelTier.FRONTIER,
-                    model_name=settings.frontier_model,
+                    model_name=self.frontier_backend.default_model,
                     backend=self.frontier_backend,
                     provider_name=settings.frontier_provider,
                     classifier_score=1.0,
@@ -214,7 +215,7 @@ class RouterEngine:
                     )
                 return RoutingDecision(
                     tier=ModelTier.MEDIUM,
-                    model_name=settings.frontier_model,
+                    model_name=self.frontier_backend.default_model,
                     backend=self.frontier_backend,
                     provider_name=settings.frontier_provider,
                     classifier_score=0.5,
@@ -233,7 +234,7 @@ class RouterEngine:
                     )
                 return RoutingDecision(
                     tier=ModelTier.CHEAP,
-                    model_name=settings.cheap_model,
+                    model_name=self.cheap_backend.default_model,
                     backend=self.cheap_backend,
                     provider_name=settings.cheap_provider,
                     classifier_score=0.0,
@@ -276,7 +277,7 @@ class RouterEngine:
                 classifier_score=0.0,
                 reasons=[f"Explicit model target requested: {request.model}"],
             )
-        elif req_model in ("router-frontier", "frontier", settings.frontier_model.lower()):
+        elif req_model in ("router-frontier", "frontier", settings.frontier_model.lower(), settings.openai_model.lower(), settings.anthropic_model.lower()):
             if settings.agy_enabled:
                 model = self.agy_backend.get_model_for_tier("frontier")
                 return RoutingDecision(
@@ -289,7 +290,7 @@ class RouterEngine:
                 )
             return RoutingDecision(
                 tier=ModelTier.FRONTIER,
-                model_name=settings.frontier_model,
+                model_name=self.frontier_backend.default_model,
                 backend=self.frontier_backend,
                 provider_name=settings.frontier_provider,
                 classifier_score=1.0,
@@ -308,7 +309,7 @@ class RouterEngine:
                 )
             return RoutingDecision(
                 tier=ModelTier.CHEAP,
-                model_name=settings.cheap_model,
+                model_name=self.cheap_backend.default_model,
                 backend=self.cheap_backend,
                 provider_name=settings.cheap_provider,
                 classifier_score=0.0,
@@ -354,7 +355,7 @@ class RouterEngine:
         if classification.tier == ModelTier.FRONTIER:
             return RoutingDecision(
                 tier=ModelTier.FRONTIER,
-                model_name=settings.frontier_model,
+                model_name=self.frontier_backend.default_model,
                 backend=self.frontier_backend,
                 provider_name=settings.frontier_provider,
                 classifier_score=classification.score,
@@ -363,7 +364,7 @@ class RouterEngine:
         elif classification.tier == ModelTier.MEDIUM:
             return RoutingDecision(
                 tier=ModelTier.MEDIUM,
-                model_name=settings.frontier_model,
+                model_name=self.frontier_backend.default_model,
                 backend=self.frontier_backend,
                 provider_name=settings.frontier_provider,
                 classifier_score=classification.score,
@@ -372,7 +373,7 @@ class RouterEngine:
         else:
             return RoutingDecision(
                 tier=ModelTier.CHEAP,
-                model_name=settings.cheap_model,
+                model_name=self.cheap_backend.default_model,
                 backend=self.cheap_backend,
                 provider_name=settings.cheap_provider,
                 classifier_score=classification.score,

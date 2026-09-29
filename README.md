@@ -84,11 +84,18 @@ flowchart TD
 - `POST /v1/chat/completions`: Standard OpenAI chat completion. Returns routing info in headers (`X-Router-Tier`, `X-Router-Model`, `X-Router-Saved-USD`).
 - `POST /v1/classify`: Analyzes prompt complexity and suggests tier.
 
-## Configuration
-
-Set these in your `.env` file:
-
-- `JEV_API_KEY`: TypeSafe AI key for Jev classifier
-- `CLASSIFIER_MODE`: `mock` or `jev`
-- `AGY_ENABLED`: `true` to use local Antigravity CLI backends
-- `SIMULATE_FALLBACK`: `true` for offline testing
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8000` | HTTP port for the FastAPI gateway |
+| `HOST` | `0.0.0.0` | Bind host address |
+| `CLASSIFIER_MODE` | `mock` | `mock` (rule-based) or `jev` (TypeSafe AI) |
+| `JEV_API_KEY` | `""` | TypeSafe AI key for Jev classifier |
+| `CHEAP_PROVIDER` | `ollama` | Cheap provider (`ollama` or `openai_compatible`) |
+| `FRONTIER_PROVIDER` | `openai` | Frontier provider (`openai`, `anthropic`, or `openai_compatible`) |
+| `FRONTIER_API_KEY` | `""` | Generic frontier API key |
+| `OPENAI_API_KEY` | `""` | OpenAI API Key (for demo) |
+| `OPENAI_MODEL` | `gpt-5` | OpenAI target model |
+| `ANTHROPIC_API_KEY` | `""` | Anthropic API Key (for demo) |
+| `ANTHROPIC_MODEL` | `claude-opus-4-6` | Anthropic target model |
+| `AGY_ENABLED` | `false` | `true` to use local Antigravity CLI backends |
+| `SIMULATE_FALLBACK` | `true` | Return simulation when upstream providers are offline |
