@@ -60,3 +60,5 @@
 - Tue Sep 29 07:31:30 UTC 2026: Quota épuisé pour gemini-3.1-pro-high. Passage au modèle suivant.
 - Tue Sep 29 08:04:24 UTC 2026: Enhanced heuristic classifier with multi-language keyword support (French, Spanish, German, Portuguese), math/LaTeX notation detection, and structured output keywords (JSON schema, OpenAPI, YAML). 4 new tests added. Tests: 78 passed, build OK.
 - Tue Sep 29 08:08:11 UTC 2026: Implemented token estimation engine (app/tokenizer.py) and /v1/estimate-cost pre-execution cost preview API with savings summary, cache projections, and context-fit checks. Added frontend API client helpers. Tests: 91 passed, build OK.
+- Tue Sep 29 08:09:47 UTC 2026: Upgraded frontend with responsive mobile layout (hamburger menu), full ARIA accessibility (tablist/tab/tabpanel, aria-selected, aria-expanded), keyboard navigation (arrows, Home, End, Escape), focus-visible indicators, reduced-motion support, and high-contrast mode compatibility. Tests: 91 passed, build OK.
+- Tue Sep 29 08:14:00 UTC 2026: Quota épuisé pour claude-opus-4-6-thinking (RESOURCE_EXHAUSTED, reset ~4h47). Passage au modèle suivant.
