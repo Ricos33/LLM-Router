@@ -1,5 +1,11 @@
 # Mission overnight — LLM Router (29→30 septembre 2026)
 
+## MISSION 29 SEPT APRÈS-MIDI — priorités de Youssef (lis en premier)
+Nouveau cycle demandé par Youssef le 29/09 à 14h20. En plus de la boucle d'amélioration continue, ces 3 chantiers sont PRIORITAIRES :
+1. **Fine-tuning du JSON envoyé à Jev** : le payload SystemOne doit être affiné pour de meilleurs résultats de routage. Améliore le schéma (champs, pondérations, fit scoring par modèle candidat), la sélection des candidats, et la calibration des scores. La clé Jev est encore vide (mock actif) : tout doit être excellent ET testé en mock, prêt pour la vraie clé.
+2. **La partie "routing strategy" ne fonctionne pas bien** (constat de Youssef) : diagnostique pourquoi (les stratégies ne changent pas réellement le routage ? UI déconnectée du backend ?), répare, et prouve avec des tests + curl que chaque stratégie (balanced, cost_optimized, quality_optimized, etc.) produit un routage différent et cohérent.
+3. **Améliorations de fonctionnalités** : continue d'ajouter des features utiles (voir section FONCTIONNALITÉS), en gardant le repo propre et présentable pour GitHub/LinkedIn.
+
 Tu travailles de façon AUTONOME toute la nuit sur /home/hatch/workspace/LLM-Router,
 SUR LA BRANCHE `overnight-improvements` (déjà créée, déjà checkout). Tous les commits et pushs
 vont sur `overnight-improvements`, JAMAIS sur main.
