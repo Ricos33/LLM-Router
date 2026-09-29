@@ -36,7 +36,7 @@ Garde l'ADN validé par Youssef : 3 colonnes (prompt / analyse / catalogue), pro
 
 ## Direction 3 — Frontend de niveau supérieur
 - Porte le Playground au niveau premium : raffiné, humain, micro-interactions soignées, zéro esthétique "généré par IA".
-- Garde l'ADN validé : 3 colonnes (prompt / analyse / catalogue), bouton Analyze, providers à cocher, slider budget, barres noires.
+- Garde l'ADN validé : 3 colonnes (prompt / analyse / catalogue), bouton Send (PAS de bouton Analyze — supprimé et remplacé par Send le 29/09), providers à cocher, slider budget, barres noires, classification live pendant la frappe.
 - Chaque élément doit avoir une raison d'être. Teste visuellement via le build (pas de screenshot possible sur cette VM).
 
 ## BACKLOG VERROUILLÉ — imposé par Lmoudir, validé par Youssef le 29/09 à 14h30
@@ -82,7 +82,7 @@ C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'ar
 
 ## Règles strictes
 - Ne commiter JAMAIS de clé API ou secret. Vérifie avec `git diff --cached` avant chaque commit.
-- Ne casse pas ce qui marche : le bouton Analyze et la classification doivent rester fonctionnels après chaque itération.
+- Ne casse pas ce qui marche : le bouton Send et la classification live doivent rester fonctionnels après chaque itération.
 - Réponds à la fin UNIQUEMENT : résumé des améliorations + liste des commits. Rien d'autre.
 
 ## ROTATION DES MODÈLES — le travail ne s'arrête jamais

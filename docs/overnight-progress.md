@@ -88,3 +88,9 @@
 - Added candidate fit-scoring evaluation to `RuleBasedClassifier` (mock) so it realistically simulates Jev's tailored scoring. 
 - The recommendation engine now clearly differentiates the models per category. 
 - Tests (116) pass. Web build pass. Push successful.
+## 29/09 14:31 - UI Premium Upgrades & Resilience Analytics
+- Added debounced live-typing classification to the Playground for a premium 'instant-analyze' feel.
+- Modified `ModelCompareResult` and `app/main.py` to return `fallback_triggered` metadata to the frontend.
+- Added visual fallback indicator badges to the Playground to prove resilience transparency.
+- Tracked `fallback_triggered` in SQLite `RequestMetric` and added Resilience Stats to the Analytics dashboard UI.
+- All tests (116) pass. Web build pass. Pushed.
