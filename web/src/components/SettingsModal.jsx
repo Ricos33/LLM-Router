@@ -13,6 +13,7 @@ const AUTHORIZED_PROVIDERS = [
 
 export default function SettingsModal({ onClose }) {
   const [keys, setKeys] = useState({});
+  const [health, setHealth] = useState({});
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
@@ -20,6 +21,11 @@ export default function SettingsModal({ onClose }) {
     if (saved) {
       try { setKeys(JSON.parse(saved)); } catch (e) {}
     }
+    const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    fetch(`${apiBase}/v1/providers/health`)
+      .then(res => res.json())
+      .then(setHealth)
+      .catch(() => {});
   }, []);
 
   const handleSave = () => {
@@ -35,8 +41,8 @@ export default function SettingsModal({ onClose }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Provider API Keys</h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">8 authorized providers — stored locally in browser</p>
+            <h2 className="text-[15px] font-semibold text-gray-900">Provider API Keys & Health</h2>
+            <p className="text-[11px] text-gray-500 mt-0.5">8 authorized providers with live circuit breaker tracking</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-black">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -44,16 +50,32 @@ export default function SettingsModal({ onClose }) {
         </div>
         
         <div className="p-5 flex flex-col gap-3.5 text-[13px] overflow-y-auto">
-          {AUTHORIZED_PROVIDERS.map(p => (
-            <div key={p.id} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <label className="font-semibold text-gray-700 text-[11px] tracking-wide">{p.name}</label>
-                {keys[p.id] ? (
-                  <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">Configured</span>
-                ) : (
-                  <span className="text-[10px] text-gray-400">Not set</span>
-                )}
-              </div>
+          {AUTHORIZED_PROVIDERS.map(p => {
+            const pHealth = health[p.id]?.status || 'healthy';
+            const isTripped = pHealth === 'tripped';
+            return (
+              <div key={p.id} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span 
+                      className={`w-2 h-2 rounded-full ${isTripped ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} 
+                      title={isTripped ? 'Circuit tripped (temporarily avoiding)' : 'Circuit healthy'}
+                    />
+                    <label className="font-semibold text-gray-700 text-[11px] tracking-wide">{p.name}</label>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {isTripped && (
+                      <span className="text-[9px] text-red-600 font-bold bg-red-50 px-1.5 py-0.2 rounded uppercase">
+                        Tripped
+                      </span>
+                    )}
+                    {keys[p.id] ? (
+                      <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">Configured</span>
+                    ) : (
+                      <span className="text-[10px] text-gray-400">Not set</span>
+                    )}
+                  </div>
+                </div>
               <input 
                 type="password"
                 placeholder={p.placeholder}
@@ -62,8 +84,9 @@ export default function SettingsModal({ onClose }) {
                 className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono text-[11px]"
               />
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
         
         <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
           <span className="text-[11px] text-gray-400">Keys are never sent to third parties</span>

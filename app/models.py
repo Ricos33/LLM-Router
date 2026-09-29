@@ -48,6 +48,7 @@ class RouterMetadata(BaseModel):
     cost_saved_usd: float
     fallback_triggered: bool = False
     fallback_chain: List[str] = Field(default_factory=list)
+    circuit_status: Optional[str] = "healthy"
 
 
 

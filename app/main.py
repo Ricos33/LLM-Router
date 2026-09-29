@@ -86,6 +86,12 @@ async def get_tier_models():
     return router_engine.get_tier_models()
 
 
+@app.get("/v1/providers/health")
+async def get_providers_health():
+    """Retrieve real-time circuit breaker and availability status for all providers."""
+    return router_engine.circuit_breaker.get_health_status()
+
+
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def chat_completions(
     request: ChatCompletionRequest,

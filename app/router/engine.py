@@ -25,6 +25,7 @@ from app.backends import (
 )
 from app.storage import MetricsTracker, RequestMetric
 from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing
+from app.router.circuit_breaker import ProviderCircuitBreaker
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,11 @@ class RouterEngine:
         # 3. Metrics persistence
         self.metrics = metrics_tracker or MetricsTracker(
             db_path=str(settings.db_path)
+        )
+
+        # 4. Resilience Circuit Breaker
+        self.circuit_breaker = ProviderCircuitBreaker(
+            failure_threshold=3, cooldown_seconds=30.0
         )
 
     def get_tier_models(self) -> Dict[str, Dict[str, Any]]:
@@ -450,6 +456,11 @@ class RouterEngine:
         if not any(c.model_name == default_frontier.model_name for c in candidates):
             candidates.append(default_frontier)
 
+        # Prioritize candidates from healthy/available providers over tripped ones
+        candidates.sort(
+            key=lambda c: 0 if self.circuit_breaker.is_available(c.provider_name) else 1
+        )
+
         return candidates
 
     async def route_and_execute(
@@ -487,12 +498,14 @@ class RouterEngine:
                     api_key_override=api_key_override,
                 )
                 executed_decision = candidate
+                self.circuit_breaker.record_success(candidate.provider_name)
                 if idx > 0:
                     fallback_triggered = True
                     fallback_history.append(f"{candidate.model_name} (succeeded)")
                     logger.info(f"Fallback succeeded on attempt {idx + 1} with {candidate.model_name}")
                 break
             except Exception as e:
+                self.circuit_breaker.record_failure(candidate.provider_name, str(e))
                 err_msg = str(e)[:60]
                 fallback_history.append(f"{candidate.model_name} (failed: {err_msg})")
                 logger.warning(
@@ -542,6 +555,10 @@ class RouterEngine:
         cost_saved = max(0.0, cost_frontier - cost_actual)
 
         # Step 4: Record metadata
+        circuit_status = self.circuit_breaker.get_health_status().get(
+            executed_decision.provider_name.lower(), {}
+        ).get("status", "healthy")
+
         router_metadata = RouterMetadata(
             routed_tier=executed_decision.tier.value,
             classifier_score=executed_decision.classifier_score,
@@ -554,6 +571,7 @@ class RouterEngine:
             cost_saved_usd=round(cost_saved, 6),
             fallback_triggered=fallback_triggered,
             fallback_chain=fallback_history,
+            circuit_status=circuit_status,
         )
         response.router_metadata = router_metadata
 

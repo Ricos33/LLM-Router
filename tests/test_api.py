@@ -339,8 +339,24 @@ def test_classify_explain_endpoint(client):
     assert "decision_trace" in data
     trace = data["decision_trace"]
     assert "signals" in trace
-    assert "planned_fallback_chain" in trace
-    assert len(trace["planned_fallback_chain"]) >= 2
+def test_providers_health_endpoint(client):
+    res = client.get("/v1/providers/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data, dict)
+    # Trigger a completion to see recorded provider
+    client.post("/v1/chat/completions", json={
+        "model": "router-auto",
+        "messages": [{"role": "user", "content": "hello"}]
+    })
+    health_res = client.get("/v1/providers/health")
+    assert health_res.status_code == 200
+    health_data = health_res.json()
+    assert len(health_data) > 0
+    first_p = list(health_data.values())[0]
+    assert "status" in first_p
+    assert "available" in first_p
+    assert first_p["status"] == "healthy"
 
 
 

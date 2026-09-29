@@ -207,4 +207,44 @@ async def test_resilient_fallback_chain_on_primary_failure():
         router.cheap_backend.complete = original_complete
 
 
+def test_provider_circuit_breaker():
+    from app.router.circuit_breaker import ProviderCircuitBreaker
+
+    cb = ProviderCircuitBreaker(failure_threshold=3, cooldown_seconds=0.1)
+    provider = "anthropic"
+
+    # Initially healthy
+    assert cb.is_available(provider) is True
+
+    # 1 failure -> degraded but still available
+    cb.record_failure(provider, "500 Internal Error")
+    assert cb.is_available(provider) is True
+    status = cb.get_health_status()
+    assert status[provider]["status"] == "degraded"
+    assert status[provider]["consecutive_failures"] == 1
+
+    # 2nd failure
+    cb.record_failure(provider, "502 Bad Gateway")
+    assert cb.is_available(provider) is True
+
+    # 3rd failure -> tripped
+    cb.record_failure(provider, "504 Gateway Timeout")
+    assert cb.is_available(provider) is False
+    status = cb.get_health_status()
+    assert status[provider]["status"] == "tripped"
+    assert status[provider]["consecutive_failures"] == 3
+
+    # Wait for cooldown to expire
+    import time
+    time.sleep(0.15)
+    # Should now be available (half-open)
+    assert cb.is_available(provider) is True
+
+    # Successful recovery resets count
+    cb.record_success(provider)
+    status = cb.get_health_status()
+    assert status[provider]["status"] == "healthy"
+    assert status[provider]["consecutive_failures"] == 0
+
+
 
