@@ -66,6 +66,9 @@ class ModelObject(BaseModel):
     name: Optional[str] = None
     provider: Optional[str] = None
     tier: Optional[str] = None
+    price_in: Optional[float] = None
+    price_out: Optional[float] = None
+    context_length: Optional[int] = None
 
 
 class ModelListResponse(BaseModel):

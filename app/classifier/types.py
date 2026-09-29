@@ -18,3 +18,6 @@ class ClassificationResult(BaseModel):
     probabilities: Dict[str, float] = Field(default_factory=dict)
     tier_models: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    category_scores: Dict[str, float] = Field(default_factory=dict)
+    tags: List[str] = Field(default_factory=list)
+    recommendations: List[Dict[str, Any]] = Field(default_factory=list)

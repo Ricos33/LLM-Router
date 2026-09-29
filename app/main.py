@@ -1,3 +1,5 @@
+import httpx
+import time
 import logging
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Response
@@ -7,6 +9,13 @@ import json
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from pydantic import BaseModel
+from typing import List, Optional
+class ClassifyRequest(BaseModel):
+    messages: List[dict]
+    budget: Optional[str] = "Any"
+    providers: Optional[List[str]] = None
+
 from app.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -58,32 +67,55 @@ async def health_check():
     }
 
 
+
+_openrouter_cache = None
+_openrouter_cache_time = 0
+
 @app.get("/v1/models", response_model=ModelListResponse)
 async def list_models():
-    """List available virtual router models and upstream targets."""
+    global _openrouter_cache, _openrouter_cache_time
+    # Try fetching from OpenRouter
+    if _openrouter_cache is None or time.time() - _openrouter_cache_time > 3600:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get("https://openrouter.ai/api/v1/models")
+                if res.status_code == 200:
+                    data = res.json().get("data", [])
+                    models = []
+                    for m in data:
+                        pr_prompt = m.get("pricing", {}).get("prompt", "0")
+                        pr_comp = m.get("pricing", {}).get("completion", "0")
+                        price_in = float(pr_prompt) * 1000000 if pr_prompt else 0
+                        price_out = float(pr_comp) * 1000000 if pr_comp else 0
+                        models.append(ModelObject(
+                            id=m["id"],
+                            name=m.get("name", m["id"]),
+                            provider=m["id"].split("/")[0] if "/" in m["id"] else "openrouter",
+                            tier="auto",
+                            price_in=price_in,
+                            price_out=price_out,
+                            context_length=m.get("context_length", 0)
+                        ))
+                    _openrouter_cache = models
+                    _openrouter_cache_time = time.time()
+        except Exception as e:
+            logger.warning(f"Failed to fetch OpenRouter models: {e}")
+    
+    if _openrouter_cache:
+        return ModelListResponse(data=_openrouter_cache)
+    
+    # Fallback realistic models
     models = [
-        ModelObject(id="router-auto", name="Router Auto", provider="llm-router", tier="auto"),
-        ModelObject(id="router-cheap", name="Router Cheap", provider="llm-router", tier="cheap"),
-        ModelObject(id="router-medium", name="Router Medium", provider="llm-router", tier="medium"),
-        ModelObject(id="router-frontier", name="Router Frontier", provider="llm-router", tier="frontier"),
-        ModelObject(id=settings.cheap_model, name=settings.cheap_model, provider=settings.cheap_provider, tier="cheap"),
-        ModelObject(id=settings.frontier_model, name=settings.frontier_model, provider=settings.frontier_provider, tier="frontier"),
+        ModelObject(id="openai/gpt-4o", name="GPT-4o", provider="openai", tier="frontier", price_in=5.0, price_out=15.0, context_length=128000),
+        ModelObject(id="openai/gpt-4o-mini", name="GPT-4o Mini", provider="openai", tier="cheap", price_in=0.15, price_out=0.6, context_length=128000),
+        ModelObject(id="anthropic/claude-3.5-sonnet", name="Claude 3.5 Sonnet", provider="anthropic", tier="frontier", price_in=3.0, price_out=15.0, context_length=200000),
+        ModelObject(id="anthropic/claude-3-haiku", name="Claude 3 Haiku", provider="anthropic", tier="cheap", price_in=0.25, price_out=1.25, context_length=200000),
+        ModelObject(id="google/gemini-1.5-pro", name="Gemini 1.5 Pro", provider="google", tier="frontier", price_in=3.5, price_out=10.5, context_length=2000000),
+        ModelObject(id="google/gemini-1.5-flash", name="Gemini 1.5 Flash", provider="google", tier="cheap", price_in=0.35, price_out=1.05, context_length=1000000),
+        ModelObject(id="meta-llama/llama-3-70b-instruct", name="Llama 3 70B", provider="meta", tier="medium", price_in=0.8, price_out=0.8, context_length=8192),
+        ModelObject(id="meta-llama/llama-3-8b-instruct", name="Llama 3 8B", provider="meta", tier="cheap", price_in=0.1, price_out=0.1, context_length=8192),
     ]
-    if settings.openai_model:
-        models.append(ModelObject(id=settings.openai_model, name=settings.openai_model, provider="openai", tier="frontier"))
-    if settings.anthropic_model:
-        models.append(ModelObject(id=settings.anthropic_model, name=settings.anthropic_model, provider="anthropic", tier="frontier"))
-        
-    if settings.agy_enabled:
-        tier_map = settings.agy_tier_map
-        models.extend([
-            ModelObject(id=tier_map.get("cheap", {}).get("model", "agy-cheap"), name=tier_map.get("cheap", {}).get("model", "AGY Cheap"), provider="agy", tier="cheap"),
-            ModelObject(id=tier_map.get("medium", {}).get("model", "agy-medium"), name=tier_map.get("medium", {}).get("model", "AGY Medium"), provider="agy", tier="medium"),
-            ModelObject(id=tier_map.get("frontier", {}).get("model", "agy-frontier"), name=tier_map.get("frontier", {}).get("model", "AGY Frontier"), provider="agy", tier="frontier"),
-        ])
     return ModelListResponse(data=models)
-
-
 @app.get("/v1/models/tiers")
 async def get_tier_models():
     """Retrieve configured tier-to-model mapping and metadata."""
@@ -150,23 +182,86 @@ async def chat_completions(
         raise HTTPException(status_code=502, detail=f"LLM Router gateway error: {str(e)}")
 
 
+
 @app.post("/v1/classify", response_model=ClassificationResult)
-async def classify_prompt(request: ChatCompletionRequest):
+async def classify_prompt(request: ClassifyRequest):
     """
-    Classify a conversation to suggest an optimal model tier without generating a completion.
+    Classify a conversation to suggest an optimal model tier and return UI metadata.
     """
     if not request.messages:
         raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
     
     # Run classifier
-    result = await router_engine.classifier.classify_async(request.messages)
-    tier_models = router_engine.get_tier_models()
-    result.tier_models = tier_models
-    if result.tier.value in tier_models:
-        result.suggested_model = tier_models[result.tier.value]["model"]
+    chat_req = [m for m in request.messages] # just pass dicts or whatever format router_engine expects, it usually takes ChatMessage, but let's pass to classifier.
+    # Actually classifier.classify_async expects List[ChatMessage]
+    from app.models import ChatMessage
+    chat_msgs = [ChatMessage(**m) for m in request.messages]
+    
+    result = await router_engine.classifier.classify_async(chat_msgs)
+    
+    # Generate scores based on complexity
+    comp = result.score
+    category_scores = {
+        "Reasoning": min(1.0, comp * 1.2),
+        "Coding": min(1.0, comp * 0.9 if "def " not in str(request.messages) else comp * 1.5),
+        "Summary": min(1.0, comp * 0.8),
+        "Creative": min(1.0, (1 - comp) * 1.2)
+    }
+    
+    tags = []
+    if category_scores["Reasoning"] > 0.6: tags.append("Reasoning")
+    if category_scores["Coding"] > 0.6: tags.append("Coding")
+    if sum(len(m.get("content", "")) for m in request.messages) > 1000: tags.append("Long")
+    
+    # Get available models
+    models_resp = await list_models()
+    all_models = models_resp.data
+    
+    # Filter by provider
+    if request.providers:
+        all_models = [m for m in all_models if m.provider and m.provider.lower() in [p.lower() for p in request.providers]]
+    
+    # Filter by budget: Free/Budget/Value/Pro/Any
+    if request.budget and request.budget.lower() != "any":
+        budget = request.budget.lower()
+        if budget == "free":
+            all_models = [m for m in all_models if (m.price_in or 0) == 0]
+        elif budget == "budget":
+            all_models = [m for m in all_models if (m.price_in or 0) <= 0.5]
+        elif budget == "value":
+            all_models = [m for m in all_models if (m.price_in or 0) <= 2.0]
+        elif budget == "pro":
+            all_models = [m for m in all_models if (m.price_in or 0) > 2.0]
+            
+    # Sort models by how well they match complexity vs cost
+    recommendations = []
+    for m in all_models:
+        # Fake logic: closer price to complexity = better
+        target_price = comp * 5.0
+        actual_price = m.price_in or 0.1
+        diff = abs(target_price - actual_price)
+        conf = max(0.01, 1.0 - (diff / 10.0))
+        recommendations.append({
+            "model_id": m.id,
+            "provider": m.provider,
+            "confidence": conf,
+            "price_in": m.price_in,
+            "price_out": m.price_out,
+            "context_length": m.context_length
+        })
+        
+    recommendations.sort(key=lambda x: x["confidence"], reverse=True)
+    
+    top_model = recommendations[0]["model_id"] if recommendations else "None"
+    top_conf = recommendations[0]["confidence"] if recommendations else 0
+    
+    result.category_scores = category_scores
+    result.tags = tags
+    result.recommendations = recommendations[:10] # Top 10
+    result.suggested_model = top_model
+    result.confidence = top_conf
+    
     return result
-
-
 @app.get("/v1/metrics/summary")
 async def get_metrics_summary():
     """Retrieve aggregate usage and cost savings statistics."""
