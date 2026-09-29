@@ -857,6 +857,19 @@ export default function Dashboard({ onReplayPrompt }) {
               </div>
             </div>
 
+            <div className="p-3 mb-4 bg-amber-50/60 rounded-xl border border-amber-100 flex items-center justify-between">
+              <div>
+                <div className="text-[11px] text-amber-700 uppercase font-semibold">Resilience Fallbacks</div>
+                <div className="text-xs text-amber-600 mt-0.5">Transparent recovery rate on upstream failure</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-amber-600 font-mono">
+                  {analytics?.resilience_stats?.total_fallbacks || 0} <span className="text-[11px] text-amber-500 font-sans">events</span>
+                </div>
+                <div className="text-[10px] text-amber-600 font-semibold">{analytics?.resilience_stats?.fallback_rate_pct || 0}% rate</div>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Provider Cache Discounts:</div>
               <div className="flex flex-wrap gap-1.5 text-[11px]">

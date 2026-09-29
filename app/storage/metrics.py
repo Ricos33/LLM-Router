@@ -21,6 +21,7 @@ class RequestMetric:
     cost_saved: float
     classifier_score: float
     classifier_reasons: List[str]
+    fallback_triggered: bool = False
 
 
 class MetricsTracker:
@@ -51,9 +52,14 @@ class MetricsTracker:
                     cost_if_frontier REAL NOT NULL,
                     cost_saved REAL NOT NULL,
                     classifier_score REAL NOT NULL,
-                    classifier_reasons TEXT NOT NULL
+                    classifier_reasons TEXT NOT NULL,
+                    fallback_triggered BOOLEAN DEFAULT 0
                 )
             """)
+            try:
+                conn.execute("ALTER TABLE metrics ADD COLUMN fallback_triggered BOOLEAN DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass
             conn.commit()
 
     def record_request(self, metric: RequestMetric) -> int:
@@ -63,8 +69,8 @@ class MetricsTracker:
                     timestamp, prompt_preview, routed_tier, model_used,
                     prompt_tokens, completion_tokens, total_tokens,
                     latency_ms, cost_actual, cost_if_frontier, cost_saved,
-                    classifier_score, classifier_reasons
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    classifier_score, classifier_reasons, fallback_triggered
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 metric.timestamp,
                 metric.prompt_preview[:150],
@@ -78,7 +84,8 @@ class MetricsTracker:
                 metric.cost_if_frontier,
                 metric.cost_saved,
                 metric.classifier_score,
-                json.dumps(metric.classifier_reasons)
+                json.dumps(metric.classifier_reasons),
+                metric.fallback_triggered
             ))
             conn.commit()
             return cursor.lastrowid
@@ -304,6 +311,14 @@ class MetricsTracker:
             cur.execute("SELECT COUNT(*) FROM metrics")
             total = cur.fetchone()[0]
             efficiency_pct = round((non_frontier / total * 100), 1) if total > 0 else 0
+            
+            # Resilience stats: fallbacks triggered
+            try:
+                cur.execute("SELECT COUNT(*) FROM metrics WHERE fallback_triggered = 1")
+                fallbacks = cur.fetchone()[0]
+            except sqlite3.OperationalError:
+                fallbacks = 0
+            fallback_rate = round((fallbacks / total * 100), 2) if total > 0 else 0
 
             # Upstream provider distribution
             provider_counts = {}
@@ -347,6 +362,10 @@ class MetricsTracker:
                 "tier_stats": tier_stats,
                 "provider_stats": provider_stats,
                 "prompt_cache_analytics": prompt_cache_analytics,
+                "resilience_stats": {
+                    "total_fallbacks": fallbacks,
+                    "fallback_rate_pct": fallback_rate
+                },
                 "hourly_timeseries": hourly,
                 "efficiency_percentage": efficiency_pct,
                 "total_requests": total,

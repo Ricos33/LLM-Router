@@ -772,6 +772,7 @@ class RouterEngine:
             cost_saved=cost_saved,
             classifier_score=executed_decision.classifier_score,
             classifier_reasons=executed_decision.reasons,
+            fallback_triggered=fallback_triggered,
         )
         self.metrics.record_request(metric)
 

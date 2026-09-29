@@ -58,6 +58,32 @@ export default function Playground({ modelsCount, initialPrompt }) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [costEstimation, setCostEstimation] = useState(null);
   const [estCompletionTokens, setEstCompletionTokens] = useState(500);
+
+  // Live Debounced Classification
+  useEffect(() => {
+    if (!input.trim()) return;
+    const timer = setTimeout(() => {
+      fetch(API_BASE + '/v1/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Provider-Keys': localStorage.getItem('provider_keys') || '{}' },
+        body: JSON.stringify({
+          messages: [
+            ...(systemPrompt.trim() ? [{ role: 'system', content: systemPrompt }] : []),
+            { role: 'user', content: input }
+          ],
+          budget: BUDGET_LEVELS[budget],
+          providers: Array.from(selectedProviders),
+          strategy: strategy,
+        })
+      })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+         if (data) setClassification(data);
+      })
+      .catch(e => console.error("Live analysis failed:", e));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [input, systemPrompt, budget, strategy, selectedProviders]);
   const [estCacheHitRate, setEstCacheHitRate] = useState(0.0);
   const [showCostEstimates, setShowCostEstimates] = useState(false);
 
@@ -224,6 +250,8 @@ export default function Playground({ modelsCount, initialPrompt }) {
           is_cheapest: r.model === data.cheapest_model,
           is_fastest: r.model === data.fastest_model,
           gateway_cache_hit: r.gateway_cache_hit,
+          fallback_triggered: r.fallback_triggered,
+          fallback_chain: r.fallback_chain,
         }
       }));
       setExecutions(updated);
@@ -1143,6 +1171,9 @@ export default function Playground({ modelsCount, initialPrompt }) {
                             <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
                             {exec.meta.gateway_cache_hit && (
                               <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">⚡ Cache Hit</span>
+                            )}
+                            {exec.meta.fallback_triggered && (
+                              <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider cursor-help" title={exec.meta.fallback_chain?.join(' → ')}>🔄 Fallback</span>
                             )}
                           </div>
                           {exec.meta.prompt_tokens !== undefined && (

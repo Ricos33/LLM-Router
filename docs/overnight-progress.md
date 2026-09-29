@@ -83,3 +83,8 @@
 - Applied routing strategy parameter (cost_optimized, quality_optimized, balanced) to the confidence scoring formula in `app/main.py`. 
 - Tested via python script: different strategies route identical prompts to different models and tiers correctly.
 - Tests (116) pass. Web build pass. Push successful.
+## 29/09 14:24 - Jev JSON payload fine-tuning
+- Updated `app/router/engine.py` to inject benchmark scores directly into the Jev candidates payload.
+- Added candidate fit-scoring evaluation to `RuleBasedClassifier` (mock) so it realistically simulates Jev's tailored scoring. 
+- The recommendation engine now clearly differentiates the models per category. 
+- Tests (116) pass. Web build pass. Push successful.

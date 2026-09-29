@@ -370,6 +370,8 @@ async def compare_models(
                 completion_tokens=resp.usage.completion_tokens,
                 cost_usd=cost,
                 gateway_cache_hit=meta.gateway_cache_hit if meta else False,
+                fallback_triggered=meta.fallback_triggered if meta else False,
+                fallback_chain=meta.fallback_chain if meta else [],
             )
         except Exception as e:
             elapsed = (time.perf_counter() - start_t) * 1000.0

@@ -100,6 +100,8 @@ class ModelCompareResult(BaseModel):
     cost_usd: float
     error: Optional[str] = None
     gateway_cache_hit: bool = False
+    fallback_triggered: bool = False
+    fallback_chain: List[str] = Field(default_factory=list)
 
 
 class CompareRequest(BaseModel):
