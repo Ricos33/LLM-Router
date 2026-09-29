@@ -844,3 +844,59 @@ async def clear_budget_alerts():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)
+from app.models import ABTestRequest, ABTestResponse, ABTestResult, ChatCompletionRequest, ChatMessage
+
+@app.post("/v1/ab-test", response_model=ABTestResponse, tags=["Testing"])
+async def run_ab_test(
+    request: ABTestRequest,
+    provider_keys: Optional[str] = Header(None, alias="X-Provider-Keys"),
+):
+    import asyncio
+    import time
+    
+    # We will build two identical requests except for the system prompt
+    req_a = ChatCompletionRequest(
+        model=request.model,
+        messages=[
+            ChatMessage(role="system", content=request.system_prompt_a),
+            ChatMessage(role="user", content=request.user_prompt)
+        ],
+        temperature=request.temperature,
+    )
+    req_b = ChatCompletionRequest(
+        model=request.model,
+        messages=[
+            ChatMessage(role="system", content=request.system_prompt_b),
+            ChatMessage(role="user", content=request.user_prompt)
+        ],
+        temperature=request.temperature,
+    )
+    
+    if provider_keys:
+        import json
+        try:
+            keys = json.loads(provider_keys)
+            object.__setattr__(req_a, "provider_keys", keys)
+            object.__setattr__(req_b, "provider_keys", keys)
+        except Exception:
+            pass
+            
+    async def run_req(req, variant):
+        t0 = time.perf_counter()
+        resp = await router_engine.route_and_execute(req)
+        latency = (time.perf_counter() - t0) * 1000
+        content = resp.choices[0].message.content if resp.choices else ""
+        return ABTestResult(
+            variant=variant,
+            content=content,
+            latency_ms=round(latency, 2),
+            cost_usd=resp.router_metadata.cost_actual_usd if hasattr(resp, "router_metadata") and resp.router_metadata else 0.0,
+            model_used=resp.router_metadata.actual_model if hasattr(resp, "router_metadata") and resp.router_metadata else request.model
+        )
+
+    res_a, res_b = await asyncio.gather(
+        run_req(req_a, "A"),
+        run_req(req_b, "B")
+    )
+    
+    return ABTestResponse(results=[res_a, res_b])

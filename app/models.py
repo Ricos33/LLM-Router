@@ -129,3 +129,20 @@ class BudgetConfigRequest(BaseModel):
 
 class BudgetTestAlertRequest(BaseModel):
     webhook_url: Optional[str] = None
+
+class ABTestRequest(BaseModel):
+    system_prompt_a: str
+    system_prompt_b: str
+    user_prompt: str
+    model: str = "router-auto"
+    temperature: Optional[float] = 1.0
+
+class ABTestResult(BaseModel):
+    variant: str
+    content: str
+    latency_ms: float
+    cost_usd: float
+    model_used: str
+
+class ABTestResponse(BaseModel):
+    results: List[ABTestResult]
