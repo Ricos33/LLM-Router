@@ -63,3 +63,4 @@
 - Tue Sep 29 08:09:47 UTC 2026: Upgraded frontend with responsive mobile layout (hamburger menu), full ARIA accessibility (tablist/tab/tabpanel, aria-selected, aria-expanded), keyboard navigation (arrows, Home, End, Escape), focus-visible indicators, reduced-motion support, and high-contrast mode compatibility. Tests: 91 passed, build OK.
 - Tue Sep 29 08:14:00 UTC 2026: Quota épuisé pour claude-opus-4-6-thinking (RESOURCE_EXHAUSTED, reset ~4h47). Passage au modèle suivant.
 - Tue Sep 29 08:28:00 UTC 2026: Quota épuisé pour claude-sonnet-4-6 (RESOURCE_EXHAUSTED au démarrage, reset ~4h43). Passage au modèle suivant.
+- Tue Sep 29 08:31:43 UTC 2026: Upgraded Model Catalog with benchmark scores visualization (Reasoning, Coding, Summary, Creative), prompt caching discount pills, search bar, multi-criteria sorting (benchmarks, cost, context, name), and direct Route Prompt action. Tests: 91 passed, build OK.
