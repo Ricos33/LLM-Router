@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     # Gateway Cache (Semantic/Exact Match)
     gateway_cache_enabled: bool = False
     gateway_cache_ttl_seconds: int = 3600
+    
+    # Context Management
+    auto_truncate_context: bool = True
 
     # Database
     database_url: str = "sqlite:///./data/metrics.sqlite3"

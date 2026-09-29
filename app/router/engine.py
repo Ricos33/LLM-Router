@@ -514,13 +514,36 @@ class RouterEngine:
 
         for idx, candidate in enumerate(attempt_queue):
             try:
+                # Execution request copy for safe truncation
+                exec_req = request.model_copy()
+                exec_req.messages = list(request.messages)
+                
+                if settings.auto_truncate_context:
+                    m_info = get_model_by_id(candidate.model_name)
+                    if m_info and m_info.context_length:
+                        # Simple heuristic token estimation (chars / 4)
+                        # We keep the first message (usually system prompt) if possible
+                        max_ctx = m_info.context_length - (exec_req.max_tokens or 1000)
+                        
+                        def est_tokens(msgs):
+                            return sum(len(m.content) for m in msgs) / 4
+                        
+                        if est_tokens(exec_req.messages) > max_ctx and len(exec_req.messages) > 1:
+                            sys_msg = [exec_req.messages[0]] if exec_req.messages[0].role == "system" else []
+                            rest = exec_req.messages[1:] if exec_req.messages[0].role == "system" else exec_req.messages[:]
+                            
+                            while rest and est_tokens(sys_msg + rest) > max_ctx:
+                                rest.pop(0) # drop oldest
+                            exec_req.messages = sys_msg + rest
+                            logger.info(f"Auto-truncated prompt for {candidate.model_name} to fit {m_info.context_length} window")
+
                 api_key_override = (
                     getattr(request, "provider_keys", None).get(candidate.provider_name.lower())
                     if getattr(request, "provider_keys", None) and candidate.provider_name
                     else None
                 )
                 response = await candidate.backend.complete(
-                    request,
+                    exec_req,
                     model_override=candidate.model_name,
                     api_key_override=api_key_override,
                 )
