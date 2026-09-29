@@ -4,10 +4,12 @@ import { classifyPrompt, getModels } from '../api/client';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const PRESETS = [
-  { label: 'Debug', text: 'Can you help me debug this python script that throws a RecursionError?' },
-  { label: 'Summary', text: 'Summarize the following article in 3 bullet points...' },
-  { label: 'Story', text: 'Write a creative short story about a time traveler who gets stuck in 1999.' },
-  { label: 'Chat', text: 'Hi, how are you today?' },
+  { label: 'Code Refactor', text: 'Can you help me debug this python script that throws a RecursionError in a DFS graph traversal and refactor it with type hints?' },
+  { label: 'Summary', text: 'Summarize the following quarterly earnings report into 3 crisp bullet points with key revenue and EBITDA takeaways...' },
+  { label: 'Creative', text: 'Write an atmospheric sci-fi vignette about an AI model broker negotiating compute tokens in neo-Tokyo.' },
+  { label: 'Chat', text: 'Hi there! Could you give me three quick tips for improving morning focus?' },
+  { label: 'Architecture', text: 'Design a globally distributed event-driven payment ledger with idempotent consumers, outbox pattern, and CDC.' },
+  { label: 'Formal Proof', text: 'Prove formally that the Halting Problem is undecidable using a diagonal argument and reduction to Turing machines.' },
 ];
 
 const BUDGET_LEVELS = ['Free', 'Budget', 'Value', 'Pro', 'Any'];
@@ -39,6 +41,29 @@ export default function Playground({ modelsCount }) {
       }
     }).catch(console.warn);
   }, []);
+
+  const handleExportJSON = () => {
+    if (!classification) return;
+    const exportData = {
+      prompt: input,
+      timestamp: new Date().toISOString(),
+      classification: {
+        tier: classification.tier,
+        score: classification.score,
+        tags: classification.tags,
+        category_scores: classification.category_scores,
+      },
+      top_recommendation: classification.recommendations?.[0],
+      all_recommendations: classification.recommendations,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm_router_classification_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleAnalyze = async (textToAnalyze) => {
     const text = typeof textToAnalyze === 'string' ? textToAnalyze : input;
@@ -248,8 +273,29 @@ export default function Playground({ modelsCount }) {
           <>
             {/* RECOMMENDATION */}
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-5">
-              <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
-                Recommendation · {selectedProviders.size} Providers
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                    Recommendation · {selectedProviders.size} Providers
+                  </span>
+                  {classification.tier && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      classification.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                      classification.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                      'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {classification.tier}
+                    </span>
+                  )}
+                </div>
+                <button 
+                  onClick={handleExportJSON}
+                  title="Export classification and recommendations as JSON"
+                  className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export JSON
+                </button>
               </div>
               
               {/* Top Model */}
@@ -515,14 +561,27 @@ export default function Playground({ modelsCount }) {
           {/* Model List */}
           <div className="p-5 flex flex-col gap-4">
             {modelsToShow.map(m => (
-              <div key={m.id} className="flex flex-col gap-1.5 pb-3 border-b border-gray-50 last:border-0">
-                <div className="flex justify-between items-start">
-                  <div className="font-semibold text-[14px] leading-tight truncate mr-2" title={m.name || m.id}>
+              <div key={m.id} className="flex flex-col gap-1.5 pb-3 border-b border-gray-100 last:border-0 hover:bg-gray-50/60 p-2 rounded-lg transition-colors">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="font-semibold text-[13px] leading-tight truncate" title={m.name || m.id}>
                     {m.name || m.id}
                   </div>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex-shrink-0 ${
+                    m.tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                    m.tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                    'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {m.tier || 'cheap'}
+                  </span>
                 </div>
-                <div className="text-[11px] text-gray-500 truncate" title={m.id}>{m.id}</div>
-                <div className="flex gap-4 text-[11px] text-gray-600 mt-1 font-medium">
+                <div className="text-[11px] text-gray-500 font-mono truncate" title={m.id}>{m.id}</div>
+                {m.scores && (
+                  <div className="flex gap-3 text-[10px] text-gray-500 font-mono">
+                    <span>Reasoning: {Math.round((m.scores.Reasoning || 0) * 100)}%</span>
+                    <span>Coding: {Math.round((m.scores.Coding || 0) * 100)}%</span>
+                  </div>
+                )}
+                <div className="flex gap-4 text-[11px] text-gray-600 mt-0.5 font-medium">
                   <span className="flex items-center gap-1">
                     <span className="text-gray-400">Context:</span> {(m.context_length || 0).toLocaleString()}
                   </span>
