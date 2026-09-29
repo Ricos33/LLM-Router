@@ -234,3 +234,60 @@ class MetricsTracker:
                 ])
             return output.getvalue()
 
+
+    def get_analytics(self) -> Dict[str, Any]:
+        """Rich analytics: model distribution, avg scores per tier, top models, time-series."""
+        with self._get_connection() as conn:
+            cur = conn.cursor()
+
+            # Model distribution
+            cur.execute("""
+                SELECT model_used, COUNT(*) as count, 
+                       ROUND(AVG(cost_actual), 6) as avg_cost,
+                       ROUND(AVG(latency_ms), 1) as avg_latency,
+                       ROUND(AVG(classifier_score), 3) as avg_score
+                FROM metrics
+                GROUP BY model_used
+                ORDER BY count DESC
+            """)
+            model_stats = [dict(r) for r in cur.fetchall()]
+
+            # Tier distribution with avg classifier score
+            cur.execute("""
+                SELECT routed_tier, COUNT(*) as count,
+                       ROUND(AVG(classifier_score), 3) as avg_score,
+                       ROUND(AVG(cost_actual), 6) as avg_cost,
+                       ROUND(SUM(cost_saved), 6) as total_saved
+                FROM metrics
+                GROUP BY routed_tier
+            """)
+            tier_stats = {r["routed_tier"]: dict(r) for r in cur.fetchall()}
+
+            # Hourly time-series (last 24h)
+            cur.execute("""
+                SELECT 
+                    CAST((timestamp / 3600) AS INTEGER) * 3600 as hour_ts,
+                    COUNT(*) as requests,
+                    ROUND(SUM(cost_actual), 6) as cost,
+                    ROUND(SUM(cost_saved), 6) as saved
+                FROM metrics
+                WHERE timestamp > (strftime('%s', 'now') - 86400)
+                GROUP BY hour_ts
+                ORDER BY hour_ts
+            """)
+            hourly = [dict(r) for r in cur.fetchall()]
+
+            # Cost efficiency score: % of requests routed to cheaper tiers
+            cur.execute("SELECT COUNT(*) FROM metrics WHERE routed_tier != 'frontier'")
+            non_frontier = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM metrics")
+            total = cur.fetchone()[0]
+            efficiency_pct = round((non_frontier / total * 100), 1) if total > 0 else 0
+
+            return {
+                "model_stats": model_stats,
+                "tier_stats": tier_stats,
+                "hourly_timeseries": hourly,
+                "efficiency_percentage": efficiency_pct,
+                "total_requests": total,
+            }

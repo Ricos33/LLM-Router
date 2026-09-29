@@ -265,3 +265,30 @@ def test_three_tier_classifier():
     frontier = classifier.classify([ChatMessage(role="user", content="Design a distributed system with Byzantine fault tolerance. Prove the correctness of your consensus algorithm. Debug this implementation:\n```python\nclass Raft:\n    async def replicate_log(self): pass\n```\nAnalyze the asymptotic complexity and compare to Paxos.")])
     assert frontier.tier.value == "frontier", f"Got {frontier.tier.value} with score {frontier.score}"
 
+
+def test_catalog_summary(client):
+    """Test /v1/catalog/summary returns overview metrics."""
+    res = client.get("/v1/catalog/summary")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_models"] > 0
+    assert "providers" in data
+    assert "tier_distribution" in data
+    assert data["tier_distribution"]["cheap"] > 0
+    assert data["tier_distribution"]["frontier"] > 0
+    assert data["price_range_per_m"]["min_in"] >= 0
+    assert data["price_range_per_m"]["max_in"] > 0
+
+
+def test_analytics_endpoint(client):
+    """Test /v1/analytics returns structured analytics."""
+    res = client.get("/v1/analytics")
+    assert res.status_code == 200
+    data = res.json()
+    assert "model_stats" in data
+    assert "tier_stats" in data
+    assert "hourly_timeseries" in data
+    assert "efficiency_percentage" in data
+    assert "total_requests" in data
+
+

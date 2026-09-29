@@ -313,23 +313,29 @@ async def classify_prompt(request: ClassifyRequest):
         price = max(m.price_in or 0.01, 0.01)
         cost_penalty = math.log10(1 + price) * 0.15  # mild penalty for cost
 
+        # Tier alignment bonus: models matching the classified tier get a clear boost
+        classified_tier = result.tier.value if hasattr(result.tier, "value") else str(result.tier)
+        tier_bonus = 0.22 if (m.tier and m.tier == classified_tier) else 0.0
+
         # For LOW complexity prompts (score < 0.4), strongly prefer cheap models
         if comp < 0.4:
-            # Cheap models get a big bonus; frontier models get heavy cost penalty
-            if (m.price_in or 0) <= 0.5:
-                cost_bonus = 0.25  # strong bonus for being cheap
+            # Ultra-cheap models (<= 0.15) get highest bonus, cheap (<= 0.50) good bonus, frontier heavy penalty
+            if (m.price_in or 0) <= 0.15:
+                cost_bonus = 0.35
+            elif (m.price_in or 0) <= 0.5:
+                cost_bonus = 0.20
             elif (m.price_in or 0) <= 2.0:
-                cost_bonus = 0.10
+                cost_bonus = -0.10
             else:
-                cost_bonus = -0.20  # penalty for frontier on simple tasks
-            conf = max(0.01, min(0.99, model_score * 0.6 + cost_bonus - cost_penalty))
+                cost_bonus = -0.35  # heavy penalty for frontier on simple tasks
+            conf = max(0.01, min(0.99, model_score * 0.45 + cost_bonus + tier_bonus - cost_penalty))
         elif comp < 0.65:
             # MEDIUM complexity: balanced approach
             if quality_meets:
-                cost_bonus = max(0, 0.3 - price / 15.0)
+                cost_bonus = max(0, 0.25 - price / 15.0)
             else:
                 cost_bonus = -0.15
-            conf = max(0.01, min(0.99, model_score * 0.7 + cost_bonus - cost_penalty * 0.5))
+            conf = max(0.01, min(0.99, model_score * 0.65 + cost_bonus + tier_bonus - cost_penalty * 0.5))
         else:
             # HIGH complexity: quality is paramount, cost secondary
             if model_score < target_score:
@@ -337,7 +343,7 @@ async def classify_prompt(request: ClassifyRequest):
             else:
                 penalty = 0.0
             cost_bonus = max(0, 0.15 - price / 30.0) if quality_meets else 0
-            conf = max(0.01, min(0.99, model_score - penalty + cost_bonus))
+            conf = max(0.01, min(0.99, model_score - penalty + cost_bonus + tier_bonus))
 
         recommendations.append({
             "model_id": m.id,
@@ -387,6 +393,48 @@ async def export_metrics_csv():
     })
 
 
+@app.get("/v1/analytics")
+async def get_analytics():
+    """Rich analytics: model distribution, tier stats, time-series, efficiency."""
+    return router_engine.metrics.get_analytics()
+
+
+@app.get("/v1/catalog/summary")
+async def get_catalog_summary():
+    """Quick overview of the curated model catalog."""
+    providers = {}
+    tiers = {"cheap": 0, "medium": 0, "frontier": 0}
+    price_range = {"min_in": float("inf"), "max_in": 0, "min_out": float("inf"), "max_out": 0}
+
+    for m in _curated_models:
+        p = m.provider or "unknown"
+        if p not in providers:
+            providers[p] = {"count": 0, "models": []}
+        providers[p]["count"] += 1
+        providers[p]["models"].append(m.id)
+
+        tier = m.tier or "cheap"
+        tiers[tier] = tiers.get(tier, 0) + 1
+
+        pin = m.price_in or 0
+        pout = m.price_out or 0
+        if pin < price_range["min_in"]: price_range["min_in"] = pin
+        if pin > price_range["max_in"]: price_range["max_in"] = pin
+        if pout < price_range["min_out"]: price_range["min_out"] = pout
+        if pout > price_range["max_out"]: price_range["max_out"] = pout
+
+    if price_range["min_in"] == float("inf"):
+        price_range["min_in"] = 0.0
+    if price_range["min_out"] == float("inf"):
+        price_range["min_out"] = 0.0
+
+    return {
+        "total_models": len(_curated_models),
+        "providers": providers,
+        "tier_distribution": tiers,
+        "price_range_per_m": price_range,
+        "last_updated": "2026-09-29",
+    }
 
 if __name__ == "__main__":
     import uvicorn
