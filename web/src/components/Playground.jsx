@@ -27,6 +27,10 @@ export default function Playground({ modelsCount }) {
   
   const [showSetup, setShowSetup] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
+  
+  const [completionResult, setCompletionResult] = useState('');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [completionMeta, setCompletionMeta] = useState(null);
 
   useEffect(() => {
     getModels().then(data => {
@@ -43,6 +47,8 @@ export default function Playground({ modelsCount }) {
     if (!text.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setError(null);
+    setCompletionResult('');
+    setCompletionMeta(null);
     try {
       const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
@@ -61,6 +67,33 @@ export default function Playground({ modelsCount }) {
       setError('Analysis failed — is the backend running on ' + API_BASE + ' ?');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleExecute = async (modelId) => {
+    if (!input.trim() || isExecuting) return;
+    setIsExecuting(true);
+    setCompletionResult('');
+    setCompletionMeta(null);
+    try {
+      const res = await fetch(API_BASE + '/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelId || 'router-auto',
+          messages: [{ role: 'user', content: input }],
+          stream: false
+        })
+      });
+      if (!res.ok) throw new Error('API error ' + res.status);
+      const data = await res.json();
+      setCompletionResult(data.choices[0].message.content);
+      setCompletionMeta(data.router_metadata);
+    } catch (e) {
+      console.error(e);
+      setCompletionResult('Error executing request.');
+    } finally {
+      setIsExecuting(false);
     }
   };
 
@@ -309,12 +342,42 @@ export default function Playground({ modelsCount }) {
                 </div>
               )}
             </div>
+
+            {/* EXECUTION RESULT */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                  Execution
+                </div>
+                <button 
+                  onClick={() => handleExecute(classification.recommendations[0]?.model_id)}
+                  disabled={isExecuting || !classification.recommendations?.length}
+                  className="px-4 py-2 bg-emerald-600 text-white text-[12px] font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+                >
+                  {isExecuting ? 'Running...' : 'Run with Top Model'}
+                </button>
+              </div>
+              
+              {completionResult && (
+                <div className="mt-2 text-[13px] text-gray-700 p-4 bg-gray-50 rounded-lg border border-gray-100 max-h-[300px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
+                  {completionResult}
+                </div>
+              )}
+              
+              {completionMeta && (
+                <div className="flex flex-wrap gap-4 mt-2 text-[11px] text-gray-500 font-medium bg-gray-50/50 p-2 rounded-md border border-gray-100">
+                  <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>{completionMeta.actual_model}</span>
+                  <span>{(completionMeta.latency_ms || 0).toFixed(0)}ms</span>
+                  <span className="text-emerald-600">Saved: ${(completionMeta.cost_saved_usd || 0).toFixed(4)}</span>
+                </div>
+              )}
+            </div>
           </>
         ) : (
            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center border-2 border-dashed border-gray-200 rounded-xl">
              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-xl">✨</div>
              <div className="font-semibold text-gray-600 mb-2">Ready to Analyze</div>
-             <p className="text-[13px]">Enter a prompt on the left and click Analyze to see recommendations and complexity scores.</p>
+             <p className="text-[13px]">Enter a prompt on the left to see recommendations and complexity scores.</p>
            </div>
         )}
       </div>
