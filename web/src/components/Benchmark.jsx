@@ -225,17 +225,17 @@ export default function Benchmark() {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 overflow-hidden max-w-[1300px] mx-auto text-[#111]">
+    <div className="h-full flex flex-col p-6 overflow-hidden max-w-[1300px] mx-auto text-txt-base">
       {/* Top Header */}
       <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold">Model Benchmark Suite</h2>
-            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-mono">
+            <span className="text-xs bg-gray-100 text-txt-base px-2 py-0.5 rounded-full font-mono">
               {filteredPrompts.length} Prompts
             </span>
           </div>
-          <p className="text-[13px] text-gray-500 mt-0.5">
+          <p className="text-[13px] text-txt-muted mt-0.5">
             Execute standardized benchmark battery across models in parallel to evaluate latency, cost, and output consistency.
           </p>
         </div>
@@ -246,7 +246,7 @@ export default function Benchmark() {
               <button
                 onClick={exportBenchmarkCSV}
                 disabled={isRunning}
-                className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1.5"
+                className="px-3 py-2 bg-surface border border-brd text-txt-base text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1.5"
                 title="Export results as CSV"
               >
                 <span>📥</span> CSV
@@ -254,7 +254,7 @@ export default function Benchmark() {
               <button
                 onClick={exportBenchmarkResults}
                 disabled={isRunning}
-                className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1.5"
+                className="px-3 py-2 bg-surface border border-brd text-txt-base text-[12px] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1.5"
                 title="Export results as JSON"
               >
                 <span>📄</span> JSON
@@ -280,10 +280,10 @@ export default function Benchmark() {
 
       {/* Progress Bar */}
       {isRunning && progress.total > 0 && (
-        <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3 shadow-2xs flex flex-col gap-1.5">
+        <div className="mb-4 bg-surface border border-brd rounded-xl p-3 shadow-2xs flex flex-col gap-1.5">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-gray-500 font-sans">Benchmarking progress:</span>
-            <span className="font-semibold text-gray-800">
+            <span className="text-txt-muted font-sans">Benchmarking progress:</span>
+            <span className="font-semibold text-txt-base">
               {progress.current} of {progress.total} completed ({Math.round((progress.current / progress.total) * 100)}%)
             </span>
           </div>
@@ -297,9 +297,9 @@ export default function Benchmark() {
       )}
 
       {/* Category Filter and Add Custom Prompt Bar */}
-      <div className="mb-4 flex flex-wrap justify-between items-center gap-2 bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs">
+      <div className="mb-4 flex flex-wrap justify-between items-center gap-2 bg-surface p-2.5 rounded-xl border border-brd shadow-2xs">
         <div className="flex gap-1.5 flex-wrap items-center">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-1">Category:</span>
+          <span className="text-[11px] font-bold text-txt-muted uppercase tracking-wider mr-1">Category:</span>
           {['All', 'Reasoning', 'Coding', 'Summary', 'Creative', 'Conversational'].map(cat => (
             <button
               key={cat}
@@ -317,7 +317,7 @@ export default function Benchmark() {
 
         <button
           onClick={() => setShowAddPrompt(!showAddPrompt)}
-          className="text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
+          className="text-xs font-medium text-txt-base bg-gray-50 hover:bg-gray-100 border border-brd px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
         >
           {showAddPrompt ? 'Cancel' : '+ Custom Prompt'}
         </button>
@@ -325,20 +325,20 @@ export default function Benchmark() {
 
       {/* Add Custom Prompt Inline Drawer */}
       {showAddPrompt && (
-        <form onSubmit={handleAddPrompt} className="mb-4 bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-2.5 animate-in fade-in">
-          <div className="text-xs font-semibold uppercase tracking-wider text-gray-700">Add Benchmark Prompt</div>
+        <form onSubmit={handleAddPrompt} className="mb-4 bg-gray-50 border border-brd rounded-xl p-4 flex flex-col gap-2.5 animate-in fade-in">
+          <div className="text-xs font-semibold uppercase tracking-wider text-txt-base">Add Benchmark Prompt</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               type="text"
               placeholder="Prompt Title (e.g. SQL Migration Test)"
               value={newPrompt.label}
               onChange={e => setNewPrompt({ ...newPrompt, label: e.target.value })}
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded text-xs outline-none"
+              className="px-3 py-1.5 bg-surface border border-brd rounded text-xs outline-none"
             />
             <select
               value={newPrompt.category}
               onChange={e => setNewPrompt({ ...newPrompt, category: e.target.value })}
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded text-xs outline-none"
+              className="px-3 py-1.5 bg-surface border border-brd rounded text-xs outline-none"
             >
               <option value="Reasoning">Reasoning</option>
               <option value="Coding">Coding</option>
@@ -353,13 +353,13 @@ export default function Benchmark() {
             rows={2}
             value={newPrompt.text}
             onChange={e => setNewPrompt({ ...newPrompt, text: e.target.value })}
-            className="w-full p-2.5 bg-white border border-gray-200 rounded text-xs outline-none resize-none font-mono"
+            className="w-full p-2.5 bg-surface border border-brd rounded text-xs outline-none resize-none font-mono"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setShowAddPrompt(false)}
-              className="px-3 py-1 text-xs text-gray-500 hover:text-black"
+              className="px-3 py-1 text-xs text-txt-muted hover:text-txt-base"
             >
               Cancel
             </button>
@@ -375,15 +375,15 @@ export default function Benchmark() {
 
       {/* Main Grid: Left selector & Right table */}
       <div className="flex gap-6 h-full min-h-0">
-        <div className="w-[280px] flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm p-4 overflow-y-auto flex-shrink-0">
+        <div className="w-[280px] flex flex-col bg-surface rounded-xl border border-brd shadow-sm p-4 overflow-y-auto flex-shrink-0">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-semibold text-sm">Select Models</h3>
-            <div className="flex gap-2 text-[11px] font-semibold text-gray-500">
-              <button onClick={() => selectByTiers()} disabled={isRunning} className="hover:text-black">Tiers</button>
+            <div className="flex gap-2 text-[11px] font-semibold text-txt-muted">
+              <button onClick={() => selectByTiers()} disabled={isRunning} className="hover:text-txt-base">Tiers</button>
               <span>·</span>
-              <button onClick={() => setSelectedModels(models.map(m => m.id))} disabled={isRunning} className="hover:text-black">All</button>
+              <button onClick={() => setSelectedModels(models.map(m => m.id))} disabled={isRunning} className="hover:text-txt-base">All</button>
               <span>·</span>
-              <button onClick={() => setSelectedModels([])} disabled={isRunning} className="hover:text-black">None</button>
+              <button onClick={() => setSelectedModels([])} disabled={isRunning} className="hover:text-txt-base">None</button>
             </div>
           </div>
           <div className="flex flex-col gap-2">
@@ -398,26 +398,26 @@ export default function Benchmark() {
                 />
                 <div className="flex flex-col truncate">
                   <span className="text-[13px] font-medium leading-none truncate" title={m.name}>{m.name}</span>
-                  <span className="text-[10px] text-gray-400 mt-1 capitalize">{m.provider} · {m.tier}</span>
+                  <span className="text-[10px] text-txt-muted mt-1 capitalize">{m.provider} · {m.tier}</span>
                 </div>
               </label>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+        <div className="flex-1 bg-surface rounded-xl border border-brd shadow-sm overflow-hidden flex flex-col">
           <div className="overflow-x-auto overflow-y-auto h-full">
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-200 w-1/4">Prompt</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-txt-muted uppercase tracking-wider border-b border-brd w-1/4">Prompt</th>
                   {selectedModels.map(id => {
                     const m = models.find(x => x.id === id);
                     return (
-                      <th key={id} className="px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b border-gray-200 border-l border-gray-100">
+                      <th key={id} className="px-4 py-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b border-brd border-l border-gray-100">
                         <div className="flex flex-col gap-0.5">
                           <span>{m?.name || id}</span>
-                          <span className="text-[9px] text-gray-400 font-mono normal-case">{m?.provider || 'custom'}</span>
+                          <span className="text-[9px] text-txt-muted font-mono normal-case">{m?.provider || 'custom'}</span>
                         </div>
                       </th>
                     );
@@ -429,7 +429,7 @@ export default function Benchmark() {
                   <tr key={prompt.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-4 border-r border-gray-100 align-top">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[12px] font-semibold text-gray-800">{prompt.label}</span>
+                        <span className="text-[12px] font-semibold text-txt-base">{prompt.label}</span>
                         {prompt.category && (
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                             CATEGORY_COLORS[prompt.category] || 'bg-gray-100 text-gray-600'
@@ -447,7 +447,7 @@ export default function Benchmark() {
                           </button>
                         )}
                       </div>
-                      <div className="text-[11px] text-gray-500 leading-relaxed">{prompt.text}</div>
+                      <div className="text-[11px] text-txt-muted leading-relaxed">{prompt.text}</div>
                     </td>
                     {selectedModels.map(id => {
                       const res = results[id]?.[prompt.id];
@@ -456,7 +456,7 @@ export default function Benchmark() {
                           {!res ? (
                             <span className="text-[11px] text-gray-300 italic">Pending...</span>
                           ) : res.loading ? (
-                            <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                            <div className="flex items-center gap-2 text-[11px] text-txt-muted">
                               <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
                               Running...
                             </div>
@@ -464,12 +464,12 @@ export default function Benchmark() {
                             <span className="text-[11px] text-red-500 font-medium">Failed</span>
                           ) : (
                             <div className="flex flex-col gap-2">
-                              <div className="flex gap-2 text-[10px] font-medium text-gray-500 bg-gray-50 p-1.5 rounded-md border border-gray-100">
+                              <div className="flex gap-2 text-[10px] font-medium text-txt-muted bg-gray-50 p-1.5 rounded-md border border-gray-100">
                                 <span>{(res.latency).toFixed(0)}ms</span>
                                 <span>·</span>
                                 <span>${(res.cost).toFixed(5)}</span>
                               </div>
-                              <div className="text-[11px] text-gray-700 max-h-[120px] overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                              <div className="text-[11px] text-txt-base max-h-[120px] overflow-y-auto whitespace-pre-wrap leading-relaxed">
                                 {res.text}
                               </div>
                             </div>
@@ -481,30 +481,30 @@ export default function Benchmark() {
                 ))}
               </tbody>
               {selectedModels.length > 0 && (
-                <tfoot className="bg-gray-50/80 border-t-2 border-gray-200">
+                <tfoot className="bg-gray-50/80 border-t-2 border-brd">
                   <tr>
-                    <td className="px-4 py-3 font-semibold text-[12px] text-gray-700 uppercase tracking-wider">
+                    <td className="px-4 py-3 font-semibold text-[12px] text-txt-base uppercase tracking-wider">
                       Aggregate Summary
                     </td>
                     {selectedModels.map(id => {
                       const summary = modelSummaries[id];
                       if (!summary || summary.completedCount === 0) {
                         return (
-                          <td key={id} className="px-4 py-3 border-l border-gray-200 text-[11px] text-gray-400 italic">
+                          <td key={id} className="px-4 py-3 border-l border-brd text-[11px] text-txt-muted italic">
                             No runs completed
                           </td>
                         );
                       }
                       return (
-                        <td key={id} className="px-4 py-3 border-l border-gray-200">
+                        <td key={id} className="px-4 py-3 border-l border-brd">
                           <div className="flex flex-col gap-1 text-[11px] font-mono">
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Total:</span>
-                              <span className="font-semibold text-gray-900">${summary.totalCost.toFixed(5)}</span>
+                              <span className="text-txt-muted">Total:</span>
+                              <span className="font-semibold text-txt-base">${summary.totalCost.toFixed(5)}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-500">Avg Latency:</span>
-                              <span className="font-semibold text-gray-900">{Math.round(summary.avgLatency)}ms</span>
+                              <span className="text-txt-muted">Avg Latency:</span>
+                              <span className="font-semibold text-txt-base">{Math.round(summary.avgLatency)}ms</span>
                             </div>
                             <div className="flex gap-1.5 mt-1 flex-wrap">
                               {summary.isCheapest && (

@@ -86,19 +86,19 @@ curl -X POST ${apiBase}/v1/classify/explain \\
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-gray-200">
+      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-brd">
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-lg">🔌</span>
-              <h2 className="text-[16px] font-bold text-gray-900">API Integration Snippets</h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-gray-100 text-gray-700">
+              <h2 className="text-[16px] font-bold text-txt-base">API Integration Snippets</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-gray-100 text-txt-base">
                 {model}
               </span>
             </div>
-            <p className="text-[12px] text-gray-500 mt-0.5">Use LLM-Router as an OpenAI-compatible drop-in gateway</p>
+            <p className="text-[12px] text-txt-muted mt-0.5">Use LLM-Router as an OpenAI-compatible drop-in gateway</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-black transition-colors p-1">
+          <button onClick={onClose} className="text-txt-muted hover:text-txt-base transition-colors p-1">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
@@ -116,8 +116,8 @@ curl -X POST ${apiBase}/v1/classify/explain \\
               onClick={() => setActiveTab(tab.id)}
               className={`px-3.5 py-2 border-b-2 font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'border-black text-black bg-white rounded-t-lg shadow-2xs'
-                  : 'border-transparent text-gray-500 hover:text-black'
+                  ? 'border-black text-txt-base bg-surface rounded-t-lg shadow-2xs'
+                  : 'border-transparent text-txt-muted hover:text-txt-base'
               }`}
             >
               {tab.label}
@@ -130,11 +130,11 @@ curl -X POST ${apiBase}/v1/classify/explain \\
           <pre className="overflow-x-auto leading-relaxed whitespace-pre-wrap">
             {snippets[activeTab]}
           </pre>
-          <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[11px] text-gray-400 font-sans">
+          <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[11px] text-txt-muted font-sans">
             <span>Gateway URL: <code className="text-emerald-400 font-mono">{apiBase}</code></span>
             <button
               onClick={handleCopy}
-              className="px-3 py-1.5 bg-white text-black font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 bg-surface text-txt-base font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-1.5 shadow-sm"
             >
               {copied ? '✓ Copied' : 'Copy Snippet'}
             </button>
@@ -142,7 +142,7 @@ curl -X POST ${apiBase}/v1/classify/explain \\
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[12px] text-gray-500">
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[12px] text-txt-muted">
           <span>Compatible with OpenAI SDK, LangChain, LiteLLM, Vercel AI SDK.</span>
           <button
             onClick={onClose}

@@ -78,17 +78,17 @@ function App() {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#fafafa] text-[#111] font-sans">
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-white shrink-0" role="banner">
+    <div className="flex flex-col h-screen bg-base text-txt-base font-sans">
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-brd bg-surface shrink-0" role="banner">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 bg-black text-white rounded-md flex items-center justify-center font-bold text-sm" aria-hidden="true">J</div>
           <span className="font-semibold text-[15px]">Jev Router</span>
-          <span className="text-gray-400 text-[13px] ml-2 hidden md:inline">Pick the right model. No completion.</span>
+          <span className="text-txt-muted text-[13px] ml-2 hidden md:inline">Pick the right model. No completion.</span>
         </div>
 
         {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-6 text-[13px]">
-          <nav role="tablist" aria-label="Main navigation" className="flex gap-5 text-gray-500">
+          <nav role="tablist" aria-label="Main navigation" className="flex gap-5 text-txt-muted">
             {TABS.map((tab, idx) => (
               <button
                 key={tab.key}
@@ -98,19 +98,19 @@ function App() {
                 tabIndex={activeTab === tab.key ? 0 : -1}
                 onClick={() => handleTabChange(tab.key)}
                 onKeyDown={(e) => handleTabKeyDown(e, idx)}
-                className={activeTab === tab.key ? 'text-black font-medium' : 'hover:text-black transition-colors'}
+                className={activeTab === tab.key ? 'text-txt-base font-medium' : 'hover:text-txt-base transition-colors'}
               >
                 {tab.label}
               </button>
             ))}
           </nav>
-          <div className="flex items-center gap-1.5 text-gray-500 font-medium bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200" aria-live="polite">
+          <div className="flex items-center gap-1.5 text-txt-muted font-medium bg-gray-50 px-2.5 py-1 rounded-md border border-brd" aria-live="polite">
             <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
             {modelCount} models • live
           </div>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-gray-400 hover:text-black transition-colors"
+            className="text-txt-muted hover:text-txt-base transition-colors"
             aria-label="Open settings"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -119,13 +119,13 @@ function App() {
 
         {/* Mobile hamburger */}
         <div className="flex sm:hidden items-center gap-3">
-          <div className="flex items-center gap-1.5 text-gray-500 text-xs font-medium bg-gray-50 px-2 py-0.5 rounded-md border border-gray-200" aria-live="polite">
+          <div className="flex items-center gap-1.5 text-txt-muted text-xs font-medium bg-gray-50 px-2 py-0.5 rounded-md border border-brd" aria-live="polite">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
             {modelCount}
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-gray-500 hover:text-black p-1"
+            className="text-txt-muted hover:text-txt-base p-1"
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileMenuOpen}
           >
@@ -140,7 +140,7 @@ function App() {
 
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div className="sm:hidden border-b border-gray-200 bg-white animate-fade-in">
+        <div className="sm:hidden border-b border-brd bg-surface animate-fade-in">
           <nav role="tablist" aria-label="Mobile navigation" className="flex flex-col">
             {TABS.map((tab) => (
               <button
@@ -149,7 +149,7 @@ function App() {
                 aria-selected={activeTab === tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 className={`px-4 py-3 text-left text-[14px] border-b border-gray-100 last:border-b-0 transition-colors ${
-                  activeTab === tab.key ? 'text-black font-medium bg-gray-50' : 'text-gray-500 hover:text-black hover:bg-gray-50'
+                  activeTab === tab.key ? 'text-txt-base font-medium bg-gray-50' : 'text-txt-muted hover:text-txt-base hover:bg-gray-50'
                 }`}
               >
                 {tab.label}
@@ -157,7 +157,7 @@ function App() {
             ))}
             <button
               onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }}
-              className="px-4 py-3 text-left text-[14px] text-gray-500 hover:text-black hover:bg-gray-50 flex items-center gap-2"
+              className="px-4 py-3 text-left text-[14px] text-txt-muted hover:text-txt-base hover:bg-gray-50 flex items-center gap-2"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
               Settings

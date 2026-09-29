@@ -183,8 +183,8 @@ export default function Dashboard({ onReplayPrompt }) {
   if (!summary) return (
     <div className="flex items-center justify-center h-full">
       <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
-        <div className="text-gray-400 text-sm font-medium">Loading telemetry...</div>
+        <div className="w-8 h-8 border-4 border-brd border-t-black rounded-full animate-spin"></div>
+        <div className="text-txt-muted text-sm font-medium">Loading telemetry...</div>
       </div>
     </div>
   );
@@ -236,11 +236,11 @@ export default function Dashboard({ onReplayPrompt }) {
   });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto h-full text-[#111]">
+    <div className="p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto h-full text-txt-base">
       <div className="flex justify-between items-end pb-4 border-b border-gray-100">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Telemetry & Savings</h2>
-          <p className="text-sm text-gray-500 mt-1">Real-time metrics from the LLM Router gateway</p>
+          <p className="text-sm text-txt-muted mt-1">Real-time metrics from the LLM Router gateway</p>
         </div>
         <div className="text-xs font-semibold px-3 py-1 bg-green-100 text-green-700 rounded-full flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
@@ -250,8 +250,8 @@ export default function Dashboard({ onReplayPrompt }) {
       
       {/* Top Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+        <div className="p-5 bg-surface border border-brd rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-txt-muted mb-2 uppercase tracking-widest flex items-center gap-2">
             <span>📉</span> Savings
           </div>
           <div className="text-3xl font-bold text-emerald-600">${(summary.total_cost_saved || 0).toFixed(2)}</div>
@@ -260,26 +260,26 @@ export default function Dashboard({ onReplayPrompt }) {
           </div>
         </div>
 
-        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+        <div className="p-5 bg-surface border border-brd rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-txt-muted mb-2 uppercase tracking-widest flex items-center gap-2">
             <span>⚡</span> Avg Latency
           </div>
-          <div className="text-3xl font-bold text-gray-900">
-            {(summary.avg_latency_ms || summary.average_latency_ms || 0).toFixed(0)} <span className="text-lg font-medium text-gray-400">ms</span>
+          <div className="text-3xl font-bold text-txt-base">
+            {(summary.avg_latency_ms || summary.average_latency_ms || 0).toFixed(0)} <span className="text-lg font-medium text-txt-muted">ms</span>
           </div>
-          <div className="mt-2 text-xs text-gray-500">Across all requests</div>
+          <div className="mt-2 text-xs text-txt-muted">Across all requests</div>
         </div>
 
-        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+        <div className="p-5 bg-surface border border-brd rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-txt-muted mb-2 uppercase tracking-widest flex items-center gap-2">
             <span>🎯</span> Total Requests
           </div>
-          <div className="text-3xl font-bold text-gray-900">{summary.total_requests}</div>
-          <div className="mt-2 text-xs text-gray-500">{(summary.total_tokens || 0).toLocaleString()} tokens processed</div>
+          <div className="text-3xl font-bold text-txt-base">{summary.total_requests}</div>
+          <div className="mt-2 text-xs text-txt-muted">{(summary.total_tokens || 0).toLocaleString()} tokens processed</div>
         </div>
 
-        <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+        <div className="p-5 bg-surface border border-brd rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-[11px] font-bold text-txt-muted mb-2 uppercase tracking-widest flex items-center gap-2">
             <span>🛡️</span> Optimization Rate
           </div>
           <div className="text-3xl font-bold text-blue-600">
@@ -292,20 +292,20 @@ export default function Dashboard({ onReplayPrompt }) {
       </div>
 
       {/* Enterprise Budget & Threshold Alerting Hub */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-surface border border-brd rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-2.5">
             <span className="text-lg">💳</span>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Enterprise Budget & Alerts</h3>
-              <p className="text-[11px] text-gray-500">Monthly spend threshold monitoring & automated webhooks</p>
+              <h3 className="text-sm font-semibold text-txt-base">Enterprise Budget & Alerts</h3>
+              <p className="text-[11px] text-txt-muted">Monthly spend threshold monitoring & automated webhooks</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Status Badge */}
             {budgetStatus?.status === 'unlimited' ? (
-              <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 border border-gray-200">
+              <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-txt-base border border-brd">
                 Unlimited Tier
               </span>
             ) : budgetStatus?.status === 'critical' ? (
@@ -327,7 +327,7 @@ export default function Dashboard({ onReplayPrompt }) {
             )}
 
             {/* Webhook Status */}
-            <span className={`px-2 py-0.5 text-[11px] rounded border ${budgetStatus?.webhook_configured ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+            <span className={`px-2 py-0.5 text-[11px] rounded border ${budgetStatus?.webhook_configured ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-50 text-txt-muted border-brd'}`}>
               {budgetStatus?.webhook_configured ? '🔔 Webhook Active' : '🔕 Webhook Unset'}
             </span>
 
@@ -335,7 +335,7 @@ export default function Dashboard({ onReplayPrompt }) {
             <button
               onClick={handleTestAlert}
               disabled={budgetActionLoading}
-              className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+              className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-txt-base hover:bg-gray-100 border border-brd rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
               title="Send a synthetic test alert"
             >
               ⚡ Test Alert
@@ -360,16 +360,16 @@ export default function Dashboard({ onReplayPrompt }) {
 
         {/* Feedback message */}
         {budgetFeedback && (
-          <div className="text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 animate-in fade-in flex items-center justify-between">
+          <div className="text-xs p-2.5 bg-gray-50 border border-brd rounded-lg text-txt-base animate-in fade-in flex items-center justify-between">
             <span>{budgetFeedback}</span>
-            <button onClick={() => setBudgetFeedback(null)} className="text-gray-400 hover:text-black">✕</button>
+            <button onClick={() => setBudgetFeedback(null)} className="text-txt-muted hover:text-txt-base">✕</button>
           </div>
         )}
 
         {/* Inline Config Drawer */}
         {budgetDrawerOpen && (
-          <form onSubmit={handleUpdateBudget} className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3 animate-in fade-in">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Update Budget & Alert Settings</div>
+          <form onSubmit={handleUpdateBudget} className="p-4 bg-gray-50 rounded-xl border border-brd space-y-3 animate-in fade-in">
+            <div className="text-xs font-semibold text-txt-base uppercase tracking-wider">Update Budget & Alert Settings</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-gray-600 mb-1">Monthly Budget (USD, 0 = unlimited)</label>
@@ -380,7 +380,7 @@ export default function Dashboard({ onReplayPrompt }) {
                   placeholder="e.g. 50.00"
                   value={budgetForm.monthly_budget_usd}
                   onChange={e => setBudgetForm({ ...budgetForm, monthly_budget_usd: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                  className="w-full px-3 py-1.5 text-xs bg-surface border border-brd rounded-lg outline-none focus:border-black font-mono"
                 />
               </div>
               <div>
@@ -390,7 +390,7 @@ export default function Dashboard({ onReplayPrompt }) {
                   placeholder="https://hooks.slack.com/services/..."
                   value={budgetForm.webhook_url}
                   onChange={e => setBudgetForm({ ...budgetForm, webhook_url: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                  className="w-full px-3 py-1.5 text-xs bg-surface border border-brd rounded-lg outline-none focus:border-black font-mono"
                 />
               </div>
             </div>
@@ -398,7 +398,7 @@ export default function Dashboard({ onReplayPrompt }) {
               <button
                 type="button"
                 onClick={() => setBudgetDrawerOpen(false)}
-                className="px-3 py-1 text-xs text-gray-500 hover:text-black"
+                className="px-3 py-1 text-xs text-txt-muted hover:text-txt-base"
               >
                 Cancel
               </button>
@@ -417,11 +417,11 @@ export default function Dashboard({ onReplayPrompt }) {
         {budgetStatus && budgetStatus.monthly_budget_usd > 0 ? (
           <div>
             <div className="flex justify-between items-end text-xs mb-1.5">
-              <span className="font-semibold text-gray-700">
+              <span className="font-semibold text-txt-base">
                 ${budgetStatus.current_cost_usd?.toFixed(2) || '0.00'}{' '}
-                <span className="font-normal text-gray-400">/ ${budgetStatus.monthly_budget_usd?.toFixed(2)} monthly cap</span>
+                <span className="font-normal text-txt-muted">/ ${budgetStatus.monthly_budget_usd?.toFixed(2)} monthly cap</span>
               </span>
-              <span className="text-gray-500 font-mono text-[11px]">
+              <span className="text-txt-muted font-mono text-[11px]">
                 {budgetStatus.remaining_usd !== null && `$${budgetStatus.remaining_usd?.toFixed(2)} remaining`} ({budgetStatus.percent_used?.toFixed(1)}%)
               </span>
             </div>
@@ -439,7 +439,7 @@ export default function Dashboard({ onReplayPrompt }) {
               ></div>
             </div>
 
-            <div className="flex justify-between text-[10px] text-gray-400 font-mono mt-1">
+            <div className="flex justify-between text-[10px] text-txt-muted font-mono mt-1">
               <span>0%</span>
               <span className="text-blue-500">50% Notice</span>
               <span className="text-amber-500">80% Warning</span>
@@ -447,14 +447,14 @@ export default function Dashboard({ onReplayPrompt }) {
             </div>
           </div>
         ) : (
-          <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex items-center justify-between text-xs text-gray-500">
-            <span>No monthly cap configured. Current cycle cost: <strong className="text-gray-800 font-mono">${(summary?.current_month_cost || 0).toFixed(4)}</strong></span>
+          <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-brd flex items-center justify-between text-xs text-txt-muted">
+            <span>No monthly cap configured. Current cycle cost: <strong className="text-txt-base font-mono">${(summary?.current_month_cost || 0).toFixed(4)}</strong></span>
             <button
               onClick={() => {
                 setBudgetForm({ monthly_budget_usd: '25.00', webhook_url: '' });
                 setBudgetDrawerOpen(true);
               }}
-              className="text-xs font-semibold text-black hover:underline"
+              className="text-xs font-semibold text-txt-base hover:underline"
             >
               + Set Cap
             </button>
@@ -465,12 +465,12 @@ export default function Dashboard({ onReplayPrompt }) {
         {budgetStatus?.recent_alerts && budgetStatus.recent_alerts.length > 0 && (
           <div className="pt-2 border-t border-gray-100">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-txt-muted">
                 Recent Alert History ({budgetStatus.alert_count})
               </span>
               <button
                 onClick={handleClearAlerts}
-                className="text-[11px] text-gray-400 hover:text-red-600 transition-colors"
+                className="text-[11px] text-txt-muted hover:text-red-600 transition-colors"
               >
                 Clear History
               </button>
@@ -478,8 +478,8 @@ export default function Dashboard({ onReplayPrompt }) {
             <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto">
               {budgetStatus.recent_alerts.slice(0, 5).map((a, idx) => (
                 <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 text-[11px] border border-gray-100 font-mono">
-                  <span className="text-gray-700 truncate mr-2">{a.message}</span>
-                  <span className="text-gray-400 flex-shrink-0">
+                  <span className="text-txt-base truncate mr-2">{a.message}</span>
+                  <span className="text-txt-muted flex-shrink-0">
                     {new Date(a.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
                 </div>
@@ -491,7 +491,7 @@ export default function Dashboard({ onReplayPrompt }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tier Distribution Chart */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold mb-6 flex items-center gap-2">
             Tier Distribution
           </h3>
@@ -510,16 +510,16 @@ export default function Dashboard({ onReplayPrompt }) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
                 <span className="text-2xl font-bold">{summary.total_requests}</span>
-                <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Reqs</span>
+                <span className="text-[10px] uppercase text-txt-muted font-bold tracking-wider">Reqs</span>
               </div>
             </div>
           ) : (
-            <div className="h-64 flex items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">No routing data available</div>
+            <div className="h-64 flex items-center justify-center text-sm text-txt-muted bg-gray-50 rounded-xl border border-dashed border-brd">No routing data available</div>
           )}
         </div>
 
         {/* Value vs Cost Scatter Chart */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm">
           <h3 className="text-sm font-semibold mb-6">Value (Reasoning) vs Cost</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -537,12 +537,12 @@ export default function Dashboard({ onReplayPrompt }) {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-white p-3 border border-gray-200 rounded-xl shadow-lg">
+                        <div className="bg-surface p-3 border border-brd rounded-xl shadow-lg">
                           <p className="font-bold text-sm mb-1">{data.name}</p>
-                          <p className="text-xs text-gray-500">Tier: <span className="font-semibold">{data.tier}</span></p>
-                          <p className="text-xs text-gray-500">Cost (In): <span className="font-semibold text-emerald-600">${data.price}/M</span></p>
-                          <p className="text-xs text-gray-500">Reasoning: <span className="font-semibold text-blue-600">{data.quality.toFixed(1)}</span></p>
-                          <p className="text-xs text-gray-500">Context: <span className="font-semibold">{data.context.toLocaleString()}</span></p>
+                          <p className="text-xs text-txt-muted">Tier: <span className="font-semibold">{data.tier}</span></p>
+                          <p className="text-xs text-txt-muted">Cost (In): <span className="font-semibold text-emerald-600">${data.price}/M</span></p>
+                          <p className="text-xs text-txt-muted">Reasoning: <span className="font-semibold text-blue-600">{data.quality.toFixed(1)}</span></p>
+                          <p className="text-xs text-txt-muted">Context: <span className="font-semibold">{data.context.toLocaleString()}</span></p>
                         </div>
                       );
                     }
@@ -561,7 +561,7 @@ export default function Dashboard({ onReplayPrompt }) {
       </div>
 
       {/* Provider Circuit Health Grid */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+      <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -572,7 +572,7 @@ export default function Dashboard({ onReplayPrompt }) {
                 Chaos Ready
               </span>
             </div>
-            <p className="text-[11px] text-gray-400 font-medium mt-0.5">
+            <p className="text-[11px] text-txt-muted font-medium mt-0.5">
               Automatic failover & half-open probing. Simulate upstream provider failure to observe live failover.
             </p>
           </div>
@@ -626,7 +626,7 @@ export default function Dashboard({ onReplayPrompt }) {
                 className={`p-3 rounded-xl border flex flex-col items-center justify-between text-center transition-all ${
                   isTripped ? 'border-red-300 bg-red-50/60 shadow-xs ring-1 ring-red-200' :
                   isDegraded ? 'border-amber-200 bg-amber-50/50' :
-                  'border-gray-200 bg-gray-50/40 hover:border-gray-300'
+                  'border-brd bg-gray-50/40 hover:border-gray-300'
                 }`}
               >
                 <div>
@@ -636,7 +636,7 @@ export default function Dashboard({ onReplayPrompt }) {
                       isDegraded ? 'bg-amber-500' :
                       'bg-emerald-500'
                     }`} />
-                    <span className="text-xs font-semibold capitalize text-gray-800">{p}</span>
+                    <span className="text-xs font-semibold capitalize text-txt-base">{p}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase tracking-wider block ${
                     isTripped ? 'text-red-700' :
@@ -645,11 +645,11 @@ export default function Dashboard({ onReplayPrompt }) {
                   }`}>
                     {h.status}
                   </span>
-                  <div className="mt-1 flex flex-col gap-0.5 text-[10px] font-mono text-gray-500">
+                  <div className="mt-1 flex flex-col gap-0.5 text-[10px] font-mono text-txt-muted">
                     <span title="Latest / Avg Latency">
                       ⏱️ {h.latest_latency_ms ? `${h.latest_latency_ms}ms` : (h.avg_latency_ms ? `${h.avg_latency_ms}ms` : '—')}
                     </span>
-                    <span className="text-[9px] text-gray-400">
+                    <span className="text-[9px] text-txt-muted">
                       {h.availability_rate_pct !== undefined ? `${h.availability_rate_pct}% avail` : (h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '100% avail')}
                     </span>
                   </div>
@@ -669,7 +669,7 @@ export default function Dashboard({ onReplayPrompt }) {
                       onClick={() => handleTripProvider(p)}
                       disabled={chaosLoading}
                       title="Simulate outage for chaos testing"
-                      className="text-[10px] font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
+                      className="text-[10px] font-medium text-txt-muted hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors"
                     >
                       ⚡ Trip Outage
                     </button>
@@ -684,7 +684,7 @@ export default function Dashboard({ onReplayPrompt }) {
       {/* Hourly Activity & Top Models Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Timeseries Chart */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <span>📈</span> 24h Routing Activity
@@ -693,7 +693,7 @@ export default function Dashboard({ onReplayPrompt }) {
               <button
                 onClick={() => setTimeseriesMetric('requests')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
-                  timeseriesMetric === 'requests' ? 'bg-white shadow-xs text-black' : 'text-gray-500 hover:text-black'
+                  timeseriesMetric === 'requests' ? 'bg-surface shadow-xs text-txt-base' : 'text-txt-muted hover:text-txt-base'
                 }`}
               >
                 Requests
@@ -701,7 +701,7 @@ export default function Dashboard({ onReplayPrompt }) {
               <button
                 onClick={() => setTimeseriesMetric('saved')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
-                  timeseriesMetric === 'saved' ? 'bg-white shadow-xs text-emerald-600' : 'text-gray-500 hover:text-black'
+                  timeseriesMetric === 'saved' ? 'bg-surface shadow-xs text-emerald-600' : 'text-txt-muted hover:text-txt-base'
                 }`}
               >
                 Saved ($)
@@ -728,7 +728,7 @@ export default function Dashboard({ onReplayPrompt }) {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 gap-2">
+            <div className="h-64 flex flex-col items-center justify-center text-sm text-txt-muted bg-gray-50 rounded-xl border border-dashed border-brd gap-2">
               <span className="text-xl">⏱️</span>
               <span>No requests recorded in the last 24h</span>
             </div>
@@ -736,13 +736,13 @@ export default function Dashboard({ onReplayPrompt }) {
         </div>
 
         {/* Top Models Performance Matrix */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <span>🏆</span> Model Distribution & Performance
               </h3>
-              <span className="text-xs text-gray-400 font-mono">{(analytics?.model_stats || []).length} models routed</span>
+              <span className="text-xs text-txt-muted font-mono">{(analytics?.model_stats || []).length} models routed</span>
             </div>
             {(analytics?.model_stats || []).length > 0 ? (
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
@@ -751,18 +751,18 @@ export default function Dashboard({ onReplayPrompt }) {
                   return (
                     <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-1.5">
                       <div className="flex justify-between items-center text-[12px]">
-                        <span className="font-semibold text-gray-800 truncate max-w-[200px]" title={m.model_used}>
+                        <span className="font-semibold text-txt-base truncate max-w-[200px]" title={m.model_used}>
                           {m.model_used}
                         </span>
                         <div className="flex items-center gap-2 font-mono">
-                          <span className="text-gray-500 font-bold">{m.count} reqs</span>
-                          <span className="text-gray-400">({sharePct}%)</span>
+                          <span className="text-txt-muted font-bold">{m.count} reqs</span>
+                          <span className="text-txt-muted">({sharePct}%)</span>
                         </div>
                       </div>
                       <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                         <div className="h-full bg-black rounded-full" style={{ width: `${Math.max(4, sharePct)}%` }} />
                       </div>
-                      <div className="flex justify-between text-[11px] text-gray-400 font-mono mt-0.5">
+                      <div className="flex justify-between text-[11px] text-txt-muted font-mono mt-0.5">
                         <span>Avg Latency: <strong className="text-gray-600">{Math.round(m.avg_latency)}ms</strong></span>
                         <span>Avg Score: <strong className="text-gray-600">{(m.avg_score || 0).toFixed(2)}</strong></span>
                         <span>Avg Cost: <strong className="text-emerald-600">${(m.avg_cost || 0).toFixed(4)}</strong></span>
@@ -772,13 +772,13 @@ export default function Dashboard({ onReplayPrompt }) {
                 })}
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 gap-2">
+              <div className="h-64 flex flex-col items-center justify-center text-sm text-txt-muted bg-gray-50 rounded-xl border border-dashed border-brd gap-2">
                 <span className="text-xl">📊</span>
                 <span>No model performance data yet</span>
               </div>
             )}
           </div>
-          <div className="text-[11px] text-gray-400 pt-3 border-t border-gray-100 mt-2">
+          <div className="text-[11px] text-txt-muted pt-3 border-t border-gray-100 mt-2">
             Statistics dynamically calculated from actual completions telemetry.
           </div>
         </div>
@@ -787,12 +787,12 @@ export default function Dashboard({ onReplayPrompt }) {
       {/* Provider Distribution & Prompt Caching Economics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Provider Traffic Distribution */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <span>🌐</span> Upstream Provider Traffic
             </h3>
-            <span className="text-xs text-gray-400 font-mono">
+            <span className="text-xs text-txt-muted font-mono">
               {(analytics?.provider_stats || []).length} active providers
             </span>
           </div>
@@ -805,10 +805,10 @@ export default function Dashboard({ onReplayPrompt }) {
                 return (
                   <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-1.5">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold capitalize text-gray-800">{p.provider}</span>
+                      <span className="font-semibold capitalize text-txt-base">{p.provider}</span>
                       <div className="flex items-center gap-2 font-mono">
                         <span className="text-gray-600 font-medium">{p.requests} reqs</span>
-                        <span className="text-gray-400">({pct}%)</span>
+                        <span className="text-txt-muted">({pct}%)</span>
                         <span className="text-emerald-600 font-semibold">${p.total_cost.toFixed(4)}</span>
                       </div>
                     </div>
@@ -820,14 +820,14 @@ export default function Dashboard({ onReplayPrompt }) {
               })}
             </div>
           ) : (
-            <div className="h-44 flex flex-col items-center justify-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <div className="h-44 flex flex-col items-center justify-center text-xs text-txt-muted bg-gray-50 rounded-xl border border-dashed border-brd">
               No multi-provider traffic logged yet.
             </div>
           )}
         </div>
 
         {/* Prompt Caching Economics & Savings Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+        <div className="bg-surface border border-brd rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -838,14 +838,14 @@ export default function Dashboard({ onReplayPrompt }) {
               </span>
             </div>
             
-            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+            <p className="text-xs text-txt-muted mb-4 leading-relaxed">
               When repetitive context (system instructions, codebases, documents) is reused, modern providers offer steep cache read discounts.
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="text-[11px] text-gray-400 uppercase font-semibold">Total Prompt Tokens</div>
-                <div className="text-lg font-bold text-gray-900 font-mono mt-1">
+                <div className="text-[11px] text-txt-muted uppercase font-semibold">Total Prompt Tokens</div>
+                <div className="text-lg font-bold text-txt-base font-mono mt-1">
                   {(analytics?.prompt_cache_analytics?.total_prompt_tokens || 0).toLocaleString()}
                 </div>
               </div>
@@ -871,14 +871,14 @@ export default function Dashboard({ onReplayPrompt }) {
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Provider Cache Discounts:</div>
+              <div className="text-[11px] font-semibold text-txt-muted uppercase tracking-wider">Provider Cache Discounts:</div>
               <div className="flex flex-wrap gap-1.5 text-[11px]">
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Anthropic: <strong>-90%</strong></span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">DeepSeek: <strong>-90%</strong></span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Qwen: <strong>-80%</strong></span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Meta: <strong>-80%</strong></span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">Google: <strong>-75%</strong></span>
-                <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">OpenAI: <strong>-50%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">Anthropic: <strong>-90%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">DeepSeek: <strong>-90%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">Qwen: <strong>-80%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">Meta: <strong>-80%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">Google: <strong>-75%</strong></span>
+                <span className="px-2 py-0.5 bg-gray-100 rounded text-txt-base">OpenAI: <strong>-50%</strong></span>
               </div>
             </div>
           </div>
@@ -886,7 +886,7 @@ export default function Dashboard({ onReplayPrompt }) {
       </div>
       
       {/* Recent Requests Table */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mt-6">
+      <div className="bg-surface border border-brd rounded-2xl shadow-sm overflow-hidden mt-6">
         <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 justify-between items-center bg-gray-50/50">
           <div className="flex items-center gap-3">
             <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -899,13 +899,13 @@ export default function Dashboard({ onReplayPrompt }) {
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Tier Filter Pills */}
-            <div className="flex bg-white border border-gray-200 rounded-lg p-0.5 text-[11px] font-medium shadow-2xs">
+            <div className="flex bg-surface border border-brd rounded-lg p-0.5 text-[11px] font-medium shadow-2xs">
               {['all', 'cheap', 'medium', 'frontier'].map(t => (
                 <button
                   key={t}
                   onClick={() => setTierFilter(t)}
                   className={`px-2 py-0.5 rounded capitalize transition-colors ${
-                    tierFilter === t ? 'bg-black text-white font-semibold' : 'text-gray-500 hover:text-black'
+                    tierFilter === t ? 'bg-black text-white font-semibold' : 'text-txt-muted hover:text-txt-base'
                   }`}
                 >
                   {t}
@@ -920,12 +920,12 @@ export default function Dashboard({ onReplayPrompt }) {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search prompt or model..."
-                className="px-2.5 py-1 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-black w-44 transition-all"
+                className="px-2.5 py-1 text-xs bg-surface border border-brd rounded-lg focus:outline-none focus:border-black w-44 transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1 text-gray-400 hover:text-black text-xs"
+                  className="absolute right-2 top-1 text-txt-muted hover:text-txt-base text-xs"
                 >
                   ×
                 </button>
@@ -935,14 +935,14 @@ export default function Dashboard({ onReplayPrompt }) {
             <a
               href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/csv`}
               download="llm_router_metrics.csv"
-              className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
+              className="px-2.5 py-1 bg-surface border border-brd rounded-lg text-[11px] font-semibold text-txt-base hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
             >
               <span>📥</span> CSV
             </a>
             <a
               href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/v1/metrics/export/json`}
               download="llm_router_metrics.json"
-              className="px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
+              className="px-2.5 py-1 bg-surface border border-brd rounded-lg text-[11px] font-semibold text-txt-base hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1"
             >
               <span>📄</span> JSON
             </a>
@@ -966,7 +966,7 @@ export default function Dashboard({ onReplayPrompt }) {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-white text-[11px] uppercase tracking-wider text-gray-400 font-semibold border-b border-gray-100">
+            <thead className="bg-surface text-[11px] uppercase tracking-wider text-txt-muted font-semibold border-b border-gray-100">
               <tr>
                 <th className="px-5 py-3 w-1/4">Prompt Preview</th>
                 <th className="px-5 py-3">Tier</th>
@@ -985,7 +985,7 @@ export default function Dashboard({ onReplayPrompt }) {
                     onClick={() => setExpandedRow(expandedRow === i ? null : i)}
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
                   >
-                    <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[200px]" title={req.prompt_preview}>
+                    <td className="px-5 py-3 font-medium text-txt-base truncate max-w-[200px]" title={req.prompt_preview}>
                       {req.prompt_preview || 'Empty prompt'}
                     </td>
                     <td className="px-5 py-3">
@@ -998,7 +998,7 @@ export default function Dashboard({ onReplayPrompt }) {
                       </span>
                     </td>
                     <td className="px-5 py-3 font-mono text-[12px] truncate max-w-[150px]">{req.actual_model}</td>
-                    <td className="px-5 py-3 text-right font-mono text-[12px] text-gray-500">{(req.classifier_score || 0).toFixed(2)}</td>
+                    <td className="px-5 py-3 text-right font-mono text-[12px] text-txt-muted">{(req.classifier_score || 0).toFixed(2)}</td>
                     <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
                     <td className="px-5 py-3 text-right font-mono text-[12px]">${(req.cost_actual || 0).toFixed(4)}</td>
                     <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
@@ -1007,14 +1007,14 @@ export default function Dashboard({ onReplayPrompt }) {
                         <button
                           onClick={() => setExpandedRow(expandedRow === i ? null : i)}
                           title="Toggle details"
-                          className="px-2 py-1 text-[11px] font-medium text-gray-600 border border-gray-200 rounded hover:bg-white transition-colors"
+                          className="px-2 py-1 text-[11px] font-medium text-gray-600 border border-brd rounded hover:bg-surface transition-colors"
                         >
                           {expandedRow === i ? '▲' : '▼'}
                         </button>
                         <button
                           onClick={() => navigator.clipboard.writeText(req.prompt_preview || '')}
                           title="Copy prompt"
-                          className="px-2 py-1 text-[11px] text-gray-500 hover:text-black border border-gray-200 rounded hover:bg-white transition-colors"
+                          className="px-2 py-1 text-[11px] text-txt-muted hover:text-txt-base border border-brd rounded hover:bg-surface transition-colors"
                         >
                           Copy
                         </button>
@@ -1033,27 +1033,27 @@ export default function Dashboard({ onReplayPrompt }) {
                   {expandedRow === i && (
                     <tr className="bg-gray-50/80">
                       <td colSpan="8" className="p-4 border-t border-gray-100">
-                        <div className="flex flex-col gap-2.5 text-xs text-gray-700">
-                          <div className="font-semibold text-gray-900 flex justify-between items-center">
+                        <div className="flex flex-col gap-2.5 text-xs text-txt-base">
+                          <div className="font-semibold text-txt-base flex justify-between items-center">
                             <span>Full Prompt Preview:</span>
-                            <span className="font-mono text-[11px] text-gray-400">
+                            <span className="font-mono text-[11px] text-txt-muted">
                               {req.timestamp ? new Date(req.timestamp * 1000).toLocaleString() : ''}
                             </span>
                           </div>
-                          <p className="bg-white p-3 rounded-lg border border-gray-200 font-mono text-xs whitespace-pre-wrap leading-relaxed text-gray-800">
+                          <p className="bg-surface p-3 rounded-lg border border-brd font-mono text-xs whitespace-pre-wrap leading-relaxed text-txt-base">
                             {req.prompt_preview || 'Empty prompt'}
                           </p>
-                          <div className="flex flex-wrap gap-4 text-[11px] font-mono text-gray-500 pt-1">
-                            <span>Tokens: <strong className="text-gray-800">{req.prompt_tokens || 0}</strong> in / <strong className="text-gray-800">{req.completion_tokens || 0}</strong> out (Total: {req.total_tokens || 0})</span>
-                            <span>Actual Cost: <strong className="text-gray-800">${(req.cost_actual || 0).toFixed(5)}</strong></span>
-                            <span>Frontier Baseline: <strong className="text-gray-400 line-through">${(req.cost_if_frontier || 0).toFixed(5)}</strong></span>
+                          <div className="flex flex-wrap gap-4 text-[11px] font-mono text-txt-muted pt-1">
+                            <span>Tokens: <strong className="text-txt-base">{req.prompt_tokens || 0}</strong> in / <strong className="text-txt-base">{req.completion_tokens || 0}</strong> out (Total: {req.total_tokens || 0})</span>
+                            <span>Actual Cost: <strong className="text-txt-base">${(req.cost_actual || 0).toFixed(5)}</strong></span>
+                            <span>Frontier Baseline: <strong className="text-txt-muted line-through">${(req.cost_if_frontier || 0).toFixed(5)}</strong></span>
                             <span>Net Saved: <strong className="text-emerald-600">${(req.cost_saved || req.cost_saved_usd || 0).toFixed(5)}</strong></span>
                           </div>
                           {req.classifier_reasons && (
                             <div className="flex flex-wrap gap-1.5 items-center mt-1">
-                              <span className="text-[11px] font-medium text-gray-400 mr-1">Classification Signals:</span>
+                              <span className="text-[11px] font-medium text-txt-muted mr-1">Classification Signals:</span>
                               {(typeof req.classifier_reasons === 'string' ? JSON.parse(req.classifier_reasons || '[]') : req.classifier_reasons).map((reason, rIdx) => (
-                                <span key={rIdx} className="bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded text-[10px] font-medium">
+                                <span key={rIdx} className="bg-surface border border-brd text-txt-base px-2 py-0.5 rounded text-[10px] font-medium">
                                   {reason}
                                 </span>
                               ))}
@@ -1077,7 +1077,7 @@ export default function Dashboard({ onReplayPrompt }) {
                 </Fragment>
               )) : (
                 <tr>
-                  <td colSpan="8" className="px-5 py-8 text-center text-gray-400">
+                  <td colSpan="8" className="px-5 py-8 text-center text-txt-muted">
                     {recent.length === 0 ? 'No requests recorded yet' : 'No requests matching filters'}
                   </td>
                 </tr>

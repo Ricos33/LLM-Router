@@ -239,19 +239,19 @@ export default function SettingsModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
           <div>
-            <h2 className="text-[15px] font-semibold text-gray-900">Settings & Policy Rules</h2>
+            <h2 className="text-[15px] font-semibold text-txt-base">Settings & Policy Rules</h2>
             <div className="flex gap-4 mt-2">
               <button
                 onClick={() => setActiveTab('keys')}
                 className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${
                   activeTab === 'keys'
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                    ? 'border-black text-txt-base'
+                    : 'border-transparent text-txt-muted hover:text-txt-base'
                 }`}
               >
                 API Keys & Health
@@ -260,8 +260,8 @@ export default function SettingsModal({ onClose }) {
                 onClick={() => setActiveTab('rules')}
                 className={`text-xs font-semibold pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
                   activeTab === 'rules'
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                    ? 'border-black text-txt-base'
+                    : 'border-transparent text-txt-muted hover:text-txt-base'
                 }`}
               >
                 <span>Routing Rules</span>
@@ -273,8 +273,8 @@ export default function SettingsModal({ onClose }) {
                 onClick={() => setActiveTab('budget')}
                 className={`text-xs font-semibold pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
                   activeTab === 'budget'
-                    ? 'border-black text-black'
-                    : 'border-transparent text-gray-400 hover:text-gray-700'
+                    ? 'border-black text-txt-base'
+                    : 'border-transparent text-txt-muted hover:text-txt-base'
                 }`}
               >
                 <span>Budget & Webhooks</span>
@@ -290,7 +290,7 @@ export default function SettingsModal({ onClose }) {
               </button>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-black">
+          <button onClick={onClose} className="text-txt-muted hover:text-txt-base">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
@@ -309,7 +309,7 @@ export default function SettingsModal({ onClose }) {
                         className={`w-2 h-2 rounded-full ${isTripped ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} 
                         title={isTripped ? 'Circuit tripped (temporarily avoiding)' : 'Circuit healthy'}
                       />
-                      <label className="font-semibold text-gray-700 text-[11px] tracking-wide">{p.name}</label>
+                      <label className="font-semibold text-txt-base text-[11px] tracking-wide">{p.name}</label>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {isTripped ? (
@@ -325,7 +325,7 @@ export default function SettingsModal({ onClose }) {
                         <button
                           type="button"
                           onClick={() => handleTrip(p.id)}
-                          className="text-[9px] text-gray-400 hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded font-medium transition-colors"
+                          className="text-[9px] text-txt-muted hover:text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded font-medium transition-colors"
                           title="Simulate upstream failure (trip circuit)"
                         >
                           ⚡ Trip
@@ -334,7 +334,7 @@ export default function SettingsModal({ onClose }) {
                       {keys[p.id] ? (
                         <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">Configured</span>
                       ) : (
-                        <span className="text-[10px] text-gray-400">Not set</span>
+                        <span className="text-[10px] text-txt-muted">Not set</span>
                       )}
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export default function SettingsModal({ onClose }) {
                     placeholder={p.placeholder}
                     value={keys[p.id] || ''}
                     onChange={e => setKeys({...keys, [p.id]: e.target.value})}
-                    className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono text-[11px]"
+                    className="px-3 py-1.5 border border-brd rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono text-[11px]"
                   />
                 </div>
               );
@@ -355,14 +355,14 @@ export default function SettingsModal({ onClose }) {
         {activeTab === 'rules' && (
           <div className="p-5 flex flex-col gap-4 text-[13px] overflow-y-auto">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-txt-muted">
                 Deterministic regex and keyword overrides evaluated before classification.
               </span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={handleResetRules}
-                  className="text-[11px] text-gray-500 hover:text-black border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"
+                  className="text-[11px] text-txt-muted hover:text-txt-base border border-brd px-2 py-1 rounded hover:bg-gray-50"
                   title="Reset to predefined presets"
                 >
                   ↺ Reset
@@ -379,26 +379,26 @@ export default function SettingsModal({ onClose }) {
 
             {/* Add Custom Rule Form */}
             {showAddRule && (
-              <form onSubmit={handleCreateRule} className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 flex flex-col gap-2.5 text-xs animate-in fade-in">
-                <div className="font-semibold text-gray-800 text-[11px] uppercase tracking-wider">New Routing Rule</div>
+              <form onSubmit={handleCreateRule} className="bg-gray-50 border border-brd rounded-xl p-3.5 flex flex-col gap-2.5 text-xs animate-in fade-in">
+                <div className="font-semibold text-txt-base text-[11px] uppercase tracking-wider">New Routing Rule</div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Rule Name</label>
+                    <label className="block text-[10px] text-txt-muted mb-0.5">Rule Name</label>
                     <input
                       type="text"
                       placeholder="e.g. Legal & Contracts"
                       required
                       value={newRule.name}
                       onChange={e => setNewRule({ ...newRule, name: e.target.value })}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Target Tier</label>
+                    <label className="block text-[10px] text-txt-muted mb-0.5">Target Tier</label>
                     <select
                       value={newRule.target_tier}
                       onChange={e => setNewRule({ ...newRule, target_tier: e.target.value })}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs outline-none capitalize"
+                      className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs outline-none capitalize"
                     >
                       <option value="cheap">Cheap</option>
                       <option value="medium">Medium</option>
@@ -408,34 +408,34 @@ export default function SettingsModal({ onClose }) {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-500 mb-0.5">Trigger Keywords (comma separated)</label>
+                  <label className="block text-[10px] text-txt-muted mb-0.5">Trigger Keywords (comma separated)</label>
                   <input
                     type="text"
                     placeholder="e.g. nda, compliance, indemnification, legal"
                     value={newRule.keywords}
                     onChange={e => setNewRule({ ...newRule, keywords: e.target.value })}
-                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs outline-none"
+                    className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Target Model (optional)</label>
+                    <label className="block text-[10px] text-txt-muted mb-0.5">Target Model (optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. anthropic/claude-opus-5.5"
                       value={newRule.target_model}
                       onChange={e => setNewRule({ ...newRule, target_model: e.target.value })}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs font-mono outline-none"
+                      className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs font-mono outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-gray-500 mb-0.5">Priority (default 100)</label>
+                    <label className="block text-[10px] text-txt-muted mb-0.5">Priority (default 100)</label>
                     <input
                       type="number"
                       value={newRule.priority}
                       onChange={e => setNewRule({ ...newRule, priority: e.target.value })}
-                      className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-xs outline-none"
+                      className="w-full px-2 py-1 bg-surface border border-brd rounded text-xs outline-none"
                     />
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export default function SettingsModal({ onClose }) {
                   <button
                     type="button"
                     onClick={() => setShowAddRule(false)}
-                    className="px-2.5 py-1 text-gray-500 hover:text-black"
+                    className="px-2.5 py-1 text-txt-muted hover:text-txt-base"
                   >
                     Cancel
                   </button>
@@ -460,15 +460,15 @@ export default function SettingsModal({ onClose }) {
 
             {/* Rules List */}
             {rulesLoading ? (
-              <div className="py-8 text-center text-gray-400">Loading rules...</div>
+              <div className="py-8 text-center text-txt-muted">Loading rules...</div>
             ) : (
               <div className="flex flex-col gap-2.5">
                 {rules.map(r => (
-                  <div key={r.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-2xs flex flex-col gap-1.5">
+                  <div key={r.id} className="bg-surface border border-brd rounded-lg p-3 shadow-2xs flex flex-col gap-1.5">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-semibold text-gray-900 text-[12px]">{r.name}</div>
-                        <div className="text-[10px] font-mono text-gray-400">{r.id}</div>
+                        <div className="font-semibold text-txt-base text-[12px]">{r.name}</div>
+                        <div className="text-[10px] font-mono text-txt-muted">{r.id}</div>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
@@ -491,11 +491,11 @@ export default function SettingsModal({ onClose }) {
                       </div>
                     </div>
                     {r.description && (
-                      <p className="text-[11px] text-gray-500 leading-snug">{r.description}</p>
+                      <p className="text-[11px] text-txt-muted leading-snug">{r.description}</p>
                     )}
                     {r.target_model && (
                       <div className="text-[10px] text-gray-600">
-                        Target model: <span className="font-mono font-medium text-gray-900">{r.target_model}</span>
+                        Target model: <span className="font-mono font-medium text-txt-base">{r.target_model}</span>
                       </div>
                     )}
                     {r.keywords?.length > 0 && (
@@ -506,7 +506,7 @@ export default function SettingsModal({ onClose }) {
                           </span>
                         ))}
                         {r.keywords.length > 4 && (
-                          <span className="text-[9px] text-gray-400">+{r.keywords.length - 4} more</span>
+                          <span className="text-[9px] text-txt-muted">+{r.keywords.length - 4} more</span>
                         )}
                       </div>
                     )}
@@ -521,29 +521,29 @@ export default function SettingsModal({ onClose }) {
         {activeTab === 'budget' && (
           <div className="p-5 flex flex-col gap-4 text-[13px] overflow-y-auto">
             {budgetMessage && (
-              <div className="text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 flex items-center justify-between animate-in fade-in">
+              <div className="text-xs p-2.5 bg-gray-50 border border-brd rounded-lg text-txt-base flex items-center justify-between animate-in fade-in">
                 <span>{budgetMessage}</span>
-                <button onClick={() => setBudgetMessage(null)} className="text-gray-400 hover:text-black">✕</button>
+                <button onClick={() => setBudgetMessage(null)} className="text-txt-muted hover:text-txt-base">✕</button>
               </div>
             )}
 
             {/* Current Budget Status Card */}
-            <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col gap-2">
+            <div className="p-3.5 bg-gray-50 rounded-xl border border-brd flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-semibold text-gray-700">Budget Status</span>
+                <span className="font-semibold text-txt-base">Budget Status</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                   budgetStatus?.status === 'critical' ? 'bg-red-100 text-red-700' :
                   budgetStatus?.status === 'warning' ? 'bg-amber-100 text-amber-700' :
                   budgetStatus?.status === 'caution' ? 'bg-blue-100 text-blue-700' :
                   budgetStatus?.status === 'normal' ? 'bg-emerald-100 text-emerald-700' :
-                  'bg-gray-200 text-gray-700'
+                  'bg-gray-200 text-txt-base'
                 }`}>
                   {budgetStatus?.status || 'unlimited'}
                 </span>
               </div>
               <div className="flex justify-between items-end text-xs font-mono">
-                <span className="text-gray-500">Current Month Spend:</span>
-                <span className="font-bold text-gray-900">${(budgetStatus?.current_cost_usd || 0).toFixed(4)}</span>
+                <span className="text-txt-muted">Current Month Spend:</span>
+                <span className="font-bold text-txt-base">${(budgetStatus?.current_cost_usd || 0).toFixed(4)}</span>
               </div>
               {budgetStatus?.monthly_budget_usd > 0 && (
                 <div>
@@ -557,7 +557,7 @@ export default function SettingsModal({ onClose }) {
                       style={{ width: `${Math.min(100, budgetStatus.percent_used || 0)}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] text-gray-400 mt-1 font-mono">
+                  <div className="flex justify-between text-[10px] text-txt-muted mt-1 font-mono">
                     <span>{budgetStatus.percent_used?.toFixed(1)}% used</span>
                     <span>${budgetStatus.remaining_usd?.toFixed(2)} remaining</span>
                   </div>
@@ -568,7 +568,7 @@ export default function SettingsModal({ onClose }) {
             {/* Configuration Form */}
             <form onSubmit={handleSaveBudget} className="flex flex-col gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider mb-1">
                   Monthly Budget Limit (USD)
                 </label>
                 <input
@@ -578,13 +578,13 @@ export default function SettingsModal({ onClose }) {
                   placeholder="0.00 (unlimited)"
                   value={budgetForm.monthly_budget_usd}
                   onChange={e => setBudgetForm({ ...budgetForm, monthly_budget_usd: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                  className="w-full px-3 py-2 text-xs bg-surface border border-brd rounded-lg outline-none focus:border-black font-mono"
                 />
-                <span className="text-[10px] text-gray-400 mt-0.5 block">Set to 0 or leave empty for unlimited routing.</span>
+                <span className="text-[10px] text-txt-muted mt-0.5 block">Set to 0 or leave empty for unlimited routing.</span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider mb-1">
                   Alert Webhook URL
                 </label>
                 <input
@@ -592,13 +592,13 @@ export default function SettingsModal({ onClose }) {
                   placeholder="https://hooks.slack.com/services/..."
                   value={budgetForm.webhook_url}
                   onChange={e => setBudgetForm({ ...budgetForm, webhook_url: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                  className="w-full px-3 py-2 text-xs bg-surface border border-brd rounded-lg outline-none focus:border-black font-mono"
                 />
-                <span className="text-[10px] text-gray-400 mt-0.5 block">Payload sent via HTTP POST with threshold details.</span>
+                <span className="text-[10px] text-txt-muted mt-0.5 block">Payload sent via HTTP POST with threshold details.</span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider mb-1">
                   Alert Thresholds (%)
                 </label>
                 <input
@@ -606,9 +606,9 @@ export default function SettingsModal({ onClose }) {
                   placeholder="50, 80, 90, 100"
                   value={budgetForm.thresholds}
                   onChange={e => setBudgetForm({ ...budgetForm, thresholds: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg outline-none focus:border-black font-mono"
+                  className="w-full px-3 py-2 text-xs bg-surface border border-brd rounded-lg outline-none focus:border-black font-mono"
                 />
-                <span className="text-[10px] text-gray-400 mt-0.5 block">Comma-separated percentages to trigger alerts when crossed.</span>
+                <span className="text-[10px] text-txt-muted mt-0.5 block">Comma-separated percentages to trigger alerts when crossed.</span>
               </div>
 
               <div className="flex justify-between items-center pt-2">
@@ -616,7 +616,7 @@ export default function SettingsModal({ onClose }) {
                   type="button"
                   onClick={handleTriggerTest}
                   disabled={budgetLoading}
-                  className="text-xs px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-1 shadow-2xs"
+                  className="text-xs px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-txt-base rounded-lg font-medium transition-colors flex items-center gap-1 shadow-2xs"
                 >
                   ⚡ Send Test Alert
                 </button>
@@ -634,12 +634,12 @@ export default function SettingsModal({ onClose }) {
             {budgetStatus?.recent_alerts && budgetStatus.recent_alerts.length > 0 && (
               <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-txt-muted uppercase tracking-wider">
                     Recent Alerts ({budgetStatus.alert_count})
                   </span>
                   <button
                     onClick={handleClearAlertHistory}
-                    className="text-[10px] text-gray-400 hover:text-red-600 transition-colors"
+                    className="text-[10px] text-txt-muted hover:text-red-600 transition-colors"
                   >
                     Clear History
                   </button>
@@ -647,8 +647,8 @@ export default function SettingsModal({ onClose }) {
                 <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                   {budgetStatus.recent_alerts.map((a, idx) => (
                     <div key={idx} className="p-2 rounded bg-gray-50 border border-gray-100 text-[10px] font-mono flex justify-between items-center">
-                      <span className="text-gray-800 truncate mr-2">{a.message}</span>
-                      <span className="text-gray-400 flex-shrink-0">
+                      <span className="text-txt-base truncate mr-2">{a.message}</span>
+                      <span className="text-txt-muted flex-shrink-0">
                         {new Date(a.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -666,12 +666,12 @@ export default function SettingsModal({ onClose }) {
               await fetch(`${apiBase}/v1/cache/clear`, { method: 'POST' });
               alert('Gateway Semantic Cache Cleared!');
             }}
-            className="text-[10px] font-medium text-gray-500 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded shadow-xs transition-colors"
+            className="text-[10px] font-medium text-txt-muted hover:text-red-600 bg-surface border border-brd hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded shadow-xs transition-colors"
           >
             Clear Semantic Cache
           </button>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="px-3.5 py-1.5 text-[12px] font-medium text-gray-600 hover:text-black">Cancel</button>
+            <button onClick={onClose} className="px-3.5 py-1.5 text-[12px] font-medium text-gray-600 hover:text-txt-base">Cancel</button>
             {activeTab === 'keys' && (
               <button 
                 onClick={handleSave} 

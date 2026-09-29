@@ -73,26 +73,26 @@ export default function Catalog({ onSelectModel }) {
   }, [models, filterProvider, filterTier, searchQuery, sortBy]);
 
   return (
-    <div className="h-full flex flex-col p-6 sm:p-8 overflow-y-auto max-w-[1400px] mx-auto text-[#111]">
+    <div className="h-full flex flex-col p-6 sm:p-8 overflow-y-auto max-w-[1400px] mx-auto text-txt-base">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">Model Registry & Benchmarks</h1>
-            <span className="text-xs bg-gray-100 text-gray-700 font-semibold px-2 py-0.5 rounded-full border border-gray-200">
+            <span className="text-xs bg-gray-100 text-txt-base font-semibold px-2 py-0.5 rounded-full border border-brd">
               Sept 2026
             </span>
           </div>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-txt-muted text-sm mt-1">
             Curated 8-provider registry with real LMArena & SWE-bench normalized scores, prompt caching economics, and verified token pricing.
           </p>
         </div>
 
         {/* Global Summary Stats */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <div className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-center shadow-xs">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block">Total</span>
-            <span className="text-sm font-semibold text-gray-900">{stats.total} models</span>
+          <div className="bg-surface border border-brd rounded-lg px-3 py-1.5 text-center shadow-xs">
+            <span className="text-[10px] uppercase font-bold text-txt-muted block">Total</span>
+            <span className="text-sm font-semibold text-txt-base">{stats.total} models</span>
           </div>
           <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-1.5 text-center shadow-xs">
             <span className="text-[10px] uppercase font-bold text-purple-600 block">Frontier</span>
@@ -114,23 +114,23 @@ export default function Catalog({ onSelectModel }) {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6 bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6 bg-surface p-3 rounded-xl border border-brd shadow-xs">
         <div className="relative flex-1">
           <input
             type="text"
             placeholder="Search model name, id (e.g. claude, gpt-6, qwen)..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-xs sm:text-sm bg-gray-50 focus:bg-white focus:border-gray-400 outline-none transition-colors"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-brd text-xs sm:text-sm bg-gray-50 focus:bg-surface focus:border-gray-400 outline-none transition-colors"
           />
-          <svg className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-txt-muted absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
 
         <div className="flex gap-2 flex-wrap items-center">
           <select 
-            className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-brd bg-surface text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
             value={filterProvider}
             onChange={e => setFilterProvider(e.target.value)}
           >
@@ -140,7 +140,7 @@ export default function Catalog({ onSelectModel }) {
           </select>
 
           <select 
-            className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-brd bg-surface text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
             value={filterTier}
             onChange={e => setFilterTier(e.target.value)}
           >
@@ -150,7 +150,7 @@ export default function Catalog({ onSelectModel }) {
           </select>
 
           <select 
-            className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-brd bg-surface text-xs font-medium outline-none hover:border-gray-400 cursor-pointer"
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
           >
@@ -168,7 +168,7 @@ export default function Catalog({ onSelectModel }) {
 
       {/* Model Cards Grid */}
       {loading ? (
-        <div className="flex-1 flex justify-center items-center py-20 text-gray-400">
+        <div className="flex-1 flex justify-center items-center py-20 text-txt-muted">
           <span className="animate-pulse">Loading verified model registry...</span>
         </div>
       ) : (
@@ -182,17 +182,17 @@ export default function Catalog({ onSelectModel }) {
             return (
               <div
                 key={m.id}
-                className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
+                className="bg-surface border border-brd rounded-xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
                   {/* Top Bar: Name + Tier */}
                   <div className="flex justify-between items-start mb-1.5">
                     <div>
-                      <h3 className="font-semibold text-[15px] text-gray-900 leading-snug">{m.name}</h3>
-                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
-                        <span className="capitalize font-medium text-gray-700">{m.provider}</span>
+                      <h3 className="font-semibold text-[15px] text-txt-base leading-snug">{m.name}</h3>
+                      <div className="flex items-center gap-1.5 text-[11px] text-txt-muted mt-0.5">
+                        <span className="capitalize font-medium text-txt-base">{m.provider}</span>
                         <span>•</span>
-                        <span className="font-mono text-gray-400 truncate max-w-[190px]" title={m.id}>{m.id}</span>
+                        <span className="font-mono text-txt-muted truncate max-w-[190px]" title={m.id}>{m.id}</span>
                       </div>
                     </div>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -206,13 +206,13 @@ export default function Catalog({ onSelectModel }) {
 
                   {/* Benchmark Scores Visualization */}
                   <div className="my-4 bg-gray-50 rounded-lg p-3 border border-gray-150">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex justify-between">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-txt-muted mb-2 flex justify-between">
                       <span>Benchmark Scores</span>
-                      <span className="text-gray-500 font-mono">Norm. 0-100</span>
+                      <span className="text-txt-muted font-mono">Norm. 0-100</span>
                     </div>
                     <div className="space-y-1.5 text-xs">
                       <div>
-                        <div className="flex justify-between text-[11px] font-medium text-gray-700 mb-0.5">
+                        <div className="flex justify-between text-[11px] font-medium text-txt-base mb-0.5">
                           <span>Reasoning</span>
                           <span className="font-mono">{Math.round((scores.Reasoning || 0) * 100)}%</span>
                         </div>
@@ -225,7 +225,7 @@ export default function Catalog({ onSelectModel }) {
                       </div>
 
                       <div>
-                        <div className="flex justify-between text-[11px] font-medium text-gray-700 mb-0.5">
+                        <div className="flex justify-between text-[11px] font-medium text-txt-base mb-0.5">
                           <span>Coding</span>
                           <span className="font-mono">{Math.round((scores.Coding || 0) * 100)}%</span>
                         </div>
@@ -238,7 +238,7 @@ export default function Catalog({ onSelectModel }) {
                       </div>
 
                       <div>
-                        <div className="flex justify-between text-[11px] font-medium text-gray-700 mb-0.5">
+                        <div className="flex justify-between text-[11px] font-medium text-txt-base mb-0.5">
                           <span>Summary</span>
                           <span className="font-mono">{Math.round((scores.Summary || 0) * 100)}%</span>
                         </div>
@@ -251,7 +251,7 @@ export default function Catalog({ onSelectModel }) {
                       </div>
 
                       <div>
-                        <div className="flex justify-between text-[11px] font-medium text-gray-700 mb-0.5">
+                        <div className="flex justify-between text-[11px] font-medium text-txt-base mb-0.5">
                           <span>Creative</span>
                           <span className="font-mono">{Math.round((scores.Creative || 0) * 100)}%</span>
                         </div>
@@ -268,27 +268,27 @@ export default function Catalog({ onSelectModel }) {
                   {/* Pricing and Context Grid */}
                   <div className="grid grid-cols-2 gap-2 text-[12px] mb-4">
                     <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                      <div className="text-gray-400 font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Input Price</div>
-                      <div className="font-medium text-gray-900">${m.price_in.toFixed(2)} / 1M</div>
+                      <div className="text-txt-muted font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Input Price</div>
+                      <div className="font-medium text-txt-base">${m.price_in.toFixed(2)} / 1M</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                      <div className="text-gray-400 font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Output Price</div>
-                      <div className="font-medium text-gray-900">${m.price_out.toFixed(2)} / 1M</div>
+                      <div className="text-txt-muted font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Output Price</div>
+                      <div className="font-medium text-txt-base">${m.price_out.toFixed(2)} / 1M</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                      <div className="text-gray-400 font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Prompt Cache</div>
+                      <div className="text-txt-muted font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Prompt Cache</div>
                       {m.price_cache_read != null ? (
                         <div className="font-medium text-emerald-700 flex items-center gap-1">
                           <span>${m.price_cache_read.toFixed(2)}</span>
                           <span className="text-[10px] bg-emerald-100 px-1 py-0.2 rounded font-bold">-{cacheDiscount}%</span>
                         </div>
                       ) : (
-                        <div className="text-gray-400 font-medium">Standard rate</div>
+                        <div className="text-txt-muted font-medium">Standard rate</div>
                       )}
                     </div>
                     <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                      <div className="text-gray-400 font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Context Window</div>
-                      <div className="font-medium text-gray-900">{(m.context_length / 1000).toFixed(0)}k tokens</div>
+                      <div className="text-txt-muted font-semibold mb-0.5 uppercase tracking-wider text-[9px]">Context Window</div>
+                      <div className="font-medium text-txt-base">{(m.context_length / 1000).toFixed(0)}k tokens</div>
                     </div>
                   </div>
                 </div>
@@ -297,7 +297,7 @@ export default function Catalog({ onSelectModel }) {
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleCopyId(m.id)}
-                    className="text-xs text-gray-500 hover:text-gray-900 px-2.5 py-1.5 rounded border border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1 font-mono"
+                    className="text-xs text-txt-muted hover:text-txt-base px-2.5 py-1.5 rounded border border-brd hover:bg-gray-50 transition-colors flex items-center gap-1 font-mono"
                   >
                     {copiedId === m.id ? (
                       <>
@@ -305,7 +305,7 @@ export default function Catalog({ onSelectModel }) {
                       </>
                     ) : (
                       <>
-                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 text-txt-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         <span>Copy ID</span>
@@ -330,8 +330,8 @@ export default function Catalog({ onSelectModel }) {
           })}
 
           {filteredAndSorted.length === 0 && (
-            <div className="col-span-full py-16 text-center bg-white rounded-xl border border-gray-200">
-              <p className="text-gray-500 font-medium text-sm">No models match your current filters or search query.</p>
+            <div className="col-span-full py-16 text-center bg-surface rounded-xl border border-brd">
+              <p className="text-txt-muted font-medium text-sm">No models match your current filters or search query.</p>
               <button
                 onClick={() => { setSearchQuery(''); setFilterProvider('All'); setFilterTier('All'); }}
                 className="mt-3 text-xs text-blue-600 hover:underline"

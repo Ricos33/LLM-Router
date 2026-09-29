@@ -338,7 +338,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
   const modelsToShow = showMore ? filteredModels : filteredModels.slice(0, 10);
 
   return (
-    <div className="h-full flex flex-col lg:flex-row p-6 gap-6 overflow-hidden max-w-[1400px] mx-auto text-[#111]">
+    <div className="h-full flex flex-col lg:flex-row p-6 gap-6 overflow-hidden max-w-[1400px] mx-auto text-txt-base">
       {/* LEFT COLUMN: Prompt */}
       <div className="w-full lg:w-[32%] flex flex-col gap-5 overflow-y-auto pr-2 pb-4">
         
@@ -348,14 +348,14 @@ export default function Playground({ modelsCount, initialPrompt }) {
             <button
               key={p.label}
               onClick={() => setInput(p.text)}
-              className="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 bg-surface border border-brd rounded-full text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
               {p.label}
             </button>
           ))}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`px-3 py-1.5 ml-auto border rounded-full text-xs font-medium transition-colors ${showAdvanced ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}
+            className={`px-3 py-1.5 ml-auto border rounded-full text-xs font-medium transition-colors ${showAdvanced ? 'bg-gray-900 text-white border-gray-900' : 'bg-gray-50 text-txt-muted border-brd hover:bg-gray-100'}`}
           >
             ⚙️ Advanced
           </button>
@@ -363,12 +363,12 @@ export default function Playground({ modelsCount, initialPrompt }) {
 
         {/* Advanced Options Drawer */}
         {showAdvanced && (
-          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-gray-50 rounded-xl p-4 border border-brd flex flex-col gap-3 animate-in fade-in slide-in-from-top-2">
             <div>
               <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider">System Prompt</label>
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider">System Prompt</label>
                 <select
-                  className="text-[10px] bg-transparent border-none text-gray-500 font-medium cursor-pointer outline-none hover:text-gray-900"
+                  className="text-[10px] bg-transparent border-none text-txt-muted font-medium cursor-pointer outline-none hover:text-txt-base"
                   onChange={(e) => {
                     if (e.target.value) setSystemPrompt(e.target.value);
                     e.target.value = '';
@@ -385,12 +385,12 @@ export default function Playground({ modelsCount, initialPrompt }) {
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 placeholder="Optional system instructions (e.g. 'You are a helpful coding assistant.')"
-                className="w-full p-2.5 rounded-lg border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-[12px] font-mono h-20"
+                className="w-full p-2.5 rounded-lg border border-brd bg-surface resize-none outline-none focus:border-gray-400 text-[12px] font-mono h-20"
               />
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Temperature ({temperature})</label>
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider mb-1.5">Temperature ({temperature})</label>
                 <input
                   type="range"
                   min="0"
@@ -402,14 +402,14 @@ export default function Playground({ modelsCount, initialPrompt }) {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Max Tokens</label>
+                <label className="block text-[11px] font-semibold text-txt-base uppercase tracking-wider mb-1.5">Max Tokens</label>
                 <input
                   type="number"
                   min="10"
                   step="100"
                   value={maxTokens}
                   onChange={(e) => setMaxTokens(e.target.value)}
-                  className="w-full p-1.5 rounded border border-gray-200 bg-white outline-none focus:border-gray-400 text-[12px] font-mono"
+                  className="w-full p-1.5 rounded border border-brd bg-surface outline-none focus:border-gray-400 text-[12px] font-mono"
                 />
               </div>
               <div className="flex items-center gap-2 mt-5">
@@ -420,7 +420,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   onChange={(e) => setJsonMode(e.target.checked)}
                   className="accent-gray-900 cursor-pointer"
                 />
-                <label htmlFor="jsonMode" className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider cursor-pointer">JSON Mode</label>
+                <label htmlFor="jsonMode" className="text-[11px] font-semibold text-txt-base uppercase tracking-wider cursor-pointer">JSON Mode</label>
               </div>
             </div>
           </div>
@@ -432,10 +432,10 @@ export default function Playground({ modelsCount, initialPrompt }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Enter your prompt to find the best model..."
-            className="w-full h-full p-4 pb-12 rounded-xl border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-[14px] shadow-sm font-sans"
+            className="w-full h-full p-4 pb-12 rounded-xl border border-brd bg-surface resize-none outline-none focus:border-gray-400 text-[14px] shadow-sm font-sans"
           />
-          <div className="absolute bottom-3 left-4 text-xs text-gray-400 font-mono flex items-center gap-2">
-            <span className={costEstimation ? "text-gray-700 font-medium" : ""}>
+          <div className="absolute bottom-3 left-4 text-xs text-txt-muted font-mono flex items-center gap-2">
+            <span className={costEstimation ? "text-txt-base font-medium" : ""}>
               {costEstimation ? `${costEstimation.prompt_tokens_estimated} tokens (est.)` : `~${Math.ceil(input.length / 4)} tokens`}
             </span>
             <span>·</span>
@@ -445,7 +445,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
             {input && (
               <button 
                 onClick={() => setInput('')} 
-                className="px-2.5 py-1 text-xs text-gray-500 hover:text-black font-medium border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors"
+                className="px-2.5 py-1 text-xs text-txt-muted hover:text-txt-base font-medium border border-brd rounded-md bg-surface hover:bg-gray-50 transition-colors"
               >
                 Clear
               </button>
@@ -461,10 +461,10 @@ export default function Playground({ modelsCount, initialPrompt }) {
         </div>
 
         {/* Budget */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+        <div className="bg-surface p-4 rounded-xl border border-brd shadow-sm flex flex-col gap-4">
           <div className="flex justify-between items-center text-sm font-semibold">
             <span>Set Budget</span>
-            <span className="text-gray-500 font-normal">{BUDGET_LEVELS[budget]}</span>
+            <span className="text-txt-muted font-normal">{BUDGET_LEVELS[budget]}</span>
           </div>
           <input
             type="range"
@@ -474,18 +474,18 @@ export default function Playground({ modelsCount, initialPrompt }) {
             onChange={(e) => setBudget(Number(e.target.value))}
             className="w-full accent-black cursor-pointer"
           />
-          <div className="flex justify-between text-[11px] text-gray-400 font-medium">
+          <div className="flex justify-between text-[11px] text-txt-muted font-medium">
             {BUDGET_LEVELS.map((lbl, idx) => (
-              <span key={lbl} className={budget === idx ? "text-black" : ""}>{lbl}</span>
+              <span key={lbl} className={budget === idx ? "text-txt-base" : ""}>{lbl}</span>
             ))}
           </div>
         </div>
 
         {/* Routing Strategy Profile */}
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
+        <div className="bg-surface p-4 rounded-xl border border-brd shadow-sm flex flex-col gap-3">
           <div className="flex justify-between items-center text-sm font-semibold">
             <span>Routing Strategy</span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-medium capitalize">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-txt-base font-medium capitalize">
               {strategy.replace('_', ' ')}
             </span>
           </div>
@@ -495,8 +495,8 @@ export default function Playground({ modelsCount, initialPrompt }) {
               onClick={() => setStrategy('cost_optimized')}
               className={`py-1.5 px-2 rounded-md transition-all text-center ${
                 strategy === 'cost_optimized'
-                  ? 'bg-white text-black font-semibold shadow-xs'
-                  : 'text-gray-500 hover:text-black'
+                  ? 'bg-surface text-txt-base font-semibold shadow-xs'
+                  : 'text-txt-muted hover:text-txt-base'
               }`}
             >
               💰 Cost
@@ -506,8 +506,8 @@ export default function Playground({ modelsCount, initialPrompt }) {
               onClick={() => setStrategy('balanced')}
               className={`py-1.5 px-2 rounded-md transition-all text-center ${
                 strategy === 'balanced'
-                  ? 'bg-white text-black font-semibold shadow-xs'
-                  : 'text-gray-500 hover:text-black'
+                  ? 'bg-surface text-txt-base font-semibold shadow-xs'
+                  : 'text-txt-muted hover:text-txt-base'
               }`}
             >
               ⚡ Balanced
@@ -517,27 +517,27 @@ export default function Playground({ modelsCount, initialPrompt }) {
               onClick={() => setStrategy('quality_optimized')}
               className={`py-1.5 px-2 rounded-md transition-all text-center ${
                 strategy === 'quality_optimized'
-                  ? 'bg-white text-black font-semibold shadow-xs'
-                  : 'text-gray-500 hover:text-black'
+                  ? 'bg-surface text-txt-base font-semibold shadow-xs'
+                  : 'text-txt-muted hover:text-txt-base'
               }`}
             >
               🎯 Quality
             </button>
           </div>
-          <p className="text-[11px] text-gray-500 leading-tight">
+          <p className="text-[11px] text-txt-muted leading-tight">
             {strategy === 'cost_optimized' && 'Favors cheap & medium models (Ceiling: 0.45, Floor: 0.75).'}
             {strategy === 'balanced' && 'Balanced trade-off between price and intelligence (0.35 / 0.65).'}
             {strategy === 'quality_optimized' && 'Prioritizes frontier reasoning and precision (0.25 / 0.50).'}
           </p>
         </div>
 
-        {/* Analyze Button */}
+        {/* Send Button */}
         <button 
-          onClick={handleAnalyze}
-          disabled={isAnalyzing || !input.trim()}
+          onClick={handleSendRouted}
+          disabled={isExecuting || !input.trim()}
           className="w-full py-3.5 bg-black text-white text-[15px] font-semibold rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex justify-center items-center gap-2"
         >
-          {isAnalyzing ? 'Analyzing...' : 'Analyze →'}
+          {isExecuting ? 'Sending...' : 'Send →'}
         </button>
         {error && (
           <div className="mt-2 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
@@ -546,13 +546,13 @@ export default function Playground({ modelsCount, initialPrompt }) {
         )}
 
         {/* Setup Collapsible */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-2">
+        <div className="bg-surface rounded-xl border border-brd shadow-sm overflow-hidden mt-2">
           <button 
             onClick={() => setShowSetup(!showSetup)}
             className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
           >
             How it works & setup
-            <span className="text-gray-400">{showSetup ? '−' : '+'}</span>
+            <span className="text-txt-muted">{showSetup ? '−' : '+'}</span>
           </button>
           {showSetup && (
             <div className="p-4 pt-0 text-[13px] text-gray-600 space-y-3 leading-relaxed border-t border-gray-100 mt-2 pt-3">
@@ -569,10 +569,10 @@ export default function Playground({ modelsCount, initialPrompt }) {
         {classification ? (
           <>
             {/* RECOMMENDATION */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-5">
+            <div className="bg-surface rounded-xl border border-brd p-5 shadow-sm flex flex-col gap-5">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                  <span className="text-[10px] font-bold tracking-widest text-txt-muted uppercase">
                     Recommendation · {selectedProviders.size} Providers
                   </span>
                   {classification.tier && (
@@ -589,7 +589,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   <button 
                     onClick={() => setShowSnippets(true)}
                     title="View API integration snippets for this model"
-                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-txt-base border border-brd rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                     Connect API
@@ -597,7 +597,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   <button 
                     onClick={handleExportJSON}
                     title="Export classification and recommendations as JSON"
-                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-txt-base border border-brd rounded-md hover:bg-gray-50 flex items-center gap-1 transition-colors"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Export JSON
@@ -611,7 +611,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="text-[22px] font-bold leading-tight">{classification.recommendations[0].model_id}</div>
-                      <div className="text-[13px] text-gray-500 mt-1">{classification.recommendations[0].provider} · ${(classification.recommendations[0].price_in||0).toFixed(2)}/M in</div>
+                      <div className="text-[13px] text-txt-muted mt-1">{classification.recommendations[0].provider} · ${(classification.recommendations[0].price_in||0).toFixed(2)}/M in</div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-[18px] font-semibold text-emerald-600">
@@ -619,7 +619,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       </div>
                       <button 
                         onClick={() => navigator.clipboard.writeText(classification.recommendations[0].model_id)}
-                        className="px-3 py-1.5 border border-gray-200 rounded-md text-xs font-semibold hover:bg-gray-50"
+                        className="px-3 py-1.5 border border-brd rounded-md text-xs font-semibold hover:bg-gray-50"
                       >
                         Copy
                       </button>
@@ -627,7 +627,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">No models match criteria.</div>
+                <div className="text-sm text-txt-muted">No models match criteria.</div>
               )}
 
               {/* List */}
@@ -637,7 +637,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                     <div key={r.model_id} className="flex flex-col gap-1.5">
                       <div className="flex justify-between items-center text-[13px]">
                         <span className="font-medium truncate max-w-[70%]">{r.model_id}</span>
-                        <span className="text-gray-500 font-mono">{Math.round(r.confidence * 100)}%</span>
+                        <span className="text-txt-muted font-mono">{Math.round(r.confidence * 100)}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-black rounded-full" style={{ width: `${r.confidence * 100}%` }} />
@@ -649,14 +649,14 @@ export default function Playground({ modelsCount, initialPrompt }) {
             </div>
 
             {/* ANALYSIS */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-5">
-              <div className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+            <div className="bg-surface rounded-xl border border-brd p-5 shadow-sm flex flex-col gap-5">
+              <div className="text-[10px] font-bold tracking-widest text-txt-muted uppercase">
                 Analysis
               </div>
               
               <div className="flex items-end gap-3 border-b border-gray-100 pb-4">
                 <div className="text-[32px] font-bold leading-none">{classification.score?.toFixed(1) || '0.0'}</div>
-                <div className="text-[14px] text-gray-500 mb-1 font-medium">/ 1.0 Complexity</div>
+                <div className="text-[14px] text-txt-muted mb-1 font-medium">/ 1.0 Complexity</div>
               </div>
 
               {classification.category_scores && (
@@ -678,7 +678,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
               {classification.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {classification.tags.map(t => (
-                    <span key={t} className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[11px] font-semibold rounded-md">
+                    <span key={t} className="px-2.5 py-1 bg-gray-100 text-txt-base text-[11px] font-semibold rounded-md">
                       {t}
                     </span>
                   ))}
@@ -728,23 +728,23 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col">
-                      <div className="text-[10px] text-gray-400 font-medium uppercase">
+                      <div className="text-[10px] text-txt-muted font-medium uppercase">
                         {enablePromptCache && hasCacheSupport ? 'Per Req (Cached)' : 'Per Request'}
                       </div>
                       <div className="text-lg font-bold text-emerald-600">${costRecommended.toFixed(5)}</div>
-                      <div className="text-[10px] text-gray-400 line-through">${costFrontier.toFixed(5)}</div>
+                      <div className="text-[10px] text-txt-muted line-through">${costFrontier.toFixed(5)}</div>
                     </div>
                     <div className="flex flex-col">
-                      <div className="text-[10px] text-gray-400 font-medium uppercase">Per 1K Reqs</div>
+                      <div className="text-[10px] text-txt-muted font-medium uppercase">Per 1K Reqs</div>
                       <div className="text-lg font-bold text-emerald-600">${savedPer1K.toFixed(2)}</div>
                       <div className="text-[10px] text-emerald-500 font-semibold">saved</div>
                     </div>
                     <div className="flex flex-col items-end">
-                      <div className="text-[10px] text-gray-400 font-medium uppercase">Reduction</div>
+                      <div className="text-[10px] text-txt-muted font-medium uppercase">Reduction</div>
                       <div className={`text-lg font-bold ${savedPct > 50 ? 'text-emerald-600' : savedPct > 20 ? 'text-emerald-500' : 'text-gray-600'}`}>
                         {savedPct.toFixed(0)}%
                       </div>
-                      <div className="text-[10px] text-gray-400">vs frontier</div>
+                      <div className="text-[10px] text-txt-muted">vs frontier</div>
                     </div>
                   </div>
                   <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -757,7 +757,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   {/* Volume Projection */}
                   <div className="pt-2 border-t border-emerald-100 flex flex-col gap-2">
                     <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-gray-500 font-medium">Monthly volume scale:</span>
+                      <span className="text-txt-muted font-medium">Monthly volume scale:</span>
                       <div className="flex gap-1">
                         {VOLUME_PRESETS.map((vol, vIdx) => (
                           <button
@@ -774,8 +774,8 @@ export default function Playground({ modelsCount, initialPrompt }) {
                         ))}
                       </div>
                     </div>
-                    <div className="flex justify-between items-center text-xs bg-white/80 p-2 rounded-lg border border-emerald-100 font-mono">
-                      <span className="text-gray-500 font-sans">Projected Net Savings:</span>
+                    <div className="flex justify-between items-center text-xs bg-surface/80 p-2 rounded-lg border border-emerald-100 font-mono">
+                      <span className="text-txt-muted font-sans">Projected Net Savings:</span>
                       <span className="text-emerald-700 font-bold">
                         ${(savedPerReq * VOLUME_PRESETS[volumeTier].count).toFixed(2)}/mo
                         <span className="text-[10px] text-emerald-600 font-normal ml-1">
@@ -790,7 +790,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
 
             {/* PRE-EXECUTION TOKEN & COST ESTIMATOR */}
             {costEstimation && costEstimation.summary && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2">
+              <div className="bg-surface rounded-xl border border-brd shadow-sm overflow-hidden mb-2">
                 <button
                   onClick={() => setShowCostEstimates(!showCostEstimates)}
                   className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
@@ -802,7 +802,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       {costEstimation.prompt_tokens_estimated} in · {estCompletionTokens} out
                     </span>
                   </div>
-                  <span className="text-gray-400">{showCostEstimates ? '−' : '+'}</span>
+                  <span className="text-txt-muted">{showCostEstimates ? '−' : '+'}</span>
                 </button>
 
                 {showCostEstimates && (
@@ -810,9 +810,9 @@ export default function Playground({ modelsCount, initialPrompt }) {
                     {/* Controls: Completion Tokens & Cache Hit Rate */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
                       <div>
-                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-gray-700 uppercase">
+                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-txt-base uppercase">
                           <span>Output Tokens</span>
-                          <span className="font-mono text-gray-500">{estCompletionTokens}</span>
+                          <span className="font-mono text-txt-muted">{estCompletionTokens}</span>
                         </div>
                         <div className="flex gap-1">
                           {[150, 500, 1000, 2000].map(cnt => (
@@ -822,7 +822,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                               className={`flex-1 py-1 rounded text-[10px] font-medium border transition-colors ${
                                 estCompletionTokens === cnt
                                   ? 'bg-gray-900 text-white border-gray-900'
-                                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                                  : 'bg-gray-50 text-gray-600 border-brd hover:bg-gray-100'
                               }`}
                             >
                               {cnt}
@@ -832,7 +832,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       </div>
 
                       <div>
-                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-gray-700 uppercase">
+                        <div className="flex justify-between items-center mb-1 text-[11px] font-semibold text-txt-base uppercase">
                           <span>Cache Hit Ratio</span>
                           <span className="font-mono text-emerald-600 font-bold">
                             {Math.round(estCacheHitRate * 100)}%
@@ -893,9 +893,9 @@ export default function Playground({ modelsCount, initialPrompt }) {
                     </div>
 
                     {/* Estimates Table */}
-                    <div className="max-h-56 overflow-y-auto rounded-lg border border-gray-200">
+                    <div className="max-h-56 overflow-y-auto rounded-lg border border-brd">
                       <table className="w-full text-[11px] text-left">
-                        <thead className="bg-gray-50 text-gray-500 font-semibold sticky top-0 border-b border-gray-200">
+                        <thead className="bg-gray-50 text-txt-muted font-semibold sticky top-0 border-b border-brd">
                           <tr>
                             <th className="py-1.5 px-2.5">Model</th>
                             <th className="py-1.5 px-2">Tier</th>
@@ -903,7 +903,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                             <th className="py-1.5 px-2 text-right">Savings</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 bg-white">
+                        <tbody className="divide-y divide-gray-100 bg-surface">
                           {(costEstimation.estimates || []).map(e => {
                             const isRecommended = classification.recommendations?.[0]?.model_id === e.model_id;
                             return (
@@ -921,7 +921,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                                     {e.tier}
                                   </span>
                                 </td>
-                                <td className="py-1.5 px-2 text-right font-mono text-gray-800">
+                                <td className="py-1.5 px-2 text-right font-mono text-txt-base">
                                   ${e.cost_total_usd.toFixed(6)}
                                 </td>
                                 <td className="py-1.5 px-2 text-right font-mono text-emerald-600">
@@ -940,7 +940,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
 
             {/* DECISION TRACE ACCORDION */}
             {classification.decision_trace && (
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-2">
+              <div className="bg-surface rounded-xl border border-brd shadow-sm overflow-hidden mb-2">
                 <button
                   onClick={() => setShowTrace(!showTrace)}
                   className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
@@ -948,29 +948,29 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   <div className="flex items-center gap-2">
                     <span>🔬</span>
                     <span>Decision Trace & Explanations</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700 capitalize">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-txt-base capitalize">
                       {classification.detected_intent || classification.decision_trace.detected_intent || 'analysis'}
                     </span>
                   </div>
-                  <span className="text-gray-400">{showTrace ? '−' : '+'}</span>
+                  <span className="text-txt-muted">{showTrace ? '−' : '+'}</span>
                 </button>
                 {showTrace && (
                   <div className="p-4 pt-0 border-t border-gray-100 flex flex-col gap-4 text-xs">
                     {/* Heuristic Signals */}
                     <div className="pt-3">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-txt-muted mb-2">
                         Activated Heuristic Signals
                       </div>
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-gray-500 font-mono text-[11px] p-2 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-center text-txt-muted font-mono text-[11px] p-2 bg-gray-50 rounded-lg">
                           <span>Base Prior Neutral Score</span>
-                          <span className="font-semibold text-gray-700">0.18</span>
+                          <span className="font-semibold text-txt-base">0.18</span>
                         </div>
                         {(classification.decision_trace.signals || []).map((s, idx) => (
-                          <div key={idx} className="flex justify-between items-center p-2 rounded-lg border border-gray-100 bg-white shadow-2xs">
+                          <div key={idx} className="flex justify-between items-center p-2 rounded-lg border border-gray-100 bg-surface shadow-2xs">
                             <div className="flex flex-col">
-                              <span className="font-semibold text-gray-800">{s.signal}</span>
-                              <span className="text-[10px] text-gray-400">{s.detail}</span>
+                              <span className="font-semibold text-txt-base">{s.signal}</span>
+                              <span className="text-[10px] text-txt-muted">{s.detail}</span>
                             </div>
                             <span className={`font-mono font-bold text-[12px] ${s.delta >= 0 ? 'text-purple-600' : 'text-emerald-600'}`}>
                               {s.delta >= 0 ? `+${s.delta}` : s.delta}
@@ -982,19 +982,19 @@ export default function Playground({ modelsCount, initialPrompt }) {
                           <span>{classification.score?.toFixed(2)} / 1.0</span>
                         </div>
                         {classification.decision_trace.strategy && (
-                          <div className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-lg text-gray-700 font-mono text-[11px]">
+                          <div className="flex items-center justify-between p-2 bg-gray-50 border border-gray-100 rounded-lg text-txt-base font-mono text-[11px]">
                             <div>
-                              <span className="text-gray-400">Strategy: </span>
-                              <span className="font-semibold capitalize text-black">
+                              <span className="text-txt-muted">Strategy: </span>
+                              <span className="font-semibold capitalize text-txt-base">
                                 {classification.decision_trace.strategy.replace('_', ' ')}
                               </span>
                             </div>
                             {classification.decision_trace.thresholds && (
                               <div className="text-[10px]">
-                                <span className="text-gray-400">Ceiling: </span>
+                                <span className="text-txt-muted">Ceiling: </span>
                                 <span className="font-semibold text-emerald-600">{classification.decision_trace.thresholds.cheap_ceiling}</span>
                                 <span className="text-gray-300 mx-1">|</span>
-                                <span className="text-gray-400">Floor: </span>
+                                <span className="text-txt-muted">Floor: </span>
                                 <span className="font-semibold text-purple-600">{classification.decision_trace.thresholds.frontier_floor}</span>
                               </div>
                             )}
@@ -1006,19 +1006,19 @@ export default function Playground({ modelsCount, initialPrompt }) {
                     {/* Planned Fallback Chain */}
                     {classification.decision_trace.planned_fallback_chain && (
                       <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-txt-muted mb-2">
                           Resilience Fallback Sequence
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {classification.decision_trace.planned_fallback_chain.map((mod, i) => (
                             <div key={i} className="flex items-center gap-1.5">
                               <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-medium ${
-                                i === 0 ? 'bg-black text-white shadow-xs' : 'bg-gray-100 text-gray-700'
+                                i === 0 ? 'bg-black text-white shadow-xs' : 'bg-gray-100 text-txt-base'
                               }`}>
                                 {i === 0 ? 'Primary: ' : `${i + 1}. `}{mod}
                               </span>
                               {i < classification.decision_trace.planned_fallback_chain.length - 1 && (
-                                <span className="text-gray-400 font-bold">→</span>
+                                <span className="text-txt-muted font-bold">→</span>
                               )}
                             </div>
                           ))}
@@ -1031,13 +1031,13 @@ export default function Playground({ modelsCount, initialPrompt }) {
             )}
 
             {/* Raw Data */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
+            <div className="bg-surface rounded-xl border border-brd shadow-sm overflow-hidden mb-4">
               <button 
                 onClick={() => setShowRaw(!showRaw)}
                 className="w-full p-4 flex justify-between items-center text-sm font-semibold hover:bg-gray-50 transition-colors"
               >
                 Raw data
-                <span className="text-gray-400">{showRaw ? '−' : '+'}</span>
+                <span className="text-txt-muted">{showRaw ? '−' : '+'}</span>
               </button>
               {showRaw && (
                 <div className="p-4 pt-0 border-t border-gray-100 bg-gray-50">
@@ -1049,10 +1049,10 @@ export default function Playground({ modelsCount, initialPrompt }) {
             </div>
 
             {/* EXECUTION RESULT */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm flex flex-col gap-4">
+            <div className="bg-surface rounded-xl border border-brd p-5 shadow-sm flex flex-col gap-4">
               <div className="flex flex-wrap justify-between items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                  <span className="text-[10px] font-bold tracking-widest text-txt-muted uppercase">
                     Execution Compare
                   </span>
                   {executions.length > 0 && !isExecuting && (
@@ -1060,14 +1060,14 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       <button
                         onClick={handleExportComparisonCSV}
                         title="Export comparison results as CSV"
-                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
+                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-surface border border-brd rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
                       >
                         <span>📥</span> CSV
                       </button>
                       <button
                         onClick={handleExportComparisonJSON}
                         title="Export comparison results as JSON"
-                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
+                        className="px-2 py-0.5 text-[10px] font-semibold text-gray-600 bg-surface border border-brd rounded hover:bg-gray-50 flex items-center gap-1 shadow-2xs"
                       >
                         <span>📄</span> JSON
                       </button>
@@ -1078,7 +1078,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                   <button 
                     onClick={() => handleExecute([classification.recommendations[0]?.model_id])}
                     disabled={isExecuting || !classification.recommendations?.length}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-[11px] font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-gray-100 text-txt-base text-[11px] font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                   >
                     Run Top
                   </button>
@@ -1113,8 +1113,8 @@ export default function Playground({ modelsCount, initialPrompt }) {
               {executions.length > 0 && (
                 <div className={`grid gap-4 ${executions.length > 2 ? 'grid-cols-1 md:grid-cols-3' : executions.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
                   {executions.map((exec, idx) => (
-                    <div key={idx} className="flex flex-col gap-2 border border-gray-200 rounded-lg overflow-hidden bg-gray-50/50 shadow-sm">
-                      <div className="px-3 py-2 bg-gray-100/80 border-b border-gray-200 text-[11px] font-semibold text-gray-700 flex justify-between items-center">
+                    <div key={idx} className="flex flex-col gap-2 border border-brd rounded-lg overflow-hidden bg-gray-50/50 shadow-sm">
+                      <div className="px-3 py-2 bg-gray-100/80 border-b border-brd text-[11px] font-semibold text-txt-base flex justify-between items-center">
                         <div className="flex items-center gap-1.5 truncate max-w-[70%]">
                           <span className="truncate" title={exec.model}>{exec.model}</span>
                           {exec.meta?.tier && (
@@ -1133,7 +1133,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                             <button
                               onClick={() => navigator.clipboard.writeText(exec.result)}
                               title="Copy output"
-                              className="text-[10px] text-gray-500 hover:text-black px-1.5 py-0.5 border border-gray-300 rounded bg-white"
+                              className="text-[10px] text-txt-muted hover:text-txt-base px-1.5 py-0.5 border border-gray-300 rounded bg-surface"
                             >
                               Copy
                             </button>
@@ -1157,7 +1157,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                         </div>
                       )}
 
-                      <div className="p-3 text-[12px] text-gray-700 h-[220px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
+                      <div className="p-3 text-[12px] text-txt-base h-[220px] overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
                         {exec.loading ? (
                           <div className="flex justify-center items-center h-full opacity-50">
                             <span className="animate-pulse">Waiting for model response...</span>
@@ -1166,7 +1166,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       </div>
 
                       {exec.meta && (
-                        <div className="px-3 py-2 bg-white border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-medium">
+                        <div className="px-3 py-2 bg-surface border-t border-brd flex justify-between items-center text-[10px] text-txt-muted font-medium">
                           <div className="flex items-center gap-2">
                             <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
                             {exec.meta.gateway_cache_hit && (
@@ -1177,9 +1177,9 @@ export default function Playground({ modelsCount, initialPrompt }) {
                             )}
                           </div>
                           {exec.meta.prompt_tokens !== undefined && (
-                            <span className="text-gray-400">{exec.meta.prompt_tokens}+{exec.meta.completion_tokens} toks</span>
+                            <span className="text-txt-muted">{exec.meta.prompt_tokens}+{exec.meta.completion_tokens} toks</span>
                           )}
-                          <span className="font-semibold text-gray-700">${(exec.meta.cost_actual_usd || 0).toFixed(5)}</span>
+                          <span className="font-semibold text-txt-base">${(exec.meta.cost_actual_usd || 0).toFixed(5)}</span>
                         </div>
                       )}
                     </div>
@@ -1189,7 +1189,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
             </div>
           </>
         ) : (
-           <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center border-2 border-dashed border-gray-200 rounded-xl">
+           <div className="flex-1 flex flex-col items-center justify-center text-txt-muted p-8 text-center border-2 border-dashed border-brd rounded-xl">
              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-xl">✨</div>
              <div className="font-semibold text-gray-600 mb-2">Ready to Analyze</div>
              <p className="text-[13px]">Enter a prompt on the left to see recommendations and complexity scores.</p>
@@ -1198,26 +1198,26 @@ export default function Playground({ modelsCount, initialPrompt }) {
       </div>
 
       {/* RIGHT COLUMN: Catalog */}
-      <div className="w-full lg:w-[33%] flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4">
+      <div className="w-full lg:w-[33%] flex flex-col bg-surface rounded-xl border border-brd shadow-sm overflow-hidden mb-4">
         <div className="p-5 border-b border-gray-100 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-bold">Catalog</h3>
-            <span className="text-[12px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{filteredModels.length} models</span>
+            <span className="text-[12px] font-medium text-txt-muted bg-gray-100 px-2 py-0.5 rounded-full">{filteredModels.length} models</span>
           </div>
 
           <div className="relative">
-            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
+            <span className="absolute left-3 top-2.5 text-txt-muted text-sm">🔍</span>
             <input 
               type="text" 
               placeholder="Search..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-brd rounded-lg text-sm outline-none focus:border-gray-400 transition-colors"
             />
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mr-1">Context:</span>
+            <span className="text-[11px] font-semibold text-txt-muted uppercase tracking-wider mr-1">Context:</span>
             {['All', '128k+', '200k+', '1M+'].map(lbl => (
               <button
                 key={lbl}
@@ -1238,10 +1238,10 @@ export default function Playground({ modelsCount, initialPrompt }) {
           {/* Providers */}
           <div className="p-5 border-b border-gray-100">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Providers</span>
-              <div className="flex gap-3 text-[11px] font-semibold text-gray-500">
-                <button onClick={() => setSelectedProviders(new Set())} className="hover:text-black">None</button>
-                <button onClick={() => setSelectedProviders(new Set(providersMap.map(p=>p[0])))} className="hover:text-black">All</button>
+              <span className="text-[11px] font-bold text-txt-muted uppercase tracking-wider">Providers</span>
+              <div className="flex gap-3 text-[11px] font-semibold text-txt-muted">
+                <button onClick={() => setSelectedProviders(new Set())} className="hover:text-txt-base">None</button>
+                <button onClick={() => setSelectedProviders(new Set(providersMap.map(p=>p[0])))} className="hover:text-txt-base">All</button>
               </div>
             </div>
             <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-2">
@@ -1252,15 +1252,15 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       type="checkbox" 
                       checked={selectedProviders.has(p)}
                       onChange={() => toggleProvider(p)}
-                      className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black accent-black cursor-pointer"
+                      className="w-4 h-4 rounded border-gray-300 text-txt-base focus:ring-black accent-black cursor-pointer"
                     />
-                    <span className="text-[13px] font-medium text-gray-700 group-hover:text-black capitalize">{p}</span>
+                    <span className="text-[13px] font-medium text-txt-base group-hover:text-txt-base capitalize">{p}</span>
                   </div>
-                  <span className="text-[11px] text-gray-400 font-mono">{count}</span>
+                  <span className="text-[11px] text-txt-muted font-mono">{count}</span>
                 </label>
               ))}
             </div>
-            <div className="text-[11px] text-gray-400 mt-4 italic">
+            <div className="text-[11px] text-txt-muted mt-4 italic">
               Jev only recommends from checked providers.
             </div>
           </div>
@@ -1280,7 +1280,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
                       className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-colors ${
                         customCompareModels.has(m.id)
                           ? 'bg-black text-white'
-                          : 'bg-gray-100 text-gray-500 hover:text-black hover:bg-gray-200'
+                          : 'bg-gray-100 text-txt-muted hover:text-txt-base hover:bg-gray-200'
                       }`}
                     >
                       {customCompareModels.has(m.id) ? '✓ Compare' : '+ Compare'}
@@ -1294,22 +1294,22 @@ export default function Playground({ modelsCount, initialPrompt }) {
                     </span>
                   </div>
                 </div>
-                <div className="text-[11px] text-gray-500 font-mono truncate" title={m.id}>{m.id}</div>
+                <div className="text-[11px] text-txt-muted font-mono truncate" title={m.id}>{m.id}</div>
                 {m.scores && (
-                  <div className="flex gap-3 text-[10px] text-gray-500 font-mono">
+                  <div className="flex gap-3 text-[10px] text-txt-muted font-mono">
                     <span>Reasoning: {Math.round((m.scores.Reasoning || 0) * 100)}%</span>
                     <span>Coding: {Math.round((m.scores.Coding || 0) * 100)}%</span>
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600 mt-0.5 font-medium">
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-400">Context:</span> {(m.context_length || 0).toLocaleString()}
+                    <span className="text-txt-muted">Context:</span> {(m.context_length || 0).toLocaleString()}
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-400">In:</span> ${(m.price_in || 0).toFixed(2)}/M
+                    <span className="text-txt-muted">In:</span> ${(m.price_in || 0).toFixed(2)}/M
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-400">Out:</span> ${(m.price_out || 0).toFixed(2)}/M
+                    <span className="text-txt-muted">Out:</span> ${(m.price_out || 0).toFixed(2)}/M
                   </span>
                   {m.price_cache_read !== undefined && m.price_cache_read !== null && (
                     <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100 font-mono text-[10px]" title="Prompt cache read price">

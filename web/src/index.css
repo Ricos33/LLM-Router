@@ -2,6 +2,33 @@
 
 @theme {
   --color-primary: #4f46e5;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-base: var(--color-base);
+  --color-surface: var(--color-surface);
+  --color-elevated: var(--color-elevated);
+  --color-txt-base: var(--color-txt-base);
+  --color-txt-muted: var(--color-txt-muted);
+  --color-brd: var(--color-brd);
+}
+
+:root {
+  --color-base: #fdfdfd;
+  --color-surface: #ffffff;
+  --color-elevated: #f4f4f5;
+  --color-txt-base: #18181b;
+  --color-txt-muted: #71717a;
+  --color-brd: #e4e4e7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-base: #09090b;
+    --color-surface: #18181b;
+    --color-elevated: #27272a;
+    --color-txt-base: #fafafa;
+    --color-txt-muted: #a1a1aa;
+    --color-brd: #3f3f46;
+  }
 }
 
 @keyframes fadeIn {
