@@ -53,3 +53,4 @@
 - Tue Sep 29 06:24:28 UTC 2026: Added Advanced Options Drawer to Playground UI. Users can now inject custom System Prompts and tweak Temperature/Max Tokens on the fly, which dynamically feed into the Gateway caching and routing engine. Build OK.
 - Tue Sep 29 06:25:46 UTC 2026: Implemented DELETE /v1/analytics endpoint and UI 'Clear' button to wipe all telemetry and demo data cleanly on demand.
 - Tue Sep 29 06:27:16 UTC 2026: Added System Prompt Quick-Select Templates to the Playground's Advanced Options drawer, giving users immediate testing personas (Coder, Writer, Data Analyst, Security).
+- Tue Sep 29 06:29:36 UTC 2026: Implemented 'Per-Request Budget Enforcer'. Large prompts mapped to Frontier models are estimated for token cost; if the predicted cost exceeds the configurable 'max_cost_per_request_usd', the gateway auto-downgrades the request to MEDIUM tier to prevent bill shocks.

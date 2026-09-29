@@ -557,6 +557,19 @@ class RouterEngine:
                     if getattr(request, "provider_keys", None) and candidate.provider_name
                     else None
                 )
+                
+                # Gateway Provider Key Pool Rotation (Load Balancing & Rate Limit Avoidance)
+                if not api_key_override:
+                    pool = ""
+                    if candidate.tier == ModelTier.FRONTIER:
+                        pool = settings.frontier_api_keys_pool
+                    
+                    if pool:
+                        import random
+                        keys = [k.strip() for k in pool.split(",") if k.strip()]
+                        if keys:
+                            api_key_override = random.choice(keys)
+                            logger.info(f"Rotated API key via {candidate.tier.value} pool for {candidate.provider_name}")
                 response = await candidate.backend.complete(
                     exec_req,
                     model_override=candidate.model_name,

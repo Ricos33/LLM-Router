@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     frontier_provider: str = "openai"  # 'openai', 'anthropic', or 'openai_compatible'
     frontier_api_base_url: str = "https://api.openai.com/v1"
     frontier_api_key: str = ""
+    frontier_api_keys_pool: str = "" # Comma separated list of keys for round-robin balancing
     frontier_model: str = "gpt-4o"
     frontier_prompt_price_per_m: float = 5.00      # $ / 1M prompt tokens
     frontier_completion_price_per_m: float = 15.00  # $ / 1M completion tokens
