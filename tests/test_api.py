@@ -170,3 +170,98 @@ def test_metrics_export_csv(client):
     assert "id,timestamp,prompt_preview" in res.text
 
 
+
+def test_models_all_providers_present(client):
+    """Verify all 8 authorized providers are in the catalog."""
+    res = client.get("/v1/models")
+    data = res.json()
+    providers = set(m["provider"] for m in data["data"])
+    expected = {"anthropic", "openai", "google", "qwen", "mistral", "deepseek", "meta", "xai"}
+    assert expected == providers, f"Missing providers: {expected - providers}"
+
+
+def test_models_have_scores(client):
+    """Every model in the catalog should have benchmark scores."""
+    res = client.get("/v1/models")
+    data = res.json()
+    for m in data["data"]:
+        assert m.get("scores") is not None, f"Model {m['id']} missing scores"
+        assert "Reasoning" in m["scores"], f"Model {m['id']} missing Reasoning score"
+        assert "Coding" in m["scores"], f"Model {m['id']} missing Coding score"
+        assert "Summary" in m["scores"], f"Model {m['id']} missing Summary score"
+        assert "Creative" in m["scores"], f"Model {m['id']} missing Creative score"
+
+
+def test_models_pricing_valid(client):
+    """All models should have positive pricing."""
+    res = client.get("/v1/models")
+    data = res.json()
+    for m in data["data"]:
+        assert (m.get("price_in") or 0) >= 0, f"Model {m['id']} has negative input price"
+        assert (m.get("price_out") or 0) >= 0, f"Model {m['id']} has negative output price"
+        assert (m.get("context_length") or 0) > 0, f"Model {m['id']} has zero context length"
+
+
+def test_classify_simple_recommends_cheap(client):
+    """Simple greetings should recommend a cheap/budget model."""
+    payload = {"messages": [{"role": "user", "content": "Hi there!"}]}
+    res = client.post("/v1/classify", json=payload)
+    data = res.json()
+    top_model = data["recommendations"][0]
+    # The top recommended model for a greeting should be cheap (< $1/M input)
+    assert top_model["price_in"] <= 1.0, f"Simple prompt recommended expensive model: {top_model['model_id']} at ${top_model['price_in']}/M"
+
+
+def test_classify_complex_recommends_frontier(client):
+    """Complex reasoning prompt should recommend a frontier model."""
+    payload = {"messages": [{"role": "user", "content": "Design a distributed Byzantine Fault Tolerant consensus engine with formal verification proofs and analyze asymptotic complexity of the raft protocol."}]}
+    res = client.post("/v1/classify", json=payload)
+    data = res.json()
+    top_model = data["recommendations"][0]
+    # Should recommend a high-quality model
+    assert top_model["price_in"] >= 1.0, f"Complex prompt recommended budget model: {top_model['model_id']} at ${top_model['price_in']}/M"
+
+
+def test_classify_different_prompts_give_different_models(client):
+    """Different prompt types should produce meaningfully different recommendations."""
+    simple = client.post("/v1/classify", json={"messages": [{"role": "user", "content": "Hello, how are you today?"}]}).json()
+    code = client.post("/v1/classify", json={"messages": [{"role": "user", "content": "Debug this Python function that has a memory leak and refactor: ```python\nimport sys\ndef fib(n): return fib(n-1)+fib(n-2)\n```"}]}).json()
+    reasoning = client.post("/v1/classify", json={"messages": [{"role": "user", "content": "Prove that the halting problem is undecidable using a formal proof by contradiction."}]}).json()
+
+    # Scores should be meaningfully different
+    assert simple["score"] < code["score"], "Simple prompt should have lower score than code prompt"
+    assert simple["score"] < reasoning["score"], "Simple prompt should have lower score than reasoning prompt"
+
+    # Tags should differ
+    assert "Reasoning" not in simple.get("tags", []) or "Coding" in code.get("tags", [])
+
+
+def test_classify_medium_tier(client):
+    """A moderate complexity prompt should route to medium tier."""
+    payload = {"messages": [{"role": "user", "content": "Explain the pros and cons of microservices vs monolith architecture and compare them in a table format."}]}
+    res = client.post("/v1/classify", json=payload)
+    data = res.json()
+    # Should detect medium-level indicators
+    assert data["score"] > 0.15, "Moderate prompt should have score above baseline"
+    assert len(data["recommendations"]) > 0
+
+
+def test_three_tier_classifier():
+    """Test the rule-based classifier produces all three tiers."""
+    from app.classifier.rule_based import RuleBasedClassifier
+    from app.models import ChatMessage
+
+    classifier = RuleBasedClassifier()
+
+    # CHEAP
+    cheap = classifier.classify([ChatMessage(role="user", content="Hi!")])
+    assert cheap.tier.value == "cheap"
+
+    # MEDIUM — structured task
+    medium = classifier.classify([ChatMessage(role="user", content="Explain the best practices for building a REST API with proper error handling. Create a step by step tutorial.")])
+    assert medium.tier.value in ("medium", "frontier"), f"Got {medium.tier.value} with score {medium.score}"
+
+    # FRONTIER — complex reasoning + code
+    frontier = classifier.classify([ChatMessage(role="user", content="Design a distributed system with Byzantine fault tolerance. Prove the correctness of your consensus algorithm. Debug this implementation:\n```python\nclass Raft:\n    async def replicate_log(self): pass\n```\nAnalyze the asymptotic complexity and compare to Paxos.")])
+    assert frontier.tier.value == "frontier", f"Got {frontier.tier.value} with score {frontier.score}"
+

@@ -16,3 +16,4 @@
 - Tue Sep 29 03:27:08 CEST 2026: Quota épuisé pour gemini-3.1-pro-high. Passage au modèle suivant.
 - Tue Sep 29 03:37:36 CEST 2026: Updated entire model catalog to latest Sept 2026 models (23 models from 8 providers). Overhauled recommendation algorithm for proper cost-quality balancing. Tests: 44 passed, build OK.
 - Tue Sep 29 03:41:15 CEST 2026: Upgraded heuristic classifier to proper three-tier routing (cheap/medium/frontier). Added creative/medium keyword detection, question complexity scoring, deep conversation depth. Tests: 44 passed.
+- Tue Sep 29 03:42:29 CEST 2026: Added savings estimation panel to Playground with per-request and per-1K cost comparison. Fixed Dashboard URL concatenation bug. Build OK, 44 tests pass.
