@@ -98,3 +98,7 @@
 - Implemented exponential backoff with jitter in engine.py for resilient fallback.
 - Updated openai_backend.py to actually raise errors when explicit keys are passed.
 - Added test_fallback.py which passes. Curl confirmed fallback from gpt-4o to claude-sonnet-5. All tests (117) pass, web build ok.
+## 29/09 13:10 - Configurable Timeouts per Tier & Premium UI
+- (Backend) Added `cheap_timeout_seconds`, `medium_timeout_seconds`, and `frontier_timeout_seconds` in config.py, propagated down to async HTTP clients.
+- (Frontend) Built Premium Design System using Tailwind 4 CSS variables for dark/light mode (`--color-base`, `--color-surface`, `--color-txt-base`, etc.) and added Inter typography.
+- (Frontend) Updated Playground to have a single "Send" button that streams responses using the router directly, fully replacing the old manual Compare workflow.
