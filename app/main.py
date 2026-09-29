@@ -851,6 +851,87 @@ async def clear_budget_alerts():
     return {"success": True, "message": "Alert history and fired thresholds cleared."}
 
 
+# ── Virtual API Keys ────────────────────────────────────────────────────────
+
+from app.router.virtual_keys import VirtualKeyManager
+
+_vk_manager = VirtualKeyManager(db_path=str(settings.db_path))
+
+
+class CreateVirtualKeyRequest(BaseModel):
+    name: str
+    budget_usd: Optional[float] = 100.0
+    rate_limit_rpm: Optional[int] = 60
+    metadata: Optional[dict] = None
+
+
+@app.post("/v1/keys", tags=["Virtual Keys"])
+async def create_virtual_key(request: CreateVirtualKeyRequest):
+    """
+    Issue a new virtual API key (sk-router-...) with independent budget and rate limit.
+    Real provider keys remain hidden server-side.
+    """
+    vk = _vk_manager.create_key(
+        name=request.name,
+        budget_usd=request.budget_usd or 100.0,
+        rate_limit_rpm=request.rate_limit_rpm or 60,
+        metadata=request.metadata,
+    )
+    return {"status": "created", "key": vk.to_dict()}
+
+
+@app.get("/v1/keys", tags=["Virtual Keys"])
+async def list_virtual_keys():
+    """List all virtual API keys (key values partially masked)."""
+    keys = _vk_manager.list_keys()
+    return {"keys": [k.to_dict() for k in keys]}
+
+
+@app.get("/v1/keys/{key_id}", tags=["Virtual Keys"])
+async def get_virtual_key(key_id: str):
+    """Get details of a specific virtual API key."""
+    vk = _vk_manager.get_key(key_id)
+    if not vk:
+        raise HTTPException(status_code=404, detail="Virtual key not found")
+    return vk.to_dict()
+
+
+@app.post("/v1/keys/{key_id}/revoke", tags=["Virtual Keys"])
+async def revoke_virtual_key(key_id: str):
+    """Revoke a virtual API key (soft delete — key remains but is disabled)."""
+    ok = _vk_manager.revoke_key(key_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Virtual key not found")
+    return {"status": "revoked", "key_id": key_id}
+
+
+@app.delete("/v1/keys/{key_id}", tags=["Virtual Keys"])
+async def delete_virtual_key(key_id: str):
+    """Permanently delete a virtual API key."""
+    ok = _vk_manager.delete_key(key_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Virtual key not found")
+    return {"status": "deleted", "key_id": key_id}
+
+
+@app.post("/v1/keys/validate", tags=["Virtual Keys"])
+async def validate_virtual_key(
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+):
+    """
+    Validate a virtual API key passed via Authorization: Bearer sk-router-...
+    Returns whether the key is valid, active, within budget, and within rate limits.
+    """
+    if not authorization or not authorization.startswith("Bearer sk-router-"):
+        raise HTTPException(status_code=401, detail="Missing or invalid virtual API key")
+    key_id = authorization.replace("Bearer ", "").strip()
+    allowed, reason = _vk_manager.validate_request(key_id)
+    if not allowed:
+        raise HTTPException(status_code=403, detail=reason)
+    vk = _vk_manager.get_key(key_id)
+    return {"valid": True, "key": vk.to_dict() if vk else None}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=settings.debug)
