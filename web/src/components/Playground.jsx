@@ -1,102 +1,86 @@
 import { useState, useEffect } from 'react';
-import { useDebounce } from '../hooks/useDebounce';
-import { classifyPrompt, getTierModels, chatCompletion } from '../api/client';
+import { classifyPrompt, getModels } from '../api/client';
 
 export default function Playground() {
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState(null);
-  const [tierModels, setTierModels] = useState({});
-  const [completion, setCompletion] = useState(null);
-  const [isSending, setIsSending] = useState(false);
-
-  const debouncedInput = useDebounce(input, 300);
-
-  const handleSend = async () => {
-    if (!input.trim() || isSending) return;
-    setIsSending(true);
-    setCompletion(null);
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'router-auto',
-          messages: [{ role: 'user', content: input }],
-          stream: true
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let done = false;
-      let text = '';
-      let buffer = '';
-
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        if (value) {
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop(); // Keep the last incomplete line in buffer
-          for (const line of lines) {
-            if (line.trim().startsWith('data: ') && line.trim() !== 'data: [DONE]') {
-              try {
-                const parsed = JSON.parse(line.trim().slice(6));
-                const delta = parsed.choices[0]?.delta?.content;
-                if (delta) {
-                  text += delta;
-                  setCompletion(text);
-                }
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      setCompletion('Error fetching completion.');
-    } finally {
-      setIsSending(false);
-    }
-  };
+  const [allModels, setAllModels] = useState([]);
+  const [selectedModelIds, setSelectedModelIds] = useState(new Set());
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
-    getTierModels().then(data => {
-      if (data) setTierModels(data);
+    getModels().then(data => {
+      if (data) {
+        setAllModels(data);
+        setSelectedModelIds(new Set(data.map(m => m.id)));
+      }
     }).catch(console.warn);
   }, []);
 
-  useEffect(() => {
-    if (!debouncedInput.trim()) {
-      setClassification(null);
-      return;
+  const handleAnalyze = async () => {
+    if (!input.trim() || isAnalyzing) return;
+    setIsAnalyzing(true);
+    try {
+      const res = await classifyPrompt([{ role: 'user', content: input }]);
+      setClassification(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
     }
+  };
 
-    let isSubscribed = true;
-    const runClassify = async () => {
-      try {
-        const res = await classifyPrompt([{ role: 'user', content: debouncedInput }]);
-        if (isSubscribed) {
-          setClassification(res);
-          if (res.tier_models) setTierModels(prev => ({ ...prev, ...res.tier_models }));
-        }
-      } catch (e) {
-        console.error(e);
+  const toggleModel = (id) => {
+    setSelectedModelIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const confidences = classification?.probabilities || { cheap: 0, medium: 0, frontier: 0 };
+
+  // Calculate recommended tier/model based on selected models
+  let recommendedTier = classification?.tier;
+  let recommendedModel = null;
+
+  if (classification) {
+    const availableTiers = new Set(
+      allModels.filter(m => selectedModelIds.has(m.id) && m.tier).map(m => m.tier)
+    );
+    
+    // Find best tier among available
+    let bestTier = null;
+    let maxProb = -1;
+    
+    for (const [tier, prob] of Object.entries(confidences)) {
+      if (availableTiers.has(tier) && prob > maxProb) {
+        maxProb = prob;
+        bestTier = tier;
       }
-    };
-    runClassify();
-    return () => { isSubscribed = false; };
-  }, [debouncedInput]);
+    }
+    
+    // If no exact match or we found a best tier, fallback
+    if (bestTier) {
+      recommendedTier = bestTier;
+      // Just pick the first selected model in this tier
+      const modelsInTier = allModels.filter(m => selectedModelIds.has(m.id) && m.tier === bestTier);
+      if (modelsInTier.length > 0) {
+        recommendedModel = modelsInTier[0].name || modelsInTier[0].id;
+      }
+    } else {
+        recommendedTier = "None Available";
+    }
+  }
 
-  const confidences = classification?.probabilities || { cheap: 0.75, medium: 0.20, frontier: 0.05 };
+  // Group models by provider
+  const groupedModels = allModels.reduce((acc, m) => {
+    const p = m.provider || 'unknown';
+    if (!acc[p]) acc[p] = [];
+    acc[p].push(m);
+    return acc;
+  }, {});
 
   return (
     <div className="h-full flex flex-col lg:flex-row p-6 gap-6 overflow-hidden max-w-[1400px] mx-auto">
@@ -108,11 +92,6 @@ export default function Playground() {
           placeholder="Write a prompt here..."
           className="flex-1 w-full p-4 rounded-xl border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-sm shadow-sm"
         />
-        {completion && (
-          <div className="flex-1 w-full p-4 rounded-xl border border-gray-200 bg-gray-50 overflow-y-auto text-sm shadow-sm whitespace-pre-wrap">
-            {completion}
-          </div>
-        )}
         <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <span className="text-xs text-gray-400">{input.length} chars</span>
           <div className="flex gap-2">
@@ -120,11 +99,11 @@ export default function Playground() {
               Clear
             </button>
             <button 
-              onClick={handleSend}
-              disabled={isSending || !input.trim()}
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !input.trim()}
               className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              {isSending ? 'Sending...' : 'Send →'}
+              {isAnalyzing ? 'Analyzing...' : 'Analyze'}
             </button>
           </div>
         </div>
@@ -135,13 +114,16 @@ export default function Playground() {
         {!classification ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm text-center">
             <div className="font-semibold text-gray-500 mb-1">No analysis yet</div>
-            <span className="text-xs">Type on the left...</span>
+            <span className="text-xs">Type a prompt and click Analyze</span>
           </div>
         ) : (
           <div className="text-sm space-y-6">
             <div>
               <div className="text-xs text-gray-500 mb-1">Recommended Tier</div>
-              <div className="font-semibold text-lg capitalize">{classification.tier}</div>
+              <div className="font-semibold text-lg capitalize">{recommendedTier}</div>
+              {recommendedModel && (
+                 <div className="text-xs text-gray-400 mt-1">Model: {recommendedModel}</div>
+              )}
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Complexity Score</div>
@@ -161,32 +143,44 @@ export default function Playground() {
 
       {/* RIGHT: Models */}
       <div className="w-full lg:w-[30%] flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
           <h3 className="text-sm font-semibold">Catalog</h3>
+          <span className="text-xs text-gray-400">{selectedModelIds.size} selected</span>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {['cheap', 'medium', 'frontier'].map((tierKey) => {
-            const config = tierModels[tierKey] || {};
-            const pct = Math.round((confidences[tierKey] || 0) * 100);
-            return (
-              <div key={tierKey} className="space-y-1.5">
-                <div className="flex justify-between text-sm items-center">
-                  <span className="font-medium">{config.model || tierKey}</span>
-                  <span className="text-xs text-gray-400">{config.provider || 'unknown'}</span>
-                </div>
-                <div className="text-xs text-gray-500 capitalize">{tierKey} tier</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-300 bg-black"
-                      style={{ width: `${Math.max(2, pct)}%` }} 
-                    />
-                  </div>
-                  <span className="text-xs font-mono w-8 text-right text-gray-500">{pct}%</span>
-                </div>
+          {Object.entries(groupedModels).map(([provider, models]) => (
+            <div key={provider} className="space-y-3">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{provider}</div>
+              <div className="space-y-4">
+                {models.map(m => {
+                  const pct = Math.round((confidences[m.tier] || 0) * 100);
+                  const isChecked = selectedModelIds.has(m.id);
+                  return (
+                    <div key={m.id} className={`space-y-1.5 transition-opacity ${isChecked ? 'opacity-100' : 'opacity-40'}`}>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={() => toggleModel(m.id)}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-black focus:ring-black cursor-pointer accent-black"
+                        />
+                        <span className="font-medium text-sm truncate" title={m.name || m.id}>{m.name || m.id}</span>
+                      </div>
+                      <div className="pl-5 flex items-center gap-3">
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-300 bg-black"
+                            style={{ width: `${Math.max(0, pct)}%` }} 
+                          />
+                        </div>
+                        <span className="text-xs font-mono w-8 text-right text-gray-500">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>

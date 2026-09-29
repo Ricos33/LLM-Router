@@ -34,3 +34,8 @@ export const getHealth = async () => {
   return data;
 };
 
+
+export const getModels = async () => {
+  const { data } = await api.get('/v1/models');
+  return data.data; // ModelListResponse format
+};

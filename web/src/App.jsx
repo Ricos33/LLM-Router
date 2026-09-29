@@ -5,15 +5,13 @@ import { getHealth } from './api/client';
 
 function App() {
   const [activeTab, setActiveTab] = useState('playground');
-  const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
     const checkHealth = async () => {
       try {
         await getHealth();
-        setIsOnline(true);
       } catch {
-        setIsOnline(false);
+        // ignore
       }
     };
     checkHealth();
