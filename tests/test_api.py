@@ -163,3 +163,10 @@ def test_classify_endpoint_caching(client):
     assert res2.status_code == 200
     assert res1.json()["suggested_model"] == res2.json()["suggested_model"]
 
+def test_metrics_export_csv(client):
+    res = client.get("/v1/metrics/export/csv")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "text/csv; charset=utf-8"
+    assert "id,timestamp,prompt_preview" in res.text
+
+

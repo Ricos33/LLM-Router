@@ -204,17 +204,19 @@ export default function Dashboard() {
           <table className="w-full text-left text-sm text-gray-600">
             <thead className="bg-white text-[11px] uppercase tracking-wider text-gray-400 font-semibold border-b border-gray-100">
               <tr>
-                <th className="px-5 py-3 w-1/3">Prompt Preview</th>
+                <th className="px-5 py-3 w-1/4">Prompt Preview</th>
                 <th className="px-5 py-3">Tier</th>
                 <th className="px-5 py-3">Model</th>
+                <th className="px-5 py-3 text-right">Score</th>
                 <th className="px-5 py-3 text-right">Latency</th>
+                <th className="px-5 py-3 text-right">Cost</th>
                 <th className="px-5 py-3 text-right">Saved</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {recent.length > 0 ? recent.map((req, i) => (
                 <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[250px]" title={req.prompt_preview}>
+                  <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[200px]" title={req.prompt_preview}>
                     {req.prompt_preview || 'Empty prompt'}
                   </td>
                   <td className="px-5 py-3">
@@ -227,7 +229,9 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td className="px-5 py-3 font-mono text-[12px] truncate max-w-[150px]">{req.actual_model}</td>
+                  <td className="px-5 py-3 text-right font-mono text-[12px] text-gray-500">{(req.classifier_score || 0).toFixed(2)}</td>
                   <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
+                  <td className="px-5 py-3 text-right font-mono text-[12px]">${(req.cost_actual || 0).toFixed(4)}</td>
                   <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
                 </tr>
               )) : (
