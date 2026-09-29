@@ -47,3 +47,4 @@
 - Tue Sep 29 08:12:00 CEST 2026: Implemented Routing Strategy Profiles (balanced, cost_optimized, quality_optimized): configurable tier thresholds in RuleBasedClassifier and JevClassifier, strategy propagation in RouterEngine, X-Router-Strategy request/response headers and RouterMetadata persistence, and interactive strategy profile selector controls and threshold inspect pills in Playground UI. Tests: 68 passed, build OK.
 
 
+- Tue Sep 29 06:16:58 UTC 2026: Implemented Chaos Testing API and UI controls to manually trip and restore Provider Circuit Breakers from SettingsModal and Dashboard. Tests: 71 passed, build OK.

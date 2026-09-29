@@ -139,6 +139,17 @@ async def chaos_reset_provider(request: Optional[ChaosResetRequest] = None):
     }
 
 
+from app.router.response_cache import global_response_cache
+
+@app.post("/v1/cache/clear", tags=["Gateway"])
+async def clear_gateway_cache():
+    """
+    Clear the in-memory gateway semantic response cache.
+    """
+    global_response_cache.clear()
+    return {"status": "ok", "message": "Gateway cache cleared"}
+
+
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def chat_completions(
     request: ChatCompletionRequest,
@@ -178,6 +189,8 @@ async def chat_completions(
             headers_dict["X-Router-Score"] = str(meta.classifier_score)
             if meta.routing_strategy:
                 headers_dict["X-Router-Strategy"] = meta.routing_strategy
+            if meta.gateway_cache_hit:
+                headers_dict["X-Gateway-Cache"] = "HIT"
             if meta.fallback_triggered:
                 headers_dict["X-Router-Fallback"] = "true"
                 headers_dict["X-Router-Fallback-Chain"] = "; ".join(meta.fallback_chain)
@@ -306,6 +319,7 @@ async def compare_models(
                 prompt_tokens=resp.usage.prompt_tokens,
                 completion_tokens=resp.usage.completion_tokens,
                 cost_usd=cost,
+                gateway_cache_hit=meta.gateway_cache_hit if meta else False,
             )
         except Exception as e:
             elapsed = (time.perf_counter() - start_t) * 1000.0

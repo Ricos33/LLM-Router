@@ -137,7 +137,16 @@ export default function SettingsModal({ onClose }) {
       </div>
         
         <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50 flex justify-between items-center flex-shrink-0">
-          <span className="text-[11px] text-gray-400">Keys are never sent to third parties</span>
+          <button 
+            onClick={async () => {
+              const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+              await fetch(`${apiBase}/v1/cache/clear`, { method: 'POST' });
+              alert('Gateway Semantic Cache Cleared!');
+            }}
+            className="text-[10px] font-medium text-gray-500 hover:text-red-600 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded shadow-xs transition-colors"
+          >
+            Clear Semantic Cache
+          </button>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3.5 py-1.5 text-[12px] font-medium text-gray-600 hover:text-black">Cancel</button>
             <button 

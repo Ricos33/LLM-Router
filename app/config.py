@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     # Routing & Fallbacks
     simulate_fallback: bool = True  # Fallback to simulated response if remote upstream is offline
     default_routing_tier: str = "auto"  # 'auto', 'cheap', 'medium', 'frontier'
+    
+    # Gateway Cache (Semantic/Exact Match)
+    gateway_cache_enabled: bool = False
+    gateway_cache_ttl_seconds: int = 3600
 
     # Database
     database_url: str = "sqlite:///./data/metrics.sqlite3"

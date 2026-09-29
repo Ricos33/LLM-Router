@@ -16,6 +16,7 @@ from app.classifier import (
     RuleBasedClassifier,
     JevClassifier,
 )
+from app.router.response_cache import global_response_cache
 from app.backends import (
     AnthropicBackend,
     BaseBackend,
@@ -475,7 +476,22 @@ class RouterEngine:
     ) -> ChatCompletionResponse:
         start_time = time.perf_counter()
 
-        # Step 0: Budget check
+        # Step 0: Gateway Semantic/Exact Cache Check
+        if settings.gateway_cache_enabled:
+            cached_resp = global_response_cache.get(request)
+            if cached_resp:
+                latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+                if cached_resp.router_metadata:
+                    cached_resp.router_metadata.gateway_cache_hit = True
+                    cached_resp.router_metadata.latency_ms = latency_ms
+                    # Cost is 0 for cached queries
+                    cached_resp.router_metadata.cost_actual_usd = 0.0
+                    # The cost_saved is whatever it would have cost on frontier + the actual cost saved
+                    cached_resp.router_metadata.cost_saved_usd = cached_resp.router_metadata.cost_frontier_usd
+                logger.info("Gateway Cache HIT for request.")
+                return cached_resp
+
+        # Step 0b: Budget check
         if settings.monthly_budget_usd > 0:
             current_cost = self.metrics.get_current_month_cost()
             if current_cost >= settings.monthly_budget_usd:
@@ -623,5 +639,9 @@ class RouterEngine:
             classifier_reasons=executed_decision.reasons,
         )
         self.metrics.record_request(metric)
+
+        # Cache the successful response if enabled
+        if settings.gateway_cache_enabled and not request.stream:
+            global_response_cache.set(request, response)
 
         return response

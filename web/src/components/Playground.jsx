@@ -147,6 +147,7 @@ export default function Playground({ modelsCount }) {
           tier: r.tier,
           is_cheapest: r.model === data.cheapest_model,
           is_fastest: r.model === data.fastest_model,
+          gateway_cache_hit: r.gateway_cache_hit,
         }
       }));
       setExecutions(updated);
@@ -798,7 +799,12 @@ export default function Playground({ modelsCount }) {
 
                       {exec.meta && (
                         <div className="px-3 py-2 bg-white border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-medium">
-                          <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
+                          <div className="flex items-center gap-2">
+                            <span>{(exec.meta.latency_ms || 0).toFixed(0)}ms</span>
+                            {exec.meta.gateway_cache_hit && (
+                              <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">⚡ Cache Hit</span>
+                            )}
+                          </div>
                           {exec.meta.prompt_tokens !== undefined && (
                             <span className="text-gray-400">{exec.meta.prompt_tokens}+{exec.meta.completion_tokens} toks</span>
                           )}

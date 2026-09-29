@@ -53,6 +53,7 @@ class RouterMetadata(BaseModel):
     cost_cached_usd: Optional[float] = None
     cache_savings_pct: Optional[float] = None
     routing_strategy: Optional[str] = "balanced"
+    gateway_cache_hit: bool = False
 
 
 
@@ -96,6 +97,7 @@ class ModelCompareResult(BaseModel):
     completion_tokens: int
     cost_usd: float
     error: Optional[str] = None
+    gateway_cache_hit: bool = False
 
 
 class CompareRequest(BaseModel):
