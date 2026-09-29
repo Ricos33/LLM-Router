@@ -431,6 +431,29 @@ class RuleBasedClassifier(BaseClassifier):
         if tier_tag not in tags:
             tags.append(tier_tag)
 
+        model_fit = {}
+        best_fit_model = None
+        if candidates:
+            for c in candidates:
+                c_scores = c.get("scores", {})
+                if not c_scores:
+                    continue
+                underkill = 0.0
+                overkill = 0.0
+                for cat, req in category_scores.items():
+                    cap = c_scores.get(cat, 0.5)
+                    if cap < req:
+                        underkill += (req - cap) * 2.0
+                    else:
+                        overkill += (cap - req) * 0.5
+                
+                tier_match = 0.2 if str(c.get("tier", "")).lower() == tier.value else -0.1
+                final_fit = max(0.1, min(0.99, 1.0 - underkill - overkill + tier_match))
+                model_fit[str(c.get("id"))] = round(final_fit, 3)
+            
+            if model_fit:
+                best_fit_model = max(model_fit, key=model_fit.get)
+
         decision_trace = {
             "baseline_score": base_score,
             "signals": signals,
@@ -444,6 +467,8 @@ class RuleBasedClassifier(BaseClassifier):
             "detected_intent": detected_intent,
             "category_scores": category_scores,
         }
+        if best_fit_model:
+            decision_trace["best_fit_model"] = best_fit_model
 
         return ClassificationResult(
             tier=tier,
@@ -462,6 +487,8 @@ class RuleBasedClassifier(BaseClassifier):
                 "score_threshold_cheap": self.cheap_ceiling,
                 "score_threshold_frontier": self.frontier_floor,
                 "detected_intent": detected_intent,
+                "model_fit": model_fit,
+                "best_fit_model": best_fit_model,
             }
         )
 

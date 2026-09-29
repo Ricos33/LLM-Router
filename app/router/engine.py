@@ -208,6 +208,7 @@ class RouterEngine:
         window, benchmarks) instead of answering generic tier questions.
         """
         try:
+            from app.catalog import MODEL_BENCHMARKS
             shortlist: List[Any] = []
             by_tier: Dict[str, List[Any]] = {}
             for m in CURATED_MODELS:
@@ -217,7 +218,13 @@ class RouterEngine:
                 by_tier.setdefault(tier, []).append(m)
             for tier in ("cheap", "medium", "frontier"):
                 shortlist.extend(by_tier.get(tier, [])[:2])
-            return [m.model_dump() for m in shortlist[:6]]
+            
+            dumped = []
+            for m in shortlist[:6]:
+                d = m.model_dump()
+                d["scores"] = MODEL_BENCHMARKS.get(m.id, {"Reasoning": 0.8, "Coding": 0.8, "Summary": 0.8, "Creative": 0.8})
+                dumped.append(d)
+            return dumped
         except Exception:
             logger.warning("Failed to build classification candidates", exc_info=True)
             return []

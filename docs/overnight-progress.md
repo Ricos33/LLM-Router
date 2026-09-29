@@ -79,3 +79,7 @@
 - Tue Sep 29 09:01:30 UTC 2026: Expanded integration test suite with 3 comprehensive tests covering budget lifecycle (/v1/budget/*), analytics extensions (provider_stats & prompt_cache_analytics), and synthetic latency probing (/v1/providers/probe). Total passing test count reached 112 tests. Tests: 112 passed, build OK.
 - Tue Sep 29 09:04:00 UTC 2026: Added 'Budget & Webhooks' management tab to SettingsModal.jsx: enables operators to configure monthly budget ceilings, notification webhook URLs, and alert threshold percentages, with real-time budget utilization status badges, synthetic test alert triggers, and alert event history management. Tests: 112 passed, build OK.
 - Tue Sep 29 09:15:00 UTC 2026: Jev payload now tailored per candidate model: engine shortlists up to 6 catalog models (2/tier) and JevClassifier sends per-model fit questions (pricing, context window, benchmarks) with fit scores parsed into metadata['model_fit']/best_fit_model. 4 new tests. Tests: 116 passed.
+## 29/09 14:22 - Fix Routing Strategy
+- Applied routing strategy parameter (cost_optimized, quality_optimized, balanced) to the confidence scoring formula in `app/main.py`. 
+- Tested via python script: different strategies route identical prompts to different models and tiers correctly.
+- Tests (116) pass. Web build pass. Push successful.
