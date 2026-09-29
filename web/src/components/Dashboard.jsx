@@ -8,13 +8,19 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [recent, setRecent] = useState([]);
   const [models, setModels] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
     const fetchMetrics = () => {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       getMetricsSummary().then(setSummary).catch(console.warn);
-      fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/v1/metrics/recent?limit=10')
+      fetch(`${apiUrl}/v1/metrics/recent?limit=10`)
         .then(res => res.json())
         .then(setRecent)
+        .catch(console.warn);
+      fetch(`${apiUrl}/v1/analytics`)
+        .then(res => res.json())
+        .then(setAnalytics)
         .catch(console.warn);
       getModels().then(setModels).catch(console.warn);
     };
@@ -58,6 +64,16 @@ export default function Dashboard() {
     context: m.context_length || 100000,
     tier: m.tier || 'cheap'
   }));
+
+  const hourlyData = (analytics?.hourly_timeseries || []).map(h => {
+    const d = new Date(h.hour_ts * 1000);
+    return {
+      hour: `${d.getHours().toString().padStart(2, '0')}:00`,
+      requests: h.requests,
+      saved: Number((h.saved || 0).toFixed(4)),
+      cost: Number((h.cost || 0).toFixed(4))
+    };
+  });
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto h-full text-[#111]">
@@ -104,13 +120,13 @@ export default function Dashboard() {
 
         <div className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
           <div className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest flex items-center gap-2">
-            <span>🏎️</span> Offloaded
+            <span>🛡️</span> Optimization Rate
           </div>
           <div className="text-3xl font-bold text-blue-600">
-            {summary.cheap_percentage || 0}<span className="text-lg font-medium text-blue-400">%</span>
+            {analytics?.efficiency_percentage !== undefined ? analytics.efficiency_percentage : (summary.cheap_percentage || 0)}<span className="text-lg font-medium text-blue-400">%</span>
           </div>
           <div className="mt-2 text-xs text-blue-700 bg-blue-50 inline-block px-2 py-0.5 rounded-md">
-            Routed to Cheap tier
+            Non-frontier optimized
           </div>
         </div>
       </div>
