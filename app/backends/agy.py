@@ -160,7 +160,7 @@ class AgyBackend(BaseBackend):
         return cmd
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None, timeout_override: Optional[float] = None
     ) -> ChatCompletionResponse:
         tier, target_model, effort = self.resolve_target(
             model_override=model_override, request_model=request.model
@@ -187,8 +187,9 @@ class AgyBackend(BaseBackend):
             )
 
             try:
+                timeout_val = timeout_override if timeout_override is not None else self.timeout
                 stdout, stderr = await asyncio.wait_for(
-                    proc.communicate(), timeout=self.timeout
+                    proc.communicate(), timeout=timeout_val
                 )
             except asyncio.TimeoutError:
                 try:
@@ -198,7 +199,7 @@ class AgyBackend(BaseBackend):
                     pass
                 if self.simulate_fallback:
                     logger.warning(
-                        f"Agy CLI timed out after {self.timeout}s; falling back to simulation."
+                        f"Agy CLI timed out after {timeout_val}s; falling back to simulation."
                     )
                     return self._simulated_response(
                         request,

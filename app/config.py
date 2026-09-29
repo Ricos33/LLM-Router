@@ -72,6 +72,11 @@ class Settings(BaseSettings):
     simulate_fallback: bool = True  # Fallback to simulated response if remote upstream is offline
     default_routing_tier: str = "auto"  # 'auto', 'cheap', 'medium', 'frontier'
     
+    # Tier Timeouts
+    cheap_timeout_seconds: float = 10.0
+    medium_timeout_seconds: float = 30.0
+    frontier_timeout_seconds: float = 60.0
+    
     # Gateway Cache (Semantic/Exact Match)
     gateway_cache_enabled: bool = False
     gateway_cache_ttl_seconds: int = 3600

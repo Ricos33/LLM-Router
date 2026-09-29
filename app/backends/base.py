@@ -8,6 +8,6 @@ class BaseBackend(ABC):
 
     @abstractmethod
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None, timeout_override: Optional[float] = None
     ) -> ChatCompletionResponse:
         pass

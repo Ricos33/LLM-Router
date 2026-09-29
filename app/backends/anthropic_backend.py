@@ -25,7 +25,7 @@ class AnthropicBackend(BaseBackend):
         self.simulate_fallback = simulate_fallback
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None, timeout_override: Optional[float] = None
     ) -> ChatCompletionResponse:
         model = model_override or self.default_model
         
@@ -60,7 +60,8 @@ class AnthropicBackend(BaseBackend):
             payload["temperature"] = request.temperature
 
         try:
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            timeout_val = timeout_override if timeout_override is not None else 45.0
+            async with httpx.AsyncClient(timeout=timeout_val) as client:
                 resp = await client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers=headers,

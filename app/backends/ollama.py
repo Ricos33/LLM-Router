@@ -32,7 +32,7 @@ class OllamaBackend(BaseBackend):
         self.simulate_fallback = simulate_fallback
 
     async def complete(
-        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None
+        self, request: ChatCompletionRequest, model_override: Optional[str] = None, api_key_override: Optional[str] = None, timeout_override: Optional[float] = None
     ) -> ChatCompletionResponse:
         model = model_override or self.default_model
         payload = {
@@ -45,7 +45,8 @@ class OllamaBackend(BaseBackend):
             payload["max_tokens"] = request.max_tokens
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            timeout_val = timeout_override if timeout_override is not None else 30.0
+            async with httpx.AsyncClient(timeout=timeout_val) as client:
                 resp = await client.post(
                     f"{self.base_url}/chat/completions",
                     json=payload,

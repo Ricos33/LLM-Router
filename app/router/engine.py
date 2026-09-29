@@ -653,10 +653,17 @@ class RouterEngine:
                         if keys:
                             api_key_override = random.choice(keys)
                             logger.info(f"Rotated API key via {candidate.tier.value} pool for {candidate.provider_name}")
+                tier_timeout = settings.cheap_timeout_seconds
+                if candidate.tier == ModelTier.MEDIUM:
+                    tier_timeout = settings.medium_timeout_seconds
+                elif candidate.tier == ModelTier.FRONTIER:
+                    tier_timeout = settings.frontier_timeout_seconds
+                    
                 response = await candidate.backend.complete(
                     exec_req,
                     model_override=candidate.model_name,
                     api_key_override=api_key_override,
+                    timeout_override=tier_timeout,
                 )
                 executed_decision = candidate
                 self.circuit_breaker.record_success(candidate.provider_name)
