@@ -33,3 +33,6 @@
 - Les 5 modèles de la rotation sont à sec : gemini-3.1-pro-high, claude-opus-4-6-thinking, claude-sonnet-4-6, gpt-oss-120b-medium, gemini-3.8-flash-high (reset Flash estimé ~06:15 CEST).
 - Tout committé et poussé sur overnight-improvements (dernier : 33cade0), main intacte.
 - Fichiers QUOTA_* + QUOTA_EXHAUSTED créés. Relance automatique prévue à 06:20 CEST sur gemini-3.8-flash-high.
+
+- Tue Sep 29 07:32:43 CEST 2026: Implemented 24h activity timeseries chart (requests/cost saved metric toggles) and top routed models performance matrix in Dashboard UI using live /v1/analytics telemetry. Tests: 59 passed, build OK.
+
