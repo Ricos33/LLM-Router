@@ -55,6 +55,7 @@ class RouterMetadata(BaseModel):
     cache_savings_pct: Optional[float] = None
     routing_strategy: Optional[str] = "balanced"
     gateway_cache_hit: bool = False
+    matched_rule: Optional[str] = None
 
 
 

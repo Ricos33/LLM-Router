@@ -27,6 +27,7 @@ from app.backends import (
 from app.storage import MetricsTracker, RequestMetric
 from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing, get_model_cache_pricing
 from app.router.circuit_breaker import ProviderCircuitBreaker
+from app.router.rules import RoutingRuleManager
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class RoutingDecision:
     provider_name: str
     classifier_score: float
     reasons: List[str]
+    matched_rule: Optional[str] = None
 
 
 class RouterEngine:
@@ -105,6 +107,9 @@ class RouterEngine:
         self.circuit_breaker = ProviderCircuitBreaker(
             failure_threshold=3, cooldown_seconds=30.0
         )
+
+        # 5. Enterprise Routing Rules Manager
+        self.rules_manager = RoutingRuleManager()
 
     def get_tier_models(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -354,6 +359,37 @@ class RouterEngine:
                 provider_name=catalog_model.provider or "unknown",
                 classifier_score=score,
                 reasons=[f"Explicit curated model requested: {catalog_model.id} ({tier_val} tier)"],
+            )
+
+        # Rule 2.5: Custom & Enterprise Routing Rules Policy
+        rule_match = self.rules_manager.evaluate(request.messages)
+        if rule_match:
+            target_tier_str = (rule_match.target_tier or "medium").lower()
+            tier_enum = ModelTier(target_tier_str) if target_tier_str in [t.value for t in ModelTier] else ModelTier.MEDIUM
+            
+            if settings.agy_enabled:
+                target_model = self.agy_backend.get_model_for_tier(target_tier_str)
+                target_provider = "agy"
+                backend = self.agy_backend
+            else:
+                target_model = rule_match.target_model or (
+                    settings.cheap_model if tier_enum == ModelTier.CHEAP else settings.frontier_model
+                )
+                target_provider = rule_match.target_provider or (
+                    settings.cheap_provider if tier_enum == ModelTier.CHEAP else settings.frontier_provider
+                )
+                backend = self.cheap_backend if tier_enum == ModelTier.CHEAP else self.frontier_backend
+
+            score = 1.0 if tier_enum == ModelTier.FRONTIER else (0.5 if tier_enum == ModelTier.MEDIUM else 0.1)
+
+            return RoutingDecision(
+                tier=tier_enum,
+                model_name=target_model,
+                backend=backend,
+                provider_name=target_provider,
+                classifier_score=score,
+                reasons=[f"Routing policy rule '{rule_match.rule_name}' applied: {rule_match.reason}"],
+                matched_rule=rule_match.rule_id,
             )
 
         # Rule 3: Intelligent classification
@@ -669,6 +705,7 @@ class RouterEngine:
             fallback_chain=fallback_history,
             circuit_status=circuit_status,
             routing_strategy=strat_used,
+            matched_rule=executed_decision.matched_rule,
         )
         response.router_metadata = router_metadata
 

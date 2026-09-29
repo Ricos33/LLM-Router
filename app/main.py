@@ -194,6 +194,8 @@ async def chat_completions(
             if meta.fallback_triggered:
                 headers_dict["X-Router-Fallback"] = "true"
                 headers_dict["X-Router-Fallback-Chain"] = "; ".join(meta.fallback_chain)
+            if meta.matched_rule:
+                headers_dict["X-Router-Rule"] = meta.matched_rule
             
             for k, v in headers_dict.items():
                 response.headers[k] = v
@@ -385,7 +387,12 @@ async def classify_prompt(request: ClassifyRequest):
     category_scores = result.category_scores or {
         "Reasoning": 0.5, "Coding": 0.0, "Summary": 0.0, "Creative": 0.0
     }
-    tags = result.tags or []
+    tags = list(result.tags or [])
+
+    # Check enterprise routing policy rules
+    rule_match = router_engine.rules_manager.evaluate(chat_msgs)
+    if rule_match:
+        tags.append(f"rule:{rule_match.rule_id}")
 
     # Dynamic weights derived directly from prompt category requirements
     weights = {
@@ -480,6 +487,19 @@ async def classify_prompt(request: ClassifyRequest):
 
     recommendations.sort(key=lambda x: x["confidence"], reverse=True)
     
+    if rule_match and rule_match.target_model:
+        for rec in recommendations:
+            if rec["model_id"] == rule_match.target_model:
+                rec["confidence"] = 0.999
+                break
+        recommendations.sort(key=lambda x: x["confidence"], reverse=True)
+        if rule_match.target_tier:
+            from app.classifier.types import ModelTier
+            try:
+                result.tier = ModelTier(rule_match.target_tier.lower())
+            except Exception:
+                pass
+
     top_model = recommendations[0]["model_id"] if recommendations else "None"
     top_conf = recommendations[0]["confidence"] if recommendations else 0
     
@@ -505,6 +525,8 @@ async def classify_prompt(request: ClassifyRequest):
             "planned_fallback_chain": [top_model] + fallback_candidates,
             "total_candidates_evaluated": len(all_models),
         })
+        if rule_match:
+            result.decision_trace["matched_rule"] = rule_match.model_dump()
     
     CLASSIFY_CACHE[cache_key] = result
     
@@ -522,6 +544,40 @@ async def explain_classification(request: ClassifyRequest):
     including individual heuristic signal deltas, category weights, and fallback chain.
     """
     return await classify_prompt(request)
+
+
+@app.get("/v1/rules", tags=["Routing Rules"])
+async def get_routing_rules():
+    """Retrieve all configured enterprise routing rules and policy overrides."""
+    return {"rules": [r.model_dump() for r in router_engine.rules_manager.get_all_rules()]}
+
+
+@app.post("/v1/rules", tags=["Routing Rules"])
+async def create_or_update_rule(rule_data: dict):
+    """Create or update a custom enterprise routing rule."""
+    from app.router.rules import RoutingRule
+    try:
+        rule = RoutingRule(**rule_data)
+        saved = router_engine.rules_manager.add_rule(rule)
+        return {"status": "ok", "rule": saved.model_dump()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid rule specification: {str(e)}")
+
+
+@app.delete("/v1/rules/{rule_id}", tags=["Routing Rules"])
+async def delete_routing_rule(rule_id: str):
+    """Delete a custom routing rule by its ID."""
+    deleted = router_engine.rules_manager.delete_rule(rule_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Rule '{rule_id}' not found.")
+    return {"status": "ok", "message": f"Rule '{rule_id}' deleted."}
+
+
+@app.post("/v1/rules/reset", tags=["Routing Rules"])
+async def reset_routing_rules():
+    """Reset routing rules to system defaults."""
+    router_engine.rules_manager.reset_defaults()
+    return {"status": "ok", "message": "Routing rules reset to default policy presets."}
 
 
 @app.get("/v1/metrics/summary")
