@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [models, setModels] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [timeseriesMetric, setTimeseriesMetric] = useState('requests');
 
   useEffect(() => {
     const fetchMetrics = () => {
@@ -222,6 +223,109 @@ export default function Dashboard() {
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Hourly Activity & Top Models Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hourly Timeseries Chart */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span>📈</span> 24h Routing Activity
+            </h3>
+            <div className="flex bg-gray-100 rounded-lg p-0.5 text-[11px] font-semibold">
+              <button
+                onClick={() => setTimeseriesMetric('requests')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  timeseriesMetric === 'requests' ? 'bg-white shadow-xs text-black' : 'text-gray-500 hover:text-black'
+                }`}
+              >
+                Requests
+              </button>
+              <button
+                onClick={() => setTimeseriesMetric('saved')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  timeseriesMetric === 'saved' ? 'bg-white shadow-xs text-emerald-600' : 'text-gray-500 hover:text-black'
+                }`}
+              >
+                Saved ($)
+              </button>
+            </div>
+          </div>
+          {hourlyData.length > 0 ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontSize: '13px' }}
+                    formatter={(val) => [timeseriesMetric === 'saved' ? `$${Number(val).toFixed(4)}` : val, timeseriesMetric === 'saved' ? 'Cost Saved' : 'Requests']}
+                  />
+                  <Bar
+                    dataKey={timeseriesMetric}
+                    fill={timeseriesMetric === 'saved' ? '#10b981' : '#111827'}
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex flex-col items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 gap-2">
+              <span className="text-xl">⏱️</span>
+              <span>No requests recorded in the last 24h</span>
+            </div>
+          )}
+        </div>
+
+        {/* Top Models Performance Matrix */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <span>🏆</span> Model Distribution & Performance
+              </h3>
+              <span className="text-xs text-gray-400 font-mono">{(analytics?.model_stats || []).length} models routed</span>
+            </div>
+            {(analytics?.model_stats || []).length > 0 ? (
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {(analytics.model_stats).slice(0, 5).map((m, idx) => {
+                  const sharePct = summary.total_requests > 0 ? Math.round((m.count / summary.total_requests) * 100) : 0;
+                  return (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-[12px]">
+                        <span className="font-semibold text-gray-800 truncate max-w-[200px]" title={m.model_used}>
+                          {m.model_used}
+                        </span>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-gray-500 font-bold">{m.count} reqs</span>
+                          <span className="text-gray-400">({sharePct}%)</span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-black rounded-full" style={{ width: `${Math.max(4, sharePct)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[11px] text-gray-400 font-mono mt-0.5">
+                        <span>Avg Latency: <strong className="text-gray-600">{Math.round(m.avg_latency)}ms</strong></span>
+                        <span>Avg Score: <strong className="text-gray-600">{(m.avg_score || 0).toFixed(2)}</strong></span>
+                        <span>Avg Cost: <strong className="text-emerald-600">${(m.avg_cost || 0).toFixed(4)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center text-sm text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 gap-2">
+                <span className="text-xl">📊</span>
+                <span>No model performance data yet</span>
+              </div>
+            )}
+          </div>
+          <div className="text-[11px] text-gray-400 pt-3 border-t border-gray-100 mt-2">
+            Statistics dynamically calculated from actual completions telemetry.
           </div>
         </div>
       </div>
