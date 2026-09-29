@@ -484,7 +484,7 @@ def test_jev_payload_no_candidates():
     jev = JevClassifier(api_key="k")
     messages = [ChatMessage(role="user", content="Hello")]
     payload = jev._build_payload(messages)
-    assert set(payload["questions"].keys()) == {"tier", "complexity"}
+    assert set(payload["questions"].keys()) == {"tier", "complexity", "domain"}
 
 
 def test_jev_parse_response_model_fit():
