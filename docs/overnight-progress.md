@@ -35,4 +35,5 @@
 - Fichiers QUOTA_* + QUOTA_EXHAUSTED créés. Relance automatique prévue à 06:20 CEST sur gemini-3.8-flash-high.
 
 - Tue Sep 29 07:32:43 CEST 2026: Implemented 24h activity timeseries chart (requests/cost saved metric toggles) and top routed models performance matrix in Dashboard UI using live /v1/analytics telemetry. Tests: 59 passed, build OK.
+- Tue Sep 29 07:34:54 CEST 2026: Upgraded Benchmark suite to 5 category prompts (Reasoning, Coding, Summary, Creative, Conversational), added tier quick-selectors (Tiers/All/None), and aggregate summary tfoot with lowest cost and fastest model badges. Tests: 59 passed, build OK.
 
