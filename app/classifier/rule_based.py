@@ -1,6 +1,6 @@
 import re
 import math
-from typing import List
+from typing import Any, Dict, List, Optional
 from app.models import ChatMessage
 from .base import BaseClassifier
 from .types import ClassificationResult, ModelTier
@@ -256,7 +256,14 @@ class RuleBasedClassifier(BaseClassifier):
         "quality_optimized": (0.25, 0.50),
     }
 
-    def classify(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
+    def classify(
+        self,
+        messages: List[ChatMessage],
+        strategy: str = "balanced",
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> ClassificationResult:
+        # Rule-based classifier is model-agnostic: `candidates` is accepted
+        # for interface compatibility and intentionally ignored.
         strat_key = strategy.lower().strip() if strategy else "balanced"
         cheap_ceiling, frontier_floor = self.STRATEGY_THRESHOLDS.get(
             strat_key, (self.cheap_ceiling, self.frontier_floor)

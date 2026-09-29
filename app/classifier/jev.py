@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import List, Optional, Dict, Any
 import httpx
 from app.models import ChatMessage
@@ -7,6 +8,54 @@ from .types import ClassificationResult, ModelTier
 from .rule_based import RuleBasedClassifier
 
 logger = logging.getLogger(__name__)
+
+# Max candidate models evaluated per Jev call: bounds payload size/latency.
+MAX_FIT_CANDIDATES = 6
+
+
+def _slugify(model_id: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(model_id).lower()).strip("_")
+
+
+def _build_fit_question(candidate: Dict[str, Any]) -> Dict[str, Any]:
+    """Build a per-model fit question tailored to the candidate's profile."""
+    model_id = str(candidate.get("id", "unknown"))
+    name = str(candidate.get("name", model_id))
+    provider = str(candidate.get("provider", "unknown"))
+    tier = str(candidate.get("tier", "unknown"))
+    price_in = candidate.get("price_in")
+    price_out = candidate.get("price_out")
+    context_length = candidate.get("context_length")
+    scores = candidate.get("scores") or {}
+
+    price_txt = (
+        f"Input ${price_in}/MTok, output ${price_out}/MTok"
+        if price_in is not None and price_out is not None
+        else "pricing unknown"
+    )
+    context_txt = f"{context_length:,} tokens".replace(",", " ") if context_length else "unknown"
+    if isinstance(scores, dict) and scores:
+        bench_txt = ", ".join(f"{k}: {v}" for k, v in list(scores.items())[:5])
+    else:
+        bench_txt = "no benchmark data"
+
+    return {
+        "type": "score",
+        "instructions": (
+            f"Rate how well suited the model '{name}' (provider: {provider}, tier: {tier}) "
+            f"is for THIS request. Model profile — {price_txt}; context window {context_txt}; "
+            f"benchmarks [{bench_txt}]. "
+            "Weigh: (1) whether the request complexity justifies the cost — prefer cheaper "
+            "models for simple requests; (2) whether the model's strengths match the request "
+            "type (reasoning, coding, summarization, creativity, conversation); "
+            "(3) whether the request fits comfortably in the context window."
+        ),
+        "criteria": [
+            "0.0-0.3: poor fit — overkill cost for the complexity, or mismatched capabilities",
+            "0.4-0.6: acceptable fit — can handle the request but not the optimal choice",
+            "0.7-1.0: strong fit — complexity, strengths and cost are well aligned",
+        ],
+    }
 
 TIER_MAPPING: Dict[str, ModelTier] = {
     "cheap": ModelTier.CHEAP,
@@ -50,35 +99,53 @@ class JevClassifier(BaseClassifier):
             return f"{url}/v1/systemone"
         return f"{url}/systemone"
 
-    def _build_payload(self, messages: List[ChatMessage]) -> Dict[str, Any]:
+    def _build_payload(
+        self,
+        messages: List[ChatMessage],
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        questions: Dict[str, Any] = {
+            "tier": {
+                "type": "choice",
+                "instructions": "Determine the optimal LLM model tier (cheap, medium, or frontier) to handle this conversation/request based on complexity, reasoning depth, and technical requirements.",
+                "criteria": {
+                    "cheap": "Simple, routine queries, greetings, basic facts, straightforward translations or summaries.",
+                    "medium": "Moderate complexity, intermediate tasks, multi-step instructions, standard code snippets.",
+                    "frontier": "Complex reasoning, advanced coding, system architecture, mathematical proofs, deep technical troubleshooting."
+                }
+            },
+            "complexity": {
+                "type": "score",
+                "instructions": "Rate the overall technical and reasoning complexity of the request.",
+                "criteria": [
+                    "Low complexity: routine or simple query",
+                    "Moderate complexity: intermediate tasks",
+                    "High complexity: intricate reasoning or advanced problem-solving"
+                ]
+            }
+        }
+        # Per-model fit questions, tailored to each candidate's profile
+        # (pricing, context window, benchmark scores). Bounded to keep the
+        # payload small and the Jev call fast.
+        for candidate in (candidates or [])[:MAX_FIT_CANDIDATES]:
+            if not isinstance(candidate, dict) or not candidate.get("id"):
+                continue
+            key = f"fit_{_slugify(candidate['id'])}"
+            questions[key] = _build_fit_question(candidate)
+
         return {
             "model": self.model,
             "state": {
                 "messages": [m.model_dump() for m in messages]
             },
-            "questions": {
-                "tier": {
-                    "type": "choice",
-                    "instructions": "Determine the optimal LLM model tier (cheap, medium, or frontier) to handle this conversation/request based on complexity, reasoning depth, and technical requirements.",
-                    "criteria": {
-                        "cheap": "Simple, routine queries, greetings, basic facts, straightforward translations or summaries.",
-                        "medium": "Moderate complexity, intermediate tasks, multi-step instructions, standard code snippets.",
-                        "frontier": "Complex reasoning, advanced coding, system architecture, mathematical proofs, deep technical troubleshooting."
-                    }
-                },
-                "complexity": {
-                    "type": "score",
-                    "instructions": "Rate the overall technical and reasoning complexity of the request.",
-                    "criteria": [
-                        "Low complexity: routine or simple query",
-                        "Moderate complexity: intermediate tasks",
-                        "High complexity: intricate reasoning or advanced problem-solving"
-                    ]
-                }
-            }
+            "questions": questions,
         }
 
-    def _parse_response(self, data: Dict[str, Any]) -> ClassificationResult:
+    def _parse_response(
+        self,
+        data: Dict[str, Any],
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> ClassificationResult:
         # 1. Official TypeSafe SystemOne response structure
         if "answers" in data and isinstance(data["answers"], dict):
             answers = data["answers"]
@@ -126,6 +193,27 @@ class JevClassifier(BaseClassifier):
             if raw_score is not None:
                 reasons.append(f"Jev complexity score: {float(raw_score):.2f}")
 
+            # Per-model fit scores from the tailored fit_* questions.
+            model_fit: Dict[str, float] = {}
+            if candidates:
+                slug_to_id = {
+                    f"fit_{_slugify(c.get('id', ''))}": str(c.get("id"))
+                    for c in candidates
+                    if isinstance(c, dict) and c.get("id")
+                }
+                for key, mid in slug_to_id.items():
+                    ans = answers.get(key, {})
+                    if isinstance(ans, dict) and ans.get("score") is not None:
+                        try:
+                            model_fit[mid] = round(max(0.0, min(1.0, float(ans["score"]))), 3)
+                        except (TypeError, ValueError):
+                            continue
+            best_fit_model = max(model_fit, key=model_fit.get) if model_fit else None
+            if best_fit_model:
+                reasons.append(
+                    f"Best model fit: '{best_fit_model}' (fit score: {model_fit[best_fit_model]:.2f})"
+                )
+
             return ClassificationResult(
                 tier=tier,
                 confidence=round(confidence, 2),
@@ -136,7 +224,9 @@ class JevClassifier(BaseClassifier):
                 metadata={
                     "provider": "typesafe_jev",
                     "model": data.get("model", self.model),
-                    "usage": data.get("usage", {})
+                    "usage": data.get("usage", {}),
+                    "model_fit": model_fit,
+                    "best_fit_model": best_fit_model,
                 }
             )
 
@@ -158,7 +248,12 @@ class JevClassifier(BaseClassifier):
             }
         )
 
-    def classify(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
+    def classify(
+        self,
+        messages: List[ChatMessage],
+        strategy: str = "balanced",
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> ClassificationResult:
         if not messages:
             return ClassificationResult(
                 tier=ModelTier.CHEAP,
@@ -172,13 +267,13 @@ class JevClassifier(BaseClassifier):
 
         if not self.api_key:
             logger.warning("JevClassifier: JEV_API_KEY is not set. Falling back to rule-based mock classifier.")
-            res = self.fallback.classify(messages, strategy=strategy)
+            res = self.fallback.classify(messages, strategy=strategy, candidates=candidates)
             res.metadata["provider"] = "jev_mock_fallback"
             res.reasons.insert(0, "[Jev Fallback] JEV_API_KEY not configured; evaluated via rule-based classifier")
             return res
 
         url = self._get_endpoint_url()
-        payload = self._build_payload(messages)
+        payload = self._build_payload(messages, candidates=candidates)
 
         try:
             with httpx.Client(timeout=self.timeout) as client:
@@ -192,15 +287,20 @@ class JevClassifier(BaseClassifier):
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return self._parse_response(data)
+                return self._parse_response(data, candidates=candidates)
         except Exception as e:
             logger.warning("Jev API request failed (%s: %s). Falling back to rule-based mock classifier.", type(e).__name__, e)
-            res = self.fallback.classify(messages, strategy=strategy)
+            res = self.fallback.classify(messages, strategy=strategy, candidates=candidates)
             res.metadata["provider"] = "jev_error_fallback"
             res.reasons.insert(0, f"[Jev Warning] Fallback activated ({type(e).__name__}: {e})")
             return res
 
-    async def classify_async(self, messages: List[ChatMessage], strategy: str = "balanced") -> ClassificationResult:
+    async def classify_async(
+        self,
+        messages: List[ChatMessage],
+        strategy: str = "balanced",
+        candidates: Optional[List[Dict[str, Any]]] = None,
+    ) -> ClassificationResult:
         if not messages:
             return ClassificationResult(
                 tier=ModelTier.CHEAP,
@@ -213,13 +313,13 @@ class JevClassifier(BaseClassifier):
 
         if not self.api_key:
             logger.warning("JevClassifier: JEV_API_KEY is not set. Falling back to rule-based mock classifier.")
-            res = self.fallback.classify(messages, strategy=strategy)
+            res = self.fallback.classify(messages, strategy=strategy, candidates=candidates)
             res.metadata["provider"] = "jev_mock_fallback"
             res.reasons.insert(0, "[Jev Fallback] JEV_API_KEY not configured; evaluated via rule-based classifier")
             return res
 
         url = self._get_endpoint_url()
-        payload = self._build_payload(messages)
+        payload = self._build_payload(messages, candidates=candidates)
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -233,10 +333,10 @@ class JevClassifier(BaseClassifier):
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return self._parse_response(data)
+                return self._parse_response(data, candidates=candidates)
         except Exception as e:
             logger.warning("Async Jev API request failed (%s: %s). Falling back to rule-based mock classifier.", type(e).__name__, e)
-            res = self.fallback.classify(messages, strategy=strategy)
+            res = self.fallback.classify(messages, strategy=strategy, candidates=candidates)
             res.metadata["provider"] = "jev_error_fallback"
             res.reasons.insert(0, f"[Jev Warning] Fallback activated ({type(e).__name__}: {e})")
             return res

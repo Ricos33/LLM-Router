@@ -444,3 +444,64 @@ def test_classifier_structured_output_detection():
     assert res.score >= 0.35  # At least above cheap ceiling
 
 
+
+
+def _sample_candidates():
+    return [
+        {"id": "openai/gpt-6-astra", "name": "GPT-6 Astra", "provider": "openai",
+         "tier": "frontier", "price_in": 10.0, "price_out": 50.0,
+         "context_length": 1050000, "scores": {"Reasoning": 0.95, "Coding": 0.97}},
+        {"id": "openai/gpt-4o-mini", "name": "GPT-4o mini", "provider": "openai",
+         "tier": "cheap", "price_in": 0.15, "price_out": 0.6,
+         "context_length": 128000, "scores": {"Reasoning": 0.7, "Coding": 0.72}},
+    ]
+
+
+def test_jev_payload_tailored_per_model():
+    jev = JevClassifier(api_key="k")
+    messages = [ChatMessage(role="user", content="Hello")]
+    payload = jev._build_payload(messages, candidates=_sample_candidates())
+    questions = payload["questions"]
+    assert "tier" in questions and "complexity" in questions
+    assert "fit_openai_gpt_6_astra" in questions
+    assert "fit_openai_gpt_4o_mini" in questions
+    q = questions["fit_openai_gpt_6_astra"]
+    assert "GPT-6 Astra" in q["instructions"]
+    assert "$10.0" in q["instructions"] or "10.0" in q["instructions"]
+    assert "1050000" in q["instructions"].replace(" ", "").replace(",", "")
+
+
+def test_jev_payload_bounds_candidates():
+    jev = JevClassifier(api_key="k")
+    messages = [ChatMessage(role="user", content="Hello")]
+    many = [{"id": f"p/m{i}", "name": f"M{i}"} for i in range(20)]
+    payload = jev._build_payload(messages, candidates=many)
+    fit_keys = [k for k in payload["questions"] if k.startswith("fit_")]
+    assert len(fit_keys) == 6
+
+
+def test_jev_payload_no_candidates():
+    jev = JevClassifier(api_key="k")
+    messages = [ChatMessage(role="user", content="Hello")]
+    payload = jev._build_payload(messages)
+    assert set(payload["questions"].keys()) == {"tier", "complexity"}
+
+
+def test_jev_parse_response_model_fit():
+    jev = JevClassifier(api_key="k")
+    candidates = _sample_candidates()
+    data = {
+        "answers": {
+            "tier": {"choice": "frontier", "confidence": 0.9},
+            "complexity": {"score": 2},
+            "fit_openai_gpt_6_astra": {"score": 0.92},
+            "fit_openai_gpt_4o_mini": {"score": 0.31},
+        }
+    }
+    result = jev._parse_response(data, candidates=candidates)
+    assert result.metadata["model_fit"] == {
+        "openai/gpt-6-astra": 0.92,
+        "openai/gpt-4o-mini": 0.31,
+    }
+    assert result.metadata["best_fit_model"] == "openai/gpt-6-astra"
+    assert any("openai/gpt-6-astra" in r for r in result.reasons)

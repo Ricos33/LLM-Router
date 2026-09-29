@@ -200,6 +200,28 @@ class RouterEngine:
                 },
             }
 
+    def _build_classification_candidates(self, strategy: str) -> List[Dict[str, Any]]:
+        """Shortlist catalog models for per-model Jev evaluation.
+
+        Picks up to 2 models per tier (cheap/medium/frontier) so Jev can
+        score each candidate's fit against its own profile (pricing, context
+        window, benchmarks) instead of answering generic tier questions.
+        """
+        try:
+            shortlist: List[Any] = []
+            by_tier: Dict[str, List[Any]] = {}
+            for m in CURATED_MODELS:
+                tier = str(getattr(m, "tier", "") or "").lower()
+                # Normalize enum-ish values ("ModelTier.FRONTIER", "frontier") 
+                tier = tier.split(".")[-1]
+                by_tier.setdefault(tier, []).append(m)
+            for tier in ("cheap", "medium", "frontier"):
+                shortlist.extend(by_tier.get(tier, [])[:2])
+            return [m.model_dump() for m in shortlist[:6]]
+        except Exception:
+            logger.warning("Failed to build classification candidates", exc_info=True)
+            return []
+
     def decide_route(
         self,
         request: ChatCompletionRequest,
@@ -407,7 +429,10 @@ class RouterEngine:
 
         # Rule 3: Intelligent classification
         strategy = strategy_override or getattr(request, "strategy", "balanced") or "balanced"
-        classification: ClassificationResult = self.classifier.classify(request.messages, strategy=strategy)
+        candidates = self._build_classification_candidates(strategy)
+        classification: ClassificationResult = self.classifier.classify(
+            request.messages, strategy=strategy, candidates=candidates
+        )
 
         if settings.agy_enabled:
             if classification.tier == ModelTier.FRONTIER:
