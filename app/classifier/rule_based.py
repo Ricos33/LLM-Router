@@ -43,6 +43,7 @@ class RuleBasedClassifier(BaseClassifier):
     ]
 
     COMPLEX_REASONING_KEYWORDS = [
+        # English
         "derive", "derivation", "prove", "proof", "theorem", "differential equation",
         "system design", "architecture", "trade-off", "tradeoffs",
         "concurrency", "distributed system", "distributed consensus", "byzantine",
@@ -56,9 +57,27 @@ class RuleBasedClassifier(BaseClassifier):
         "cap theorem", "raft consensus", "paxos", "crdt",
         "compiler design", "lexer", "parser", "abstract syntax tree",
         "machine learning pipeline", "feature engineering", "hyperparameter",
+        # French
+        "démontrer", "démonstration", "théorème", "équation différentielle",
+        "conception système", "compromis", "concurrence",
+        "système distribué", "vérification formelle", "algèbre abstraite",
+        "réseau de neurones", "fuite mémoire", "audit de sécurité",
+        # Spanish
+        "demostrar", "demostración", "teorema", "ecuación diferencial",
+        "diseño de sistema", "sistema distribuido", "verificación formal",
+        "red neuronal", "fuga de memoria", "auditoría de seguridad",
+        # German
+        "beweis", "beweisen", "differentialgleichung", "systemarchitektur",
+        "verteiltes system", "formale verifikation",
+        # Structured output / data transforms
+        "json schema", "xml schema", "openapi spec", "swagger",
+        "data pipeline", "etl pipeline", "data modeling",
+        "regex pattern", "regular expression",
+        "state machine", "finite automaton",
     ]
 
     MEDIUM_REASONING_KEYWORDS = [
+        # English
         "explain", "compare", "analyze", "summarize", "write a",
         "create a", "build a", "implement", "design a",
         "review this", "improve this", "convert this",
@@ -68,35 +87,71 @@ class RuleBasedClassifier(BaseClassifier):
         "data analysis", "visualization", "chart",
         "api", "endpoint", "rest", "graphql",
         "unit test", "integration test",
+        # French
+        "explique", "compare", "analyse", "résume", "écris un",
+        "crée un", "construis", "implémente", "conçois",
+        "revois ce", "améliore", "convertis",
+        "comment fonctionne", "pourquoi", "quels sont les",
+        "bonnes pratiques", "étape par étape", "tutoriel",
+        # Spanish
+        "explica", "compara", "analiza", "resume", "escribe un",
+        "crea un", "construye", "implementa", "diseña",
+        "paso a paso",
+        # Structured output
+        "format as json", "output as csv", "return as xml",
+        "generate a table", "structured output", "schema",
+        "convert to yaml", "convert to toml",
     ]
 
     SIMPLE_PATTERNS = [
-        r"^(hi|hello|hey|bonjour|salut|coucou|good morning|good evening)[\s!.]*$",
-        r"^\s*(thanks|thank you|merci|ok|okay|sure|yes|no|oui|non)\s*[!.]*\s*$",
+        r"^(hi|hello|hey|bonjour|salut|coucou|good morning|good evening|hola|guten tag|olá|bom dia|boa tarde)[\s!.]*$",
+        r"^\s*(thanks|thank you|merci|ok|okay|sure|yes|no|oui|non|sí|ja|nein|sim|não|gracias|danke|obrigado)\s*[!.]*\s*$",
         r"\bcapital of\b",
         r"\btranslate (to|into|in)\b",
         r"\btraduis (en|vers)\b",
         r"\bdefine\b",
         r"^what is .{3,30}\??\s*$",
+        r"^qu[e']est[- ]ce que .{3,40}\??\s*$",
         r"\bqui est\b",
         r"\bc'est quoi\b",
         r"\bcheck spelling\b",
         r"\bcorrige l'orthographe\b",
         r"^(who|what|when|where) (is|was|are|were) .{3,40}\??\s*$",
+        r"^(qué|quién|cuándo|dónde) (es|fue|era|son) .{3,40}\??\s*$",
+        r"^was (ist|war|sind) .{3,40}\??\s*$",
     ]
 
     CREATIVE_KEYWORDS = [
+        # English
         "poem", "poetry", "story", "short story", "novel", "narrative",
         "joke", "humor", "imagine", "creative", "fictional",
         "blog post", "essay", "article", "letter", "email draft",
         "song", "lyrics", "screenplay", "dialogue", "monologue",
         "rpg", "roleplay", "character", "world-building",
+        # French
+        "poème", "poésie", "histoire", "nouvelle", "roman",
+        "blague", "humour", "imaginer", "créatif", "fiction",
+        "article de blog", "essai", "chanson", "paroles",
+        # Spanish
+        "poema", "poesía", "cuento", "novela", "narrativa",
+        "chiste", "canción", "letra", "guión",
+    ]
+
+    # Math / LaTeX / notation patterns (strong frontier signal)
+    MATH_PATTERNS = [
+        r"\\(frac|int|sum|prod|lim|sqrt|partial|nabla|infty)\b",
+        r"\$\$.+\$\$",
+        r"\$[^$]+\$",
+        r"\\begin\{(equation|align|matrix|pmatrix|bmatrix)\}",
+        r"\b\d+\s*[×·]\s*\d+\b",
+        r"[∀∃∈⊂⊃∪∩⟹≤≥≠∞→]",
     ]
 
     def __init__(self, threshold: float = 0.50):
         self.threshold = threshold
         self.code_regexes = [re.compile(p, re.IGNORECASE) for p in self.CODE_PATTERNS]
         self.simple_regexes = [re.compile(p, re.IGNORECASE) for p in self.SIMPLE_PATTERNS]
+        self.math_regexes = [re.compile(p, re.IGNORECASE) for p in self.MATH_PATTERNS]
         # Thresholds for three tiers
         self.cheap_ceiling = 0.35
         self.frontier_floor = 0.65
@@ -281,7 +336,15 @@ class RuleBasedClassifier(BaseClassifier):
             reasons.append(f"Creative writing/generation task: {', '.join(creative_hits[:3])}")
             signals.append({"signal": "Creative Generation", "delta": round(boost, 3), "detail": f"Keywords: {', '.join(creative_hits[:3])}"})
 
-        # 6. Context length & multi-turn complexity
+        # 5b. Math / LaTeX notation — strong frontier signal
+        math_matches = sum(1 for reg in self.math_regexes if reg.search(full_text))
+        if math_matches > 0:
+            boost = min(0.45, 0.25 + (math_matches - 1) * 0.08)
+            score += boost
+            reasons.append(f"Mathematical notation / LaTeX expressions detected ({math_matches} patterns)")
+            signals.append({"signal": "Math/LaTeX Notation", "delta": round(boost, 3), "detail": f"{math_matches} math patterns matched"})
+
+
         total_length = len(full_text)
         length_delta = 0.0
         if total_length > 2000:

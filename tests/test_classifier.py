@@ -379,4 +379,68 @@ def test_classifier_strategy_profiles():
     assert tier_rank[res_quality.tier] >= tier_rank[res_balanced.tier] >= tier_rank[res_cost.tier]
 
 
+def test_classifier_multilang_simple_patterns():
+    """Multi-language simple patterns should route to cheap tier."""
+    classifier = RuleBasedClassifier()
+
+    # French greeting
+    res_fr = classifier.classify([ChatMessage(role="user", content="Bonjour!")])
+    assert res_fr.tier == ModelTier.CHEAP, f"French greeting should be cheap, got {res_fr.tier}"
+
+    # Spanish greeting
+    res_es = classifier.classify([ChatMessage(role="user", content="Hola!")])
+    assert res_es.tier == ModelTier.CHEAP, f"Spanish greeting should be cheap, got {res_es.tier}"
+
+    # German greeting
+    res_de = classifier.classify([ChatMessage(role="user", content="Guten Tag!")])
+    assert res_de.tier == ModelTier.CHEAP, f"German greeting should be cheap, got {res_de.tier}"
+
+    # Portuguese
+    res_pt = classifier.classify([ChatMessage(role="user", content="Bom dia!")])
+    assert res_pt.tier == ModelTier.CHEAP, f"Portuguese greeting should be cheap, got {res_pt.tier}"
+
+    # Multi-language thank you
+    res_ty = classifier.classify([ChatMessage(role="user", content="Gracias!")])
+    assert res_ty.tier == ModelTier.CHEAP
+
+    res_dk = classifier.classify([ChatMessage(role="user", content="Danke!")])
+    assert res_dk.tier == ModelTier.CHEAP
+
+
+def test_classifier_multilang_complex_reasoning():
+    """French and Spanish complex reasoning should route to frontier."""
+    classifier = RuleBasedClassifier()
+
+    # French: formal verification / abstract algebra
+    res_fr = classifier.classify([ChatMessage(role="user", content="Démontre la vérification formelle de ce théorème en algèbre abstraite.")])
+    assert res_fr.tier == ModelTier.FRONTIER, f"French complex reasoning should be frontier, got {res_fr.tier}"
+
+    # Spanish: distributed system design
+    res_es = classifier.classify([ChatMessage(role="user", content="Diseña un sistema distribuido con verificación formal y ecuación diferencial.")])
+    assert res_es.tier == ModelTier.FRONTIER, f"Spanish complex reasoning should be frontier, got {res_es.tier}"
+
+
+def test_classifier_math_latex_detection():
+    """LaTeX math notation should trigger frontier tier."""
+    classifier = RuleBasedClassifier()
+
+    # LaTeX fractions and integrals (using raw string to preserve backslashes)
+    latex_prompt = r"Solve \frac{d}{dx} \int_0^x f(t) dt and prove the result using the Leibniz integral rule and the fundamental theorem of calculus."
+    res_latex = classifier.classify([ChatMessage(role="user", content=latex_prompt)])
+    assert res_latex.tier == ModelTier.FRONTIER, f"LaTeX math should be frontier, got {res_latex.tier} (score={res_latex.score})"
+    assert any("Math" in r or "LaTeX" in r for r in res_latex.reasons)
+
+    # Unicode math symbols
+    res_unicode = classifier.classify([ChatMessage(role="user", content="Prove that ∀x ∈ ℝ, ∃y such that x ≤ y → x ≠ ∞")])
+    assert res_unicode.tier == ModelTier.FRONTIER, f"Unicode math should be frontier, got {res_unicode.tier}"
+
+
+def test_classifier_structured_output_detection():
+    """Requests for structured output (JSON, schema) should be detected as medium+."""
+    classifier = RuleBasedClassifier()
+
+    res = classifier.classify([ChatMessage(role="user", content="Convert this data to a JSON schema and validate the OpenAPI spec.")])
+    assert res.tier in (ModelTier.MEDIUM, ModelTier.FRONTIER), f"Structured output should be medium+, got {res.tier}"
+    assert res.score >= 0.35  # At least above cheap ceiling
+
 
