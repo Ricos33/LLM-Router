@@ -3,3 +3,4 @@
 - Tue Sep 29 03:04:30 CEST 2026: Upgraded Dashboard UI to premium level with cost comparison charts and advanced metrics.
 - Tue Sep 29 03:05:31 CEST 2026: Added backend fallback to frontier and classification caching for better performance.
 - Tue Sep 29 03:06:18 CEST 2026: Added unit tests for classification caching, budget, and provider filtering.
+- Tue Sep 29 03:06:49 CEST 2026: Added live classification with debounce in the frontend Playground.

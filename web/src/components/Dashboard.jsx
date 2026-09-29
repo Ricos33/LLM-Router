@@ -7,8 +7,16 @@ const COLORS = { cheap: '#10b981', medium: '#3b82f6', frontier: '#8b5cf6' };
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
 
+  const [recent, setRecent] = useState([]);
+
   useEffect(() => {
-    const fetchMetrics = () => getMetricsSummary().then(setSummary).catch(console.warn);
+    const fetchMetrics = () => {
+      getMetricsSummary().then(setSummary).catch(console.warn);
+      fetch(import.meta.env.VITE_API_URL || 'http://localhost:8000' + '/v1/metrics/recent?limit=10')
+        .then(res => res.json())
+        .then(setRecent)
+        .catch(console.warn);
+    };
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 8000);
     return () => clearInterval(interval);
@@ -149,6 +157,53 @@ export default function Dashboard() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+      
+      {/* Recent Requests Table */}
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mt-6">
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <span>📋</span> Recent Requests
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-600">
+            <thead className="bg-white text-[11px] uppercase tracking-wider text-gray-400 font-semibold border-b border-gray-100">
+              <tr>
+                <th className="px-5 py-3 w-1/3">Prompt Preview</th>
+                <th className="px-5 py-3">Tier</th>
+                <th className="px-5 py-3">Model</th>
+                <th className="px-5 py-3 text-right">Latency</th>
+                <th className="px-5 py-3 text-right">Saved</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {recent.length > 0 ? recent.map((req, i) => (
+                <tr key={i} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-5 py-3 font-medium text-gray-900 truncate max-w-[250px]" title={req.prompt_preview}>
+                    {req.prompt_preview || 'Empty prompt'}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold tracking-wide uppercase ${
+                      req.routed_tier === 'frontier' ? 'bg-purple-100 text-purple-700' :
+                      req.routed_tier === 'medium' ? 'bg-blue-100 text-blue-700' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {req.routed_tier}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 font-mono text-[12px] truncate max-w-[150px]">{req.actual_model}</td>
+                  <td className="px-5 py-3 text-right font-mono text-[12px]">{Math.round(req.latency_ms)}ms</td>
+                  <td className="px-5 py-3 text-right font-mono text-[12px] text-emerald-600 font-medium">${(req.cost_saved_usd || 0).toFixed(4)}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="5" className="px-5 py-8 text-center text-gray-400">No requests yet</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
