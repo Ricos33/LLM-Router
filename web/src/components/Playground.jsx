@@ -38,17 +38,17 @@ export default function Playground({ modelsCount }) {
     }).catch(console.warn);
   }, []);
 
-  const handleAnalyze = async () => {
-    if (!input.trim() || isAnalyzing) return;
+  const handleAnalyze = async (textToAnalyze) => {
+    const text = typeof textToAnalyze === 'string' ? textToAnalyze : input;
+    if (!text.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setError(null);
     try {
-      // Create request matching the new backend
       const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: input }],
+          messages: [{ role: 'user', content: text }],
           budget: BUDGET_LEVELS[budget],
           providers: Array.from(selectedProviders)
         })
@@ -63,6 +63,18 @@ export default function Playground({ modelsCount }) {
       setIsAnalyzing(false);
     }
   };
+
+  // Debounced auto-analyze
+  useEffect(() => {
+    if (!input.trim()) {
+      setClassification(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      handleAnalyze(input);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [input, budget, selectedProviders]);
 
   // Derived providers data
   const providersMap = useMemo(() => {
