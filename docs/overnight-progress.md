@@ -105,3 +105,41 @@
 ## 29/09 13:12 - System Prompt A/B Testing
 - (Backend) Created `/v1/ab-test` endpoint in main.py that runs two concurrent queries with varied system prompts.
 - (Frontend) Created `ABTesting.jsx` dedicated UI with side-by-side response cards, latencies, and costs as per the backlog requirement.
+## 29/09 13:20 - Semantic Response Cache (Backlog Item 3)
+- Upgraded ResponseCache from exact-match-only to semantic near-match support.
+- Aggressive text normalization: strips articles, filler words, punctuation, accents; collapses whitespace.
+- SequenceMatcher-based similarity (threshold 0.92) for fuzzy matching.
+- Respects non-prompt params (model, temperature, strategy) in semantic matches.
+- Added /v1/cache/stats endpoint exposing hit/miss/semantic_hit counts and cumulative savings.
+- Curl verified: exact match HIT, semantic near-match HIT ("Please explain the Docker containers" → "Explain Docker containers"), different temperature MISS.
+- 5 new tests (normalizer, similarity, exact match, semantic match, stats endpoint). Tests: 123 passed, build OK.
+## 29/09 13:23 - Virtual API Keys (Backlog Item 4)
+- Implemented VirtualKeyManager (app/router/virtual_keys.py) with SQLite persistence.
+- Keys issued as sk-router-... with per-key budget ($), rate limit (RPM), and metadata.
+- CRUD: POST/GET /v1/keys, POST /v1/keys/{id}/revoke, DELETE /v1/keys/{id}.
+- Validation: POST /v1/keys/validate with Authorization: Bearer sk-router-...
+- Sliding-window rate limiter (in-memory) + budget enforcement.
+- 9 new tests: CRUD, revocation, deletion, budget exhaustion, rate limiting.
+- Tests: 132 passed, build OK.
+## 29/09 13:25 - PII Guardrails (Backlog Item 5)
+- Implemented PII guardrail engine (app/router/guardrails.py).
+- Detects and masks: emails, phones, IBANs, credit cards (Luhn), IPv4, SSNs.
+- Support for custom regex patterns.
+- Integrated with /v1/chat/completions: opt-in via PII_GUARDRAILS_ENABLED.
+- API: POST /v1/guardrails/scan, GET /v1/guardrails/stats, POST /v1/guardrails/toggle.
+- Logs type of PII detected, never the actual value.
+- 10 new tests. Tests: 142 passed, build OK.
+## 29/09 13:27 - Feedback Loop (Backlog Item 6)
+- Implemented FeedbackManager (app/router/feedback.py) with SQLite persistence.
+- POST /v1/feedback: submit 👍/👎 with model_id, category, session_id.
+- GET /v1/feedback/stats: total votes, satisfaction rate, per-model breakdown.
+- GET /v1/feedback/recent: recent feedback entries.
+- GET /v1/feedback/adjustments: current score adjustments per model per category.
+- Exponential-weighted adjustments (min 5 votes to activate).
+- Anti-abuse: 10 votes/min per session, duplicate vote updates.
+- 8 new tests. Tests: 150 passed, build OK.
+## 29/09 15:44 - Fine-tuning Jev Payload & Strategy Repair
+- Refined `app/classifier/jev.py` payload schema: enhanced instructions/criteria for `tier` and `complexity`, and added a new `domain` question. Improved `fit_question` instructions and criteria for candidates.
+- Fixed `app/router/engine.py` routing strategy: `_build_classification_candidates` now correctly sorts models based on the selected `strategy` (cost_optimized, quality_optimized), and `decide_route` now correctly extracts `best_fit_model` from the classification metadata instead of always defaulting to the tier's default model.
+- Added `tests/test_router_strategies.py` and curl tests confirming the routing strategy properly changes model selection dynamically.
+- Tests (151) pass. Web build pass. Push successful.
