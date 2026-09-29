@@ -69,3 +69,24 @@ export const getProviderHealth = async () => {
   const { data } = await api.get('/v1/providers/health');
   return data;
 };
+
+export const getRules = async () => {
+  const { data } = await api.get('/v1/rules');
+  return data.rules || [];
+};
+
+export const createRule = async (rule) => {
+  const { data } = await api.post('/v1/rules', rule);
+  return data;
+};
+
+export const deleteRule = async (ruleId) => {
+  const { data } = await api.delete(`/v1/rules/${ruleId}`);
+  return data;
+};
+
+export const resetRules = async () => {
+  const { data } = await api.post('/v1/rules/reset');
+  return data;
+};
+
