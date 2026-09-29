@@ -102,9 +102,6 @@
 - (Backend) Added `cheap_timeout_seconds`, `medium_timeout_seconds`, and `frontier_timeout_seconds` in config.py, propagated down to async HTTP clients.
 - (Frontend) Built Premium Design System using Tailwind 4 CSS variables for dark/light mode (`--color-base`, `--color-surface`, `--color-txt-base`, etc.) and added Inter typography.
 - (Frontend) Updated Playground to have a single "Send" button that streams responses using the router directly, fully replacing the old manual Compare workflow.
-## 29/09 13:12 - System Prompt A/B Testing
-- (Backend) Created `/v1/ab-test` endpoint in main.py that runs two concurrent queries with varied system prompts.
-- (Frontend) Created `ABTesting.jsx` dedicated UI with side-by-side response cards, latencies, and costs as per the backlog requirement.
 ## 29/09 13:20 - Semantic Response Cache (Backlog Item 3)
 - Upgraded ResponseCache from exact-match-only to semantic near-match support.
 - Aggressive text normalization: strips articles, filler words, punctuation, accents; collapses whitespace.
