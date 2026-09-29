@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { classifyPrompt, getModels, estimateCost } from '../api/client';
+import { classifyPrompt, getModels, estimateCost, chatCompletion } from '../api/client';
 import CodeSnippetsModal from './CodeSnippetsModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -234,6 +234,41 @@ export default function Playground({ modelsCount, initialPrompt }) {
       setError('Analysis failed — is the backend running on ' + API_BASE + ' ?');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleSendRouted = async () => {
+    if (!input.trim() || isExecuting) return;
+    setIsExecuting(true);
+    setError(null);
+    setExecutions([{ model: 'router-auto', loading: true, result: '', meta: null }]);
+    const t0 = performance.now();
+    try {
+      const { data, headers } = await chatCompletion([
+        ...(systemPrompt.trim() ? [{ role: 'system', content: systemPrompt }] : []),
+        { role: 'user', content: input },
+      ]);
+      const content = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+      const h = headers || {};
+      setExecutions([{
+        model: h['x-router-model'] || data?.model || 'router-auto',
+        loading: false,
+        result: content,
+        meta: {
+          latency_ms: parseFloat(h['x-router-latency-ms']) || (performance.now() - t0),
+          tier: h['x-router-tier'] || null,
+          prompt_tokens: data?.usage?.prompt_tokens,
+          completion_tokens: data?.usage?.completion_tokens,
+          cost_actual_usd: 0,
+          cost_saved_usd: parseFloat(h['x-router-saved-usd']) || 0,
+        },
+      }]);
+    } catch (e) {
+      console.error(e);
+      setExecutions([{ model: 'router-auto', loading: false, result: 'Error: could not reach the router backend.', meta: null }]);
+      setError('Send failed — is the backend running on ' + API_BASE + ' ?');
+    } finally {
+      setIsExecuting(false);
     }
   };
 
