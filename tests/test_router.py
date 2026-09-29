@@ -173,3 +173,38 @@ def test_router_jev_fallback_warning_when_key_missing(caplog):
         settings.jev_api_key = original_key
 
 
+@pytest.mark.asyncio
+async def test_resilient_fallback_chain_on_primary_failure():
+    from unittest.mock import AsyncMock
+    router = RouterEngine()
+
+    req = ChatCompletionRequest(
+        model="router-auto",
+        messages=[ChatMessage(role="user", content="Hi!")]
+    )
+
+    # Mock cheap backend to fail on first attempt
+    original_complete = router.cheap_backend.complete
+    call_count = 0
+
+    async def mock_fail_then_succeed(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise RuntimeError("503 Service Unavailable on primary model")
+        return await original_complete(*args, **kwargs)
+
+    router.cheap_backend.complete = mock_fail_then_succeed
+
+    try:
+        res = await router.route_and_execute(req)
+        assert res.router_metadata is not None
+        assert res.router_metadata.fallback_triggered is True
+        assert len(res.router_metadata.fallback_chain) >= 2
+        assert any("failed" in step for step in res.router_metadata.fallback_chain)
+        assert any("succeeded" in step for step in res.router_metadata.fallback_chain)
+    finally:
+        router.cheap_backend.complete = original_complete
+
+
+

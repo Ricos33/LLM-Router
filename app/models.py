@@ -46,6 +46,9 @@ class RouterMetadata(BaseModel):
     cost_actual_usd: float
     cost_frontier_usd: float
     cost_saved_usd: float
+    fallback_triggered: bool = False
+    fallback_chain: List[str] = Field(default_factory=list)
+
 
 
 class ChatCompletionResponse(BaseModel):

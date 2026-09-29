@@ -120,6 +120,9 @@ async def chat_completions(
             headers_dict["X-Router-Latency-MS"] = str(meta.latency_ms)
             headers_dict["X-Router-Saved-USD"] = str(meta.cost_saved_usd)
             headers_dict["X-Router-Score"] = str(meta.classifier_score)
+            if meta.fallback_triggered:
+                headers_dict["X-Router-Fallback"] = "true"
+                headers_dict["X-Router-Fallback-Chain"] = "; ".join(meta.fallback_chain)
             
             for k, v in headers_dict.items():
                 response.headers[k] = v

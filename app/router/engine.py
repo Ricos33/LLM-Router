@@ -24,7 +24,7 @@ from app.backends import (
     AgyBackend,
 )
 from app.storage import MetricsTracker, RequestMetric
-from app.catalog import get_model_by_id, get_model_pricing
+from app.catalog import CURATED_MODELS, get_model_by_id, get_model_pricing
 
 logger = logging.getLogger(__name__)
 
@@ -397,6 +397,61 @@ class RouterEngine:
                 reasons=classification.reasons,
             )
 
+    def get_fallback_candidates(self, primary_decision: RoutingDecision) -> List[RoutingDecision]:
+        """
+        Generate an ordered fallback chain for resilience:
+        1. Same-tier alternative models from different providers.
+        2. Escalation to frontier models if primary was cheap or medium.
+        3. Default configured backend (guaranteed simulation fallback if needed).
+        """
+        candidates: List[RoutingDecision] = []
+
+        # 1. Same-tier alternatives from catalog
+        same_tier = [
+            m for m in CURATED_MODELS
+            if m.tier == primary_decision.tier.value and m.id != primary_decision.model_name
+        ]
+        for alt in same_tier[:2]:
+            backend = self.cheap_backend if primary_decision.tier == ModelTier.CHEAP else self.frontier_backend
+            candidates.append(RoutingDecision(
+                tier=primary_decision.tier,
+                model_name=alt.id,
+                backend=backend,
+                provider_name=alt.provider or "unknown",
+                classifier_score=primary_decision.classifier_score,
+                reasons=[f"Same-tier fallback candidate: {alt.id}"],
+            ))
+
+        # 2. Frontier escalation if primary was cheap or medium
+        if primary_decision.tier != ModelTier.FRONTIER:
+            frontier_models = [
+                m for m in CURATED_MODELS
+                if m.tier == "frontier" and m.id != primary_decision.model_name
+            ]
+            for f_alt in frontier_models[:2]:
+                candidates.append(RoutingDecision(
+                    tier=ModelTier.FRONTIER,
+                    model_name=f_alt.id,
+                    backend=self.frontier_backend,
+                    provider_name=f_alt.provider or settings.frontier_provider,
+                    classifier_score=1.0,
+                    reasons=[f"Escalation to frontier fallback: {f_alt.id}"],
+                ))
+
+        # 3. Default configured backend (guaranteed simulation fallback if needed)
+        default_frontier = RoutingDecision(
+            tier=ModelTier.FRONTIER,
+            model_name=self.frontier_backend.default_model,
+            backend=self.frontier_backend,
+            provider_name=settings.frontier_provider,
+            classifier_score=1.0,
+            reasons=["Default frontier backend fallback"],
+        )
+        if not any(c.model_name == default_frontier.model_name for c in candidates):
+            candidates.append(default_frontier)
+
+        return candidates
+
     async def route_and_execute(
         self, request: ChatCompletionRequest, tier_header_override: Optional[str] = None
     ) -> ChatCompletionResponse:
@@ -412,23 +467,40 @@ class RouterEngine:
         # Step 1: Decision
         decision = self.decide_route(request, tier_header_override)
 
-        # Step 2: Execution via selected backend with automatic fallback
-        try:
-            api_key_override = getattr(request, "provider_keys", None).get(decision.provider_name.lower()) if getattr(request, "provider_keys", None) and decision.provider_name else None
-            response = await decision.backend.complete(request, model_override=decision.model_name, api_key_override=api_key_override)
-        except Exception as e:
-            logger.warning(f"Backend execution failed for {decision.tier.value} ({decision.model_name}): {e}. Falling back to FRONTIER tier.")
-            # Fallback to Frontier
-            decision = RoutingDecision(
-                tier=ModelTier.FRONTIER,
-                model_name=self.frontier_backend.default_model,
-                backend=self.frontier_backend,
-                provider_name=settings.frontier_provider,
-                classifier_score=decision.classifier_score,
-                reasons=decision.reasons + [f"Fallback triggered due to failure in {decision.model_name}"]
-            )
-            api_key_override = getattr(request, "provider_keys", None).get(decision.provider_name.lower()) if getattr(request, "provider_keys", None) and decision.provider_name else None
-            response = await decision.backend.complete(request, model_override=decision.model_name, api_key_override=api_key_override)
+        # Step 2: Execution via selected backend with automatic resilient fallback chain
+        attempt_queue = [decision] + self.get_fallback_candidates(decision)
+        executed_decision = decision
+        response = None
+        fallback_history: List[str] = []
+        fallback_triggered = False
+
+        for idx, candidate in enumerate(attempt_queue):
+            try:
+                api_key_override = (
+                    getattr(request, "provider_keys", None).get(candidate.provider_name.lower())
+                    if getattr(request, "provider_keys", None) and candidate.provider_name
+                    else None
+                )
+                response = await candidate.backend.complete(
+                    request,
+                    model_override=candidate.model_name,
+                    api_key_override=api_key_override,
+                )
+                executed_decision = candidate
+                if idx > 0:
+                    fallback_triggered = True
+                    fallback_history.append(f"{candidate.model_name} (succeeded)")
+                    logger.info(f"Fallback succeeded on attempt {idx + 1} with {candidate.model_name}")
+                break
+            except Exception as e:
+                err_msg = str(e)[:60]
+                fallback_history.append(f"{candidate.model_name} (failed: {err_msg})")
+                logger.warning(
+                    f"Execution attempt {idx + 1} ({candidate.model_name}) failed: {e}. Retrying with next fallback."
+                )
+
+        if response is None:
+            raise RuntimeError(f"All {len(attempt_queue)} model execution attempts failed: {fallback_history}")
 
         latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
 
@@ -443,20 +515,20 @@ class RouterEngine:
         )
 
         # Actual cost depending on provider and tier
-        price_in, price_out = get_model_pricing(decision.model_name)
+        price_in, price_out = get_model_pricing(executed_decision.model_name)
         if price_in > 0 or price_out > 0:
             cost_actual = (
                 (prompt_tokens / 1_000_000.0) * price_in
                 + (completion_tokens / 1_000_000.0) * price_out
             )
-        elif decision.provider_name == "agy":
+        elif executed_decision.provider_name == "agy":
             cost_actual = (
                 (prompt_tokens / 1_000_000.0) * settings.agy_prompt_price_per_m
                 + (completion_tokens / 1_000_000.0) * settings.agy_completion_price_per_m
             )
-        elif decision.tier == ModelTier.FRONTIER:
+        elif executed_decision.tier == ModelTier.FRONTIER:
             cost_actual = cost_frontier
-        elif decision.tier == ModelTier.MEDIUM:
+        elif executed_decision.tier == ModelTier.MEDIUM:
             cost_actual = (
                 (prompt_tokens / 1_000_000.0) * settings.medium_prompt_price_per_m
                 + (completion_tokens / 1_000_000.0) * settings.medium_completion_price_per_m
@@ -471,15 +543,17 @@ class RouterEngine:
 
         # Step 4: Record metadata
         router_metadata = RouterMetadata(
-            routed_tier=decision.tier.value,
-            classifier_score=decision.classifier_score,
-            classifier_reasons=decision.reasons,
-            actual_model=decision.model_name,
-            upstream_provider=decision.provider_name,
+            routed_tier=executed_decision.tier.value,
+            classifier_score=executed_decision.classifier_score,
+            classifier_reasons=executed_decision.reasons,
+            actual_model=executed_decision.model_name,
+            upstream_provider=executed_decision.provider_name,
             latency_ms=latency_ms,
             cost_actual_usd=round(cost_actual, 6),
             cost_frontier_usd=round(cost_frontier, 6),
             cost_saved_usd=round(cost_saved, 6),
+            fallback_triggered=fallback_triggered,
+            fallback_chain=fallback_history,
         )
         response.router_metadata = router_metadata
 
@@ -488,8 +562,8 @@ class RouterEngine:
         metric = RequestMetric(
             timestamp=time.time(),
             prompt_preview=prompt_preview,
-            routed_tier=decision.tier.value,
-            model_used=decision.model_name,
+            routed_tier=executed_decision.tier.value,
+            model_used=executed_decision.model_name,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=prompt_tokens + completion_tokens,
@@ -497,8 +571,8 @@ class RouterEngine:
             cost_actual=cost_actual,
             cost_if_frontier=cost_frontier,
             cost_saved=cost_saved,
-            classifier_score=decision.classifier_score,
-            classifier_reasons=decision.reasons,
+            classifier_score=executed_decision.classifier_score,
+            classifier_reasons=executed_decision.reasons,
         )
         self.metrics.record_request(metric)
 
