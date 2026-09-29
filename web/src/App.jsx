@@ -44,13 +44,7 @@ function App() {
               Dashboard
             </button>
           </div>
-          <div className="flex items-center gap-2 text-gray-400 text-xs">
-            {isOnline ? (
-              <><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Live</>
-            ) : (
-              <><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Offline</>
-            )}
-          </div>
+
         </div>
       </header>
       <main className="flex-1 overflow-hidden">
