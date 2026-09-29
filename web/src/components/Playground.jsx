@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { classifyPrompt, getModels } from '../api/client';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const PRESETS = [
   { label: 'Debug', text: 'Can you help me debug this python script that throws a RecursionError?' },
   { label: 'Summary', text: 'Summarize the following article in 3 bullet points...' },
@@ -21,6 +23,7 @@ export default function Playground({ modelsCount }) {
   
   const [classification, setClassification] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState(null);
   
   const [showSetup, setShowSetup] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
@@ -38,9 +41,10 @@ export default function Playground({ modelsCount }) {
   const handleAnalyze = async () => {
     if (!input.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
+    setError(null);
     try {
       // Create request matching the new backend
-      const res = await fetch(import.meta.env.VITE_API_BASE_URL + '/v1/classify', {
+      const res = await fetch(API_BASE + '/v1/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -49,10 +53,12 @@ export default function Playground({ modelsCount }) {
           providers: Array.from(selectedProviders)
         })
       });
+      if (!res.ok) throw new Error('API error ' + res.status);
       const data = await res.json();
       setClassification(data);
     } catch (e) {
       console.error(e);
+      setError('Analysis failed — is the backend running on ' + API_BASE + ' ?');
     } finally {
       setIsAnalyzing(false);
     }
@@ -158,6 +164,11 @@ export default function Playground({ modelsCount }) {
         >
           {isAnalyzing ? 'Analyzing...' : 'Analyze →'}
         </button>
+        {error && (
+          <div className="mt-2 text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            {error}
+          </div>
+        )}
 
         {/* Setup Collapsible */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mt-2">
