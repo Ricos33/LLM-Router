@@ -35,6 +35,17 @@ Youssef donne carte blanche totale : toutes les améliorations possibles, en te 
 - **Hygiène** : refactorise proprement tout module devenu confus ; supprime le code mort.
 Chaque idée suivie jusqu'au bout : implémentée, testée, committée, poussée.
 
+## FONCTIONNALITÉS — ton jugement, recherche web profonde
+Au-delà de la liste ci-dessus : ajoute TOUTE fonctionnalité que tu juges bonne pour le projet. Passe du temps sur le web : étudie les routeurs et gateways existants (OpenRouter, Jev Router, LiteLLM, Portkey, OpenAI, Vercel AI Gateway...), repère ce qui fait leur force, et implémente ce qui rendrait ce routeur objectivement meilleur et plus impressionnant en portfolio. Exemples pour démarrer (dépasse-les) :
+- Fallback automatique : si le modèle recommandé échoue ou timeout, retry transparent sur le suivant.
+- Comparaison côte-à-côte : même prompt envoyé à 2-3 modèles, résultats et coûts comparés.
+- Mode benchmark : batterie de prompts types, tableau coût/qualité/vitesse estimés par modèle.
+- Historique des requêtes + analytics enrichies (persistance locale).
+- Export des résultats (JSON/CSV).
+- Clés API par provider configurables depuis l'UI (stockage local).
+- Rate limiting / budget mensuel avec alertes.
+Ne te limite pas : si une fonctionnalité sert la vision (routeur intelligent, économique, présentable), construis-la.
+
 ## RÈGLE D'OR — NE RESTE JAMAIS BLOQUÉ
 C'est la règle la plus importante de la mission : la boucle ne doit JAMAIS s'arrêter en attendant quoi que ce soit.
 - Timebox : 25 minutes max par itération. Au-delà, termine l'itération (commit ce qui marche, ou revert) et passe à la suivante.
