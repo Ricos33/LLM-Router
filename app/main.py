@@ -295,6 +295,7 @@ async def compare_models(
             messages=request.messages,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            response_format=request.response_format,
         )
         if provider_keys:
             sub_req.provider_keys = provider_keys

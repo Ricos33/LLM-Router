@@ -25,6 +25,7 @@ export default function Playground({ modelsCount }) {
   const [input, setInput] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [temperature, setTemperature] = useState(0.7);
+  const [jsonMode, setJsonMode] = useState(false);
   const [maxTokens, setMaxTokens] = useState(1000);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [budget, setBudget] = useState(4); // index in BUDGET_LEVELS
@@ -142,6 +143,7 @@ export default function Playground({ modelsCount }) {
           ],
           temperature: parseFloat(temperature),
           max_tokens: parseInt(maxTokens) || 1000,
+          ...(jsonMode ? { response_format: { type: "json_object" } } : {})
         })
       });
       if (!res.ok) throw new Error('API error ' + res.status);
@@ -298,6 +300,16 @@ export default function Playground({ modelsCount }) {
                   onChange={(e) => setMaxTokens(e.target.value)}
                   className="w-full p-1.5 rounded border border-gray-200 bg-white outline-none focus:border-gray-400 text-[12px] font-mono"
                 />
+              </div>
+              <div className="flex items-center gap-2 mt-5">
+                <input
+                  type="checkbox"
+                  id="jsonMode"
+                  checked={jsonMode}
+                  onChange={(e) => setJsonMode(e.target.checked)}
+                  className="accent-gray-900 cursor-pointer"
+                />
+                <label htmlFor="jsonMode" className="text-[11px] font-semibold text-gray-700 uppercase tracking-wider cursor-pointer">JSON Mode</label>
               </div>
             </div>
           </div>

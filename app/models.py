@@ -23,6 +23,7 @@ class ChatCompletionRequest(BaseModel):
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
     strategy: Optional[str] = "balanced"
+    response_format: Optional[Dict[str, str]] = None
 
 
 class ChatCompletionChoice(BaseModel):
@@ -106,6 +107,7 @@ class CompareRequest(BaseModel):
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = None
     provider_keys: Optional[Dict[str, str]] = None
+    response_format: Optional[Dict[str, str]] = None
 
 
 class CompareResponse(BaseModel):

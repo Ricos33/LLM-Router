@@ -52,6 +52,8 @@ class OpenAICompatibleBackend(BaseBackend):
         }
         if request.max_tokens:
             payload["max_tokens"] = request.max_tokens
+        if request.response_format:
+            payload["response_format"] = request.response_format
 
         try:
             # If no API key configured and simulation is enabled, avoid failing network call
