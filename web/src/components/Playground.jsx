@@ -1,13 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
-import { classifyPrompt, getTierModels } from '../api/client';
+import { classifyPrompt, getTierModels, chatCompletion } from '../api/client';
 
 export default function Playground() {
   const [input, setInput] = useState('');
   const [classification, setClassification] = useState(null);
   const [tierModels, setTierModels] = useState({});
+  const [completion, setCompletion] = useState(null);
+  const [isSending, setIsSending] = useState(false);
 
   const debouncedInput = useDebounce(input, 300);
+
+  const handleSend = async () => {
+    if (!input.trim() || isSending) return;
+    setIsSending(true);
+    setCompletion(null);
+    try {
+      const res = await chatCompletion([{ role: 'user', content: input }]);
+      const content = res.data?.choices?.[0]?.message?.content || JSON.stringify(res.data);
+      setCompletion(content);
+    } catch (e) {
+      console.error(e);
+      setCompletion('Error fetching completion.');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   useEffect(() => {
     getTierModels().then(data => {
@@ -49,14 +67,23 @@ export default function Playground() {
           placeholder="Write a prompt here..."
           className="flex-1 w-full p-4 rounded-xl border border-gray-200 bg-white resize-none outline-none focus:border-gray-400 text-sm shadow-sm"
         />
+        {completion && (
+          <div className="flex-1 w-full p-4 rounded-xl border border-gray-200 bg-gray-50 overflow-y-auto text-sm shadow-sm whitespace-pre-wrap">
+            {completion}
+          </div>
+        )}
         <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
           <span className="text-xs text-gray-400">{input.length} chars</span>
           <div className="flex gap-2">
             <button onClick={() => setInput('')} className="px-4 py-2 text-sm text-gray-500 hover:text-black transition-colors">
               Clear
             </button>
-            <button className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors">
-              Analyze →
+            <button 
+              onClick={handleSend}
+              disabled={isSending || !input.trim()}
+              className="px-4 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              {isSending ? 'Sending...' : 'Send →'}
             </button>
           </div>
         </div>
@@ -67,7 +94,7 @@ export default function Playground() {
         {!classification ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm text-center">
             <div className="font-semibold text-gray-500 mb-1">No analysis yet</div>
-            <span className="text-xs">Type on the left and hit Analyze.</span>
+            <span className="text-xs">Type on the left...</span>
           </div>
         ) : (
           <div className="text-sm space-y-6">
@@ -110,7 +137,7 @@ export default function Playground() {
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full rounded-full transition-all duration-300 ${tierKey === 'cheap' ? 'bg-green-500' : tierKey === 'medium' ? 'bg-blue-500' : 'bg-purple-500'}`} 
+                      className="h-full rounded-full transition-all duration-300 bg-black"
                       style={{ width: `${Math.max(2, pct)}%` }} 
                     />
                   </div>
