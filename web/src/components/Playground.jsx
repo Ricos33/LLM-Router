@@ -87,6 +87,29 @@ export default function Playground({ modelsCount, initialPrompt }) {
   const [estCacheHitRate, setEstCacheHitRate] = useState(0.0);
   const [showCostEstimates, setShowCostEstimates] = useState(false);
 
+  const handleFeedback = async (execIdx, responseId, modelId, rating) => {
+    if (!responseId) return;
+    try {
+      const res = await fetch(API_BASE + '/v1/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          response_id: responseId,
+          model_id: modelId,
+          rating: rating,
+          category: classification?.detected_intent || 'general',
+          session_id: 'playground-session'
+        })
+      });
+      if (res.ok) {
+        setExecutions(prev => prev.map((ex, i) => 
+          i === execIdx ? { ...ex, feedback: rating } : ex
+        ));
+      }
+    } catch (e) {
+      console.error("Feedback failed:", e);
+    }
+  };
   const toggleCustomCompare = (modelId) => {
     setCustomCompareModels(prev => {
       const next = new Set(prev);
@@ -249,6 +272,7 @@ export default function Playground({ modelsCount, initialPrompt }) {
           tier: r.tier,
           is_cheapest: r.model === data.cheapest_model,
           is_fastest: r.model === data.fastest_model,
+          response_id: r.response_id,
           gateway_cache_hit: r.gateway_cache_hit,
           fallback_triggered: r.fallback_triggered,
           fallback_chain: r.fallback_chain,
@@ -1130,13 +1154,33 @@ export default function Playground({ modelsCount, initialPrompt }) {
                         <div className="flex items-center gap-1.5">
                           {exec.loading && <span className="animate-pulse w-2 h-2 bg-blue-500 rounded-full"></span>}
                           {!exec.loading && exec.result && (
-                            <button
-                              onClick={() => navigator.clipboard.writeText(exec.result)}
-                              title="Copy output"
-                              className="text-[10px] text-txt-muted hover:text-txt-base px-1.5 py-0.5 border border-gray-300 rounded bg-surface"
-                            >
-                              Copy
-                            </button>
+                            <div className="flex gap-1 items-center">
+                              {exec.meta?.response_id && (
+                                <>
+                                  <button
+                                    onClick={() => handleFeedback(idx, exec.meta.response_id, exec.model, 1)}
+                                    title="Good Response"
+                                    className={`text-[10px] px-1.5 py-0.5 border rounded ${exec.feedback === 1 ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-surface border-gray-300 text-txt-muted hover:text-txt-base'}`}
+                                  >
+                                    👍
+                                  </button>
+                                  <button
+                                    onClick={() => handleFeedback(idx, exec.meta.response_id, exec.model, -1)}
+                                    title="Bad Response"
+                                    className={`text-[10px] px-1.5 py-0.5 border rounded ${exec.feedback === -1 ? 'bg-red-100 border-red-300 text-red-800' : 'bg-surface border-gray-300 text-txt-muted hover:text-txt-base'}`}
+                                  >
+                                    👎
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                onClick={() => navigator.clipboard.writeText(exec.result)}
+                                title="Copy output"
+                                className="text-[10px] text-txt-muted hover:text-txt-base px-1.5 py-0.5 border border-gray-300 rounded bg-surface"
+                              >
+                                Copy
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>

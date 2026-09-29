@@ -393,6 +393,7 @@ async def compare_models(
                 prompt_tokens=resp.usage.prompt_tokens,
                 completion_tokens=resp.usage.completion_tokens,
                 cost_usd=cost,
+                response_id=resp.id,
                 gateway_cache_hit=meta.gateway_cache_hit if meta else False,
                 fallback_triggered=meta.fallback_triggered if meta else False,
                 fallback_chain=meta.fallback_chain if meta else [],

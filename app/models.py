@@ -98,6 +98,7 @@ class ModelCompareResult(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     cost_usd: float
+    response_id: Optional[str] = None
     error: Optional[str] = None
     gateway_cache_hit: bool = False
     fallback_triggered: bool = False
@@ -142,6 +143,7 @@ class ABTestResult(BaseModel):
     content: str
     latency_ms: float
     cost_usd: float
+    response_id: Optional[str] = None
     model_used: str
 
 class ABTestResponse(BaseModel):
