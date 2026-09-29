@@ -33,6 +33,31 @@ export default function Dashboard({ onReplayPrompt }) {
   const [budgetActionLoading, setBudgetActionLoading] = useState(false);
   const [budgetFeedback, setBudgetFeedback] = useState(null);
 
+  // Live Probing State
+  const [probing, setProbing] = useState(false);
+
+  const handleProbeProviders = async () => {
+    setProbing(true);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${apiUrl}/v1/providers/probe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProviderHealth(data.all_health);
+        setChaosFeedback(`Probed ${data.total_probed} providers: ${data.healthy_count} healthy.`);
+        setTimeout(() => setChaosFeedback(null), 5000);
+      }
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setProbing(false);
+    }
+  };
+
   const handleTripProvider = async (provider) => {
     setChaosLoading(true);
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -552,17 +577,25 @@ export default function Dashboard({ onReplayPrompt }) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleProbeProviders}
+              disabled={probing || chaosLoading}
+              className="text-xs px-2.5 py-1 bg-black text-white hover:bg-gray-800 rounded-lg font-medium transition-colors flex items-center gap-1 shadow-2xs disabled:opacity-50"
+              title="Probe roundtrip ping and update latency stats across all providers"
+            >
+              {probing ? 'Probing...' : '⚡ Probe All'}
+            </button>
             {Object.values(providerHealth).some(h => h.status === 'tripped') && (
               <button
                 onClick={() => handleResetProvider('all')}
                 disabled={chaosLoading}
                 className="text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-medium transition-colors"
               >
-                ↺ Reset All Circuits
+                ↺ Reset Circuits
               </button>
             )}
             <span className="text-xs px-2.5 py-0.5 bg-gray-100 rounded-full font-mono text-gray-600 font-medium">
-              8 Providers Tracked
+              8 Providers
             </span>
           </div>
         </div>
@@ -612,9 +645,14 @@ export default function Dashboard({ onReplayPrompt }) {
                   }`}>
                     {h.status}
                   </span>
-                  <span className="text-[9px] text-gray-400 font-mono mt-0.5 block">
-                    {h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '0 errors'}
-                  </span>
+                  <div className="mt-1 flex flex-col gap-0.5 text-[10px] font-mono text-gray-500">
+                    <span title="Latest / Avg Latency">
+                      ⏱️ {h.latest_latency_ms ? `${h.latest_latency_ms}ms` : (h.avg_latency_ms ? `${h.avg_latency_ms}ms` : '—')}
+                    </span>
+                    <span className="text-[9px] text-gray-400">
+                      {h.availability_rate_pct !== undefined ? `${h.availability_rate_pct}% avail` : (h.consecutive_failures > 0 ? `${h.consecutive_failures} errs` : '100% avail')}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-2.5 pt-2 border-t border-gray-100 w-full flex justify-center">
                   {isTripped ? (
