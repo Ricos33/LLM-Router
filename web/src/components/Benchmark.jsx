@@ -3,8 +3,16 @@ import { getModels } from '../api/client';
 
 const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
+const CATEGORY_COLORS = {
+  Reasoning: 'bg-purple-100 text-purple-700',
+  Coding: 'bg-blue-100 text-blue-700',
+  Summary: 'bg-amber-100 text-amber-700',
+  Creative: 'bg-pink-100 text-pink-700',
+  Conversational: 'bg-emerald-100 text-emerald-700',
+};
+
 const BENCHMARK_PROMPTS = [
-  { id: 'simple', label: 'Conversational', category: 'Reasoning', text: 'What is the capital of Australia and its estimated population?' },
+  { id: 'simple', label: 'Conversational', category: 'Conversational', text: 'What is the capital of Australia and its estimated population?' },
   { id: 'coding', label: 'Coding Test', category: 'Coding', text: 'Write a Python function to reverse a singly linked list in O(n) time and O(1) space with type annotations.' },
   { id: 'reasoning', label: 'Architecture', category: 'Reasoning', text: 'Explain the trade-offs between monolithic and microservice architectures with respect to the CAP theorem.' },
   { id: 'summary', label: 'Executive Summary', category: 'Summary', text: 'Summarize the core security and performance advantages of WebAssembly versus containerization in 3 concise bullet points.' },
@@ -15,6 +23,7 @@ export default function Benchmark() {
   const [models, setModels] = useState([]);
   const [selectedModels, setSelectedModels] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [results, setResults] = useState({}); // { [modelId]: { [promptId]: { latency, cost, text } } }
   
   const selectByTiers = (dataModels) => {
@@ -67,20 +76,48 @@ export default function Benchmark() {
     return map;
   }, [selectedModels, results]);
 
+  const hasCompletedResults = useMemo(() => {
+    return Object.values(results).some(modelRes => 
+      Object.values(modelRes || {}).some(r => r && !r.loading && !r.error)
+    );
+  }, [results]);
+
+  const exportBenchmarkResults = () => {
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      models: selectedModels,
+      prompts: BENCHMARK_PROMPTS,
+      summaries: modelSummaries,
+      results
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm_router_benchmark_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const runBenchmark = async () => {
     if (!selectedModels.length || isRunning) return;
     setIsRunning(true);
     setResults({});
-    
-    const newResults = {};
-    
-    // We run the benchmark sequentially to avoid rate limits, or batch them slightly.
-    for (const modelId of selectedModels) {
-      newResults[modelId] = {};
-      for (const prompt of BENCHMARK_PROMPTS) {
-        // Init state
-        setResults(prev => ({ ...prev, [modelId]: { ...prev[modelId], [prompt.id]: { loading: true } } }));
-        
+    const totalRuns = selectedModels.length * BENCHMARK_PROMPTS.length;
+    setProgress({ current: 0, total: totalRuns });
+    let completedRuns = 0;
+
+    // Run prompt by prompt, executing across selected models in parallel
+    for (const prompt of BENCHMARK_PROMPTS) {
+      setResults(prev => {
+        const next = { ...prev };
+        for (const modelId of selectedModels) {
+          next[modelId] = { ...(next[modelId] || {}), [prompt.id]: { loading: true } };
+        }
+        return next;
+      });
+
+      await Promise.all(selectedModels.map(async (modelId) => {
         try {
           const res = await fetch(`${API_BASE}/v1/chat/completions`, {
             method: 'POST',
@@ -94,17 +131,17 @@ export default function Benchmark() {
               stream: false
             })
           });
-          
+
           if (!res.ok) throw new Error('Failed');
           const data = await res.json();
-          
+
           setResults(prev => ({
             ...prev,
             [modelId]: {
               ...prev[modelId],
               [prompt.id]: {
                 loading: false,
-                text: data.choices[0].message.content,
+                text: data.choices[0]?.message?.content || '',
                 latency: data.router_metadata?.latency_ms || 0,
                 cost: data.router_metadata?.cost_actual_usd || 0
               }
@@ -118,28 +155,66 @@ export default function Benchmark() {
               [prompt.id]: { loading: false, error: true }
             }
           }));
+        } finally {
+          completedRuns++;
+          setProgress({ current: completedRuns, total: totalRuns });
         }
-      }
+      }));
     }
-    
+
     setIsRunning(false);
   };
 
   return (
     <div className="h-full flex flex-col p-6 overflow-hidden max-w-[1200px] mx-auto text-[#111]">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
         <div>
           <h2 className="text-xl font-bold">Model Benchmark Suite</h2>
-          <p className="text-[13px] text-gray-500 mt-1">Run standard prompts against selected models to compare latency and cost.</p>
+          <p className="text-[13px] text-gray-500 mt-1">Run standard prompts against selected models in parallel to evaluate latency and cost.</p>
         </div>
-        <button 
-          onClick={runBenchmark}
-          disabled={isRunning || !selectedModels.length}
-          className="px-5 py-2.5 bg-black text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-        >
-          {isRunning ? 'Benchmarking...' : 'Run Benchmark'}
-        </button>
+        <div className="flex items-center gap-2">
+          {hasCompletedResults && (
+            <button
+              onClick={exportBenchmarkResults}
+              disabled={isRunning}
+              className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 text-[13px] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-2xs flex items-center gap-1.5"
+            >
+              <span>📥</span> Export JSON
+            </button>
+          )}
+          <button 
+            onClick={runBenchmark}
+            disabled={isRunning || !selectedModels.length}
+            className="px-5 py-2.5 bg-black text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+          >
+            {isRunning ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Running ({progress.current}/{progress.total})...</span>
+              </>
+            ) : (
+              <span>Run Benchmark ({selectedModels.length * BENCHMARK_PROMPTS.length} reqs)</span>
+            )}
+          </button>
+        </div>
       </div>
+
+      {isRunning && progress.total > 0 && (
+        <div className="mb-4 bg-white border border-gray-200 rounded-xl p-3 shadow-2xs flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs font-mono">
+            <span className="text-gray-500 font-sans">Benchmarking progress:</span>
+            <span className="font-semibold text-gray-800">
+              {progress.current} of {progress.total} completed ({Math.round((progress.current / progress.total) * 100)}%)
+            </span>
+          </div>
+          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-black rounded-full transition-all duration-300"
+              style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-6 h-full min-h-0">
         <div className="w-[300px] flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm p-4 overflow-y-auto">
@@ -198,7 +273,9 @@ export default function Benchmark() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[12px] font-semibold text-gray-800">{prompt.label}</span>
                         {prompt.category && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-gray-100 text-gray-600 uppercase">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                            CATEGORY_COLORS[prompt.category] || 'bg-gray-100 text-gray-600'
+                          }`}>
                             {prompt.category}
                           </span>
                         )}
